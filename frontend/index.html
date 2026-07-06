@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spectroscopic Intelligence Platform - Login</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="login-screen" class="page page--active">
+    <div class="login-panel">
+      <div class="brand-panel">
+        <div class="brand-mark">SIP</div>
+        <h1>Spectroscopic Intelligence Platform</h1>
+        <p>Secure cloud-connected platform for process monitoring, quality assurance, and compliance.</p>
+      </div>
+      <form id="login-form" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-username">Username</label>
+          <input id="login-username" type="text" placeholder="Enter your username" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="Enter your password" required />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="button button--primary">Login</button>
+        </div>
+      </form>
+      <div class="login-footnote">Use enterprise credentials to access platform workflows. Configuration is fully managed by users.</div>
+    </div>
+  </div>
+
+  <script src="js/demo-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+      <div class="sidebar-brand">
+        <div class="logo">SIP</div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link active" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports</button>
+        <button class="nav-link" data-page="audit">Audit Trail</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Dashboard</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrapper">
+            <input id="globalSearch" type="search" placeholder="Search modules, projects, records..." />
+          </div>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="content-section content-section--active">
+        <div class="grid grid--4cards">
+          <article class="card card--metric">
+            <div class="card-title">Total Projects</div>
+            <div class="card-value" id="metricProjects">0</div>
+          </article>
+          <article class="card card--metric">
+            <div class="card-title">Active Sessions</div>
+            <div class="card-value" id="metricSessions">0</div>
+          </article>
+          <article class="card card--metric">
+            <div class="card-title">Compliance Score</div>
+            <div class="card-value" id="metricCompliance">0%</div>
+          </article>
+          <article class="card card--metric">
+            <div class="card-title">Pending Deviations</div>
+            <div class="card-value" id="metricDeviations">0</div>
+          </article>
+        </div>
+        <div class="grid grid--cards">
+          <article class="card card--chart">
+            <div class="card-header">Critical Alerts</div>
+            <div class="card-note" id="criticalAlerts">No critical alerts at the moment.</div>
+          </article>
+          <article class="card card--chart">
+            <div class="card-header">Recent Reports</div>
+            <ul class="report-list" id="dashboardReports"></ul>
+          </article>
+          <article class="card card--actions">
+            <div class="card-header">Quick Actions</div>
+            <div class="action-grid">
+              <button class="mini-button" data-action="openPage" data-page="projects">New Project</button>
+              <button class="mini-button" data-action="openPage" data-page="monitoring">Configure Points</button>
+              <button class="mini-button" data-action="openPage" data-page="data-entry">Upload Data</button>
+              <button class="mini-button" data-action="openPage" data-page="compliance">Evaluate Compliance</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="projects" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Project Management</h3>
+            <p>Create, configure, and maintain manufacturing project records for quality lifecycle tracking.</p>
+          </div>
+          <button class="button button--primary" id="openProjectForm">Create Project</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="projectsTable">
+            <thead>
+              <tr>
+                <th>Project Name</th>
+                <th>Product</th>
+                <th>Batch</th>
+                <th>Department</th>
+                <th>Line</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="monitoring" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Monitoring Point Management</h3>
+            <p>Define points of measurement across the manufacturing process. Use generic, configurable points.</p>
+          </div>
+          <button class="button button--primary" id="openMonitoringForm">Add Monitoring Point</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="monitoringTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Frequency</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="parameters" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Process Parameter Management</h3>
+            <p>Configure analytical parameters, instruments, units, and sampling details.</p>
+          </div>
+          <button class="button button--primary" id="openParameterForm">Add Parameter</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="parametersTable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Instrument</th>
+                <th>Unit</th>
+                <th>Frequency</th>
+                <th>Description</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="checkout" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Checkout Condition Management</h3>
+            <p>Define acceptance, warning, and critical limits with corrective actions for each parameter.</p>
+          </div>
+          <button class="button button--primary" id="openConditionForm">Add Condition</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="checkoutTable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Acceptance</th>
+                <th>Warning</th>
+                <th>Critical</th>
+                <th>Action</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="rules" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Regulatory Rule Management</h3>
+            <p>Configure regulatory and SOP compliance frameworks for your quality governance.</p>
+          </div>
+          <button class="button button--primary" id="openRuleForm">Add Rule</button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="rulesTable">
+            <thead>
+              <tr>
+                <th>Rule</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="data-entry" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Analytical Process Data</h3>
+            <p>Enter or upload spectrum and process parameter data for validation and compliance evaluation.</p>
+          </div>
+        </div>
+        <div class="grid grid--2cols">
+          <article class="card card--form">
+            <h4>Manual Entry</h4>
+            <form id="dataEntryForm" class="panel-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Parameter</label>
+                  <select id="dataParameter"></select>
+                </div>
+                <div class="form-group">
+                  <label>Instrument</label>
+                  <input id="dataInstrument" type="text" readonly />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Value</label>
+                  <input id="dataValue" type="text" placeholder="Enter numeric value" />
+                </div>
+                <div class="form-group">
+                  <label>Unit</label>
+                  <input id="dataUnit" type="text" readonly />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Timestamp</label>
+                  <input id="dataTimestamp" type="datetime-local" />
+                </div>
+                <div class="form-group"></div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="button button--primary">Submit Data</button>
+              </div>
+            </form>
+          </article>
+          <article class="card card--form">
+            <h4>CSV Upload</h4>
+            <p>Upload structured analytical data with headers: parameter, instrument, value, unit, timestamp.</p>
+            <input id="csvUpload" type="file" accept=".csv" />
+            <div class="note">Values are validated for missing fields, duplicates, and timestamp consistency.</div>
+          </article>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="dataTable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Instrument</th>
+                <th>Value</th>
+                <th>Unit</th>
+                <th>Timestamp</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="compliance" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Compliance Evaluation Engine</h3>
+            <p>Validate data against checkout conditions, identify deviations, and generate corrective guidance.</p>
+          </div>
+          <button class="button button--primary" id="runCompliance">Run Evaluation</button>
+        </div>
+        <div class="grid grid--3cards">
+          <div class="card card--metric">
+            <div class="card-title">Validation Status</div>
+            <div class="card-value" id="complianceStatus">Idle</div>
+          </div>
+          <div class="card card--metric">
+            <div class="card-title">Pass Rate</div>
+            <div class="card-value" id="compliancePassRate">0%</div>
+          </div>
+          <div class="card card--metric">
+            <div class="card-title">Deviations</div>
+            <div class="card-value" id="complianceDeviations">0</div>
+          </div>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="complianceTable">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Limit Status</th>
+                <th>Result</th>
+                <th>Corrective Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="reports" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Report Generation</h3>
+            <p>Generate batch, compliance, QA, trend, and audit reports for quality assurance oversight.</p>
+          </div>
+          <div class="button-group">
+            <button class="button button--secondary" id="exportExcel">Excel Export</button>
+            <button class="button button--secondary" id="exportPdf">Print / PDF</button>
+          </div>
+        </div>
+        <div class="grid grid--3cards">
+          <div class="card card--report">
+            <h4>Batch Report</h4>
+            <p>Summary of project activities, monitoring points, and data validation status.</p>
+          </div>
+          <div class="card card--report">
+            <h4>Compliance Report</h4>
+            <p>Evaluation results, deviations, and regulatory alignment for current dataset.</p>
+          </div>
+          <div class="card card--report">
+            <h4>Audit Report</h4>
+            <p>Historical trail of user actions, configuration updates, data uploads, and approvals.</p>
+          </div>
+        </div>
+        <div class="report-panel" id="reportPanel"></div>
+      </section>
+
+      <section id="audit" class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Audit Trail</h3>
+            <p>Complete audit records for login, configuration changes, uploads, report generation, and approvals.</p>
+          </div>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="auditTable">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Activity</th>
+                <th>Module</th>
+                <th>User</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalPanel" class="modal hidden"></div>
+
+  <script src="js/demo-data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/project.js"></script>
+  <script src="js/monitoring.js"></script>
+  <script src="js/parameters.js"></script>
+  <script src="js/checkout.js"></script>
+  <script src="js/compliance.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/audit.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+branch-defaults:
+  default:
+    environment: null
+    group_suffix: null
+global:
+  application_name: spectroscopic-intelligence-platform
+  default_platform: Node.js
+  default_region: us-east-1
+  profile: null

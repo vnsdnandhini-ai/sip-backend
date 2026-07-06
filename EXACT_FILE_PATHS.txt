@@ -1,0 +1,138 @@
+SPECTROSCOPIC INTELLIGENCE PLATFORM - FILE PATHS
+================================================
+
+PROJECT ROOT:
+C:\Users\sri kanisha engineer\Desktop\html practice\
+
+═══════════════════════════════════════════════════════════════
+
+FRONTEND FILES (User Interface)
+───────────────────────────────────────────────────────────────
+
+📂 FRONTEND FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\frontend\
+
+📄 HTML PAGES:
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\index.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\dashboard.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\projects.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\monitoring.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\parameters.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\checkout.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\rules.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\analytical.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\compliance.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\reports.html
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\audit.html
+
+📂 CSS FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\frontend\css\
+
+  📄 STYLESHEET:
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\css\style.css
+
+📂 JAVASCRIPT FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\
+
+  📄 JAVASCRIPT FILES:
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\app.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\dashboard.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\project.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\monitoring.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\parameters.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\checkout.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\rules.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\compliance.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\reports.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\audit.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\nav.js
+    C:\Users\sri kanisha engineer\Desktop\html practice\frontend\js\demo-data.js
+
+📂 ASSETS FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\frontend\assets\
+  - icons/
+  - images/
+
+📂 IMAGE FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\frontend\img\
+
+═══════════════════════════════════════════════════════════════
+
+BACKEND FILES (API Server)
+───────────────────────────────────────────────────────────────
+
+📂 BACKEND FOLDER:
+C:\Users\sri kanisha engineer\Desktop\html practice\backend\
+
+  📄 SERVER:
+    C:\Users\sri kanisha engineer\Desktop\html practice\backend\server.js
+
+  📄 CONFIGURATION:
+    C:\Users\sri kanisha engineer\Desktop\html practice\backend\package.json
+    C:\Users\sri kanisha engineer\Desktop\html practice\backend\Procfile
+
+  📄 DATABASE:
+    C:\Users\sri kanisha engineer\Desktop\html practice\backend\data.json
+
+  📂 ELASTICBEANSTALK:
+    C:\Users\sri kanisha engineer\Desktop\html practice\backend\.elasticbeanstalk\
+      └─ C:\Users\sri kanisha engineer\Desktop\html practice\backend\.elasticbeanstalk\config.yml
+
+═══════════════════════════════════════════════════════════════
+
+ROOT LEVEL FILES & SCRIPTS
+───────────────────────────────────────────────────────────────
+
+🚀 START SCRIPTS:
+  C:\Users\sri kanisha engineer\Desktop\html practice\start-frontend.bat
+  C:\Users\sri kanisha engineer\Desktop\html practice\start-backend.bat
+  C:\Users\sri kanisha engineer\Desktop\html practice\start-server.py
+
+📚 DOCUMENTATION:
+  C:\Users\sri kanisha engineer\Desktop\html practice\README-ORGANIZED.md
+  C:\Users\sri kanisha engineer\Desktop\html practice\FILE_MANAGER_GUIDE.md
+  C:\Users\sri kanisha engineer\Desktop\html practice\README.md
+
+🔧 GIT:
+  C:\Users\sri kanisha engineer\Desktop\html practice\.gitignore
+
+═══════════════════════════════════════════════════════════════
+
+QUICK ACCESS
+───────────────────────────────────────────────────────────────
+
+To open in Windows File Manager, copy & paste in address bar:
+  C:\Users\sri kanisha engineer\Desktop\html practice\frontend\
+  C:\Users\sri kanisha engineer\Desktop\html practice\backend\
+
+To view a specific file, open with:
+  Notepad, VS Code, or your preferred editor
+
+═══════════════════════════════════════════════════════════════
+
+RUNNING THE APPLICATION
+───────────────────────────────────────────────────────────────
+
+WINDOWS:
+  1. Go to: C:\Users\sri kanisha engineer\Desktop\html practice\
+  2. Double-click: start-frontend.bat
+  3. Open: http://localhost:8000
+  4. Login: admin / admin123
+
+LINUX/MAC:
+  1. cd C:\Users\sri kanisha engineer\Desktop\html practice\
+  2. python3 start-server.py
+  3. Open: http://localhost:8000
+
+═══════════════════════════════════════════════════════════════
+
+FILE SUMMARY
+───────────────────────────────────────────────────────────────
+
+Frontend:  29 files (11 HTML + 1 CSS + 12 JS + assets)
+Backend:   5 files (server + config + database + EB config)
+Total:     34+ organized files
+
+Ready for: Development, testing, cloud deployment
+
+═══════════════════════════════════════════════════════════════

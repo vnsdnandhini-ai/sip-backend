@@ -1,0 +1,75 @@
+{
+  "users": [],
+  "projects": [],
+  "devices": [
+    {
+      "deviceId": "id-uq98n3qc-1783323629430",
+      "apiKey": "id-amakt2l5-1783323629431",
+      "name": "ESP32-Trial-1",
+      "connectionType": "UART",
+      "monitoringPointId": "mp-001",
+      "status": "active",
+      "registeredAt": "2026-07-06T07:40:29.432Z",
+      "lastSeenAt": "2026-07-06T07:41:36.475Z"
+    }
+  ],
+  "monitoringPoints": [],
+  "parameters": [],
+  "checkoutConditions": [],
+  "regulatoryRules": [
+    {
+      "id": "rule-fda-21cfr",
+      "name": "FDA 21 CFR Part 11",
+      "description": "Electronic records and signatures compliance.",
+      "status": "Active"
+    },
+    {
+      "id": "rule-gmp",
+      "name": "GMP",
+      "description": "Good Manufacturing Practices framework.",
+      "status": "Active"
+    },
+    {
+      "id": "rule-ich-q8",
+      "name": "ICH Q8",
+      "description": "Pharmaceutical development guidelines.",
+      "status": "Active"
+    },
+    {
+      "id": "rule-ich-q9",
+      "name": "ICH Q9",
+      "description": "Quality risk management guidance.",
+      "status": "Active"
+    },
+    {
+      "id": "rule-ich-q10",
+      "name": "ICH Q10",
+      "description": "Pharmaceutical quality system guidance.",
+      "status": "Active"
+    },
+    {
+      "id": "rule-sop",
+      "name": "SOP",
+      "description": "Standard operating procedures.",
+      "status": "Active"
+    }
+  ],
+  "analyticalData": [
+    {
+      "id": "id-tggkjzpg-1783323696473",
+      "deviceId": "id-uq98n3qc-1783323629430",
+      "monitoringPointId": "mp-001",
+      "readingType": "parameter",
+      "values": null,
+      "parameters": {
+        "concentration": 12.4,
+        "temperature": 24.8
+      },
+      "receivedAt": "2026-07-06T07:41:36.475Z",
+      "deviceTimestamp": null
+    }
+  ],
+  "complianceResults": [],
+  "auditTrail": [],
+  "reports": []
+}

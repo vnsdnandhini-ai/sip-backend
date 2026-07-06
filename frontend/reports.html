@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">SIP</div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link active" data-page="reports">Reports</button>
+        <button class="nav-link" data-page="audit">Audit Trail</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Reports</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrapper">
+            <input id="globalSearch" type="search" placeholder="Search modules, projects, records..." />
+          </div>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Report Generation</h3>
+            <p>Generate batch, compliance, QA, trend, and audit reports for quality assurance oversight.</p>
+          </div>
+          <div class="button-group">
+            <button class="button button--secondary" id="exportExcel">Excel Export</button>
+            <button class="button button--secondary" id="exportPdf">Print / PDF</button>
+          </div>
+        </div>
+        <div class="grid grid--3cards">
+          <div class="card card--report">
+            <h4>Batch Report</h4>
+            <p>Summary of project activities, monitoring points, and data validation status.</p>
+          </div>
+          <div class="card card--report">
+            <h4>Compliance Report</h4>
+            <p>Evaluation results, deviations, and regulatory alignment for current dataset.</p>
+          </div>
+          <div class="card card--report">
+            <h4>Audit Report</h4>
+            <p>Historical trail of user actions, configuration updates, data uploads, and approvals.</p>
+          </div>
+        </div>
+        <div class="report-panel" id="reportPanel"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalPanel" class="modal hidden"></div>
+
+  <script src="js/demo-data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/reports.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
