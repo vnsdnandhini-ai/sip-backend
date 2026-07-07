@@ -15,7 +15,10 @@
   ],
   "monitoringPoints": [],
   "parameters": [],
-  "checkoutConditions": [],
+  "checkoutConditions": [
+  { "id": "cond-concentration", "parameter": "concentration", "acceptance": "8-15", "warning": "5-8", "critical": "<5", "action": "Recalibrate sensor" },
+  { "id": "cond-temperature", "parameter": "temperature", "acceptance": "20-30", "warning": "15-20", "critical": "<15", "action": "Check thermal control" }
+],
   "regulatoryRules": [
     {
       "id": "rule-fda-21cfr",
