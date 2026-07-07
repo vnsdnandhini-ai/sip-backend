@@ -1,3 +1,65 @@
+const BACKEND_URL = 'https://sip-backend-1.onrender.com';
+
+async function fetchLiveAnalyticalData() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/state`);
+    const liveData = await response.json();
+    if (liveData.analyticalData && liveData.analyticalData.length) {
+      const liveFormatted = liveData.analyticalData.map((item) => ({
+        id: item.id,
+        parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
+        instrument: item.deviceId || 'ESP32',
+        value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
+        unit: '',
+         timestamp: item.receivedAt,
+        result: 'Live',
+        isLive: true,
+      }));
+    appState.analyticalData = [...liveFormatted.reverse(), ...appState.analyticalData];
+    }
+  } catch (err) {
+    console.error('Could not fetch live sensor data:', err);
+  }
+}
+async function deleteSingleReading(id) {
+  const confirmed = confirm('Delete this reading permanently?');
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/sensor-data/${id}`, {
+      method: 'DELETE',
+    });
+    if (response.ok) {
+      window.location.reload();
+    } else {
+      alert('Failed to delete reading.');
+    }
+  } catch (err) {
+    console.error('Error deleting reading:', err);
+    alert('Error deleting reading. Check console.');
+  }
+}
+
+async function clearAllSensorData() {
+  const confirmed = confirm('This will permanently delete all sensor readings from the cloud. Continue?');
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/sensor-data`, {
+      method: 'DELETE',
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(`Cleared ${data.cleared} readings successfully.`);
+      window.location.reload();
+    } else {
+      alert('Failed to clear data.');
+    }
+  } catch (err) {
+    console.error('Error clearing data:', err);
+    alert('Error clearing data. Check console.');
+  }
+}
 const appState = {
   session: null,
   projects: [],
@@ -20,8 +82,9 @@ const selectors = {
   modalPanel: document.getElementById('modalPanel'),
 };
 
+
+
 function initApp() {
-  loadState();
   if (selectors.loginForm) {
     selectors.loginForm.addEventListener('submit', handleLogin);
   }
@@ -70,8 +133,11 @@ function bindEvents() {
   if (document.getElementById('exportPdf')) {
     document.getElementById('exportPdf').addEventListener('click', () => exportReport('pdf'));
   }
-  if (document.getElementById('modalBackdrop')) {
+ if (document.getElementById('modalBackdrop')) {
     document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+  }
+  if (document.getElementById('clearDataButton')) {
+    document.getElementById('clearDataButton').addEventListener('click', clearAllSensorData);
   }
 }
 
@@ -169,8 +235,9 @@ function searchTable(tableId, data, fields, query) {
         row.innerHTML = `<td>${item.parameter}</td><td>${item.acceptance}</td><td>${item.warning}</td><td>${item.critical}</td><td>${item.action}</td><td>${createRowActions(item.id, 'condition')}</td>`;
       } else if (tableId === 'rulesTable') {
         row.innerHTML = `<td>${item.name}</td><td>${item.description}</td><td>${item.status}</td><td>${createRowActions(item.id, 'rule')}</td>`;
-      } else if (tableId === 'dataTable') {
-        row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${item.value}</td><td>${item.unit}</td><td>${item.timestamp}</td><td>${item.result || 'Pending'}</td>`;
+     } else if (tableId === 'dataTable') {
+        const deleteBtn = item.isLive ? `<button class="table-action-button danger" onclick="deleteSingleReading('${item.id}')">Delete</button>` : '';
+        row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${item.value}</td><td>${item.unit}</td><td>${item.timestamp}</td><td>${item.result || 'Pending'}</td><td>${deleteBtn}</td>`;
       }
       tbody.appendChild(row);
     });
@@ -307,9 +374,11 @@ function initializePlatform() {
   } else if (!appState.session && !document.getElementById('login-form')) {
     // On module page without session - redirect to login
     window.location.href = 'index.html';
-  } else {
+} else {
     // Normal initialization
-    initApp();
+    fetchLiveAnalyticalData().then(() => {
+      initApp();
+    });
   }
 }
 

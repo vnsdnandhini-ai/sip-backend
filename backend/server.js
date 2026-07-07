@@ -4,12 +4,14 @@ const fs = require('fs');
 const path = require('path');
 const sensorRoutes = require('./sensorRoutes');
 
+const complianceRoutes = require('./complianceRoutes');
 const DATA_FILE = path.join(__dirname, 'data.json');
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
 app.use('/api', sensorRoutes(readData, writeData, generateId));
+app.use('/api', complianceRoutes(readData, writeData, generateId));
 
 function readData() {
   const json = fs.readFileSync(DATA_FILE, 'utf8');
