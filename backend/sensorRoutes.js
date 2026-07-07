@@ -170,5 +170,29 @@ module.exports = function (readData, writeData, generateId) {
     res.json({ success: true, count: records.length });
   });
 
+  // --- Delete a single sensor reading by its record ID -------------------
+  router.delete('/sensor-data/:id', (req, res) => {
+    const data = readData();
+    const index = data.analyticalData.findIndex((item) => item.id === req.params.id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Reading not found.' });
+    }
+
+    data.analyticalData.splice(index, 1);
+    writeData(data);
+    res.json({ success: true, deletedId: req.params.id });
+  });
+
+  // --- Clear all sensor/analytical data (for demo resets) ---------------
+  // Use this to wipe accumulated test readings before a clean demo.
+  router.delete('/sensor-data', (req, res) => {
+    const data = readData();
+    const clearedCount = data.analyticalData.length;
+    data.analyticalData = [];
+    writeData(data);
+    res.json({ success: true, cleared: clearedCount });
+  });
+
   return router;
 };
