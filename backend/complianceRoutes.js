@@ -85,38 +85,44 @@ module.exports = function (readData, writeData, generateId) {
     const newResults = [];
 
     pending.forEach((reading) => {
-      let parameterName = reading.parameter;
-      let numericValue = parseFloat(reading.value);
+      // Build a list of { parameterName, numericValue } pairs to evaluate.
+      // Manual-entry readings have exactly one (item.parameter / item.value).
+      // Sensor readings can carry multiple parameters at once (e.g.
+      // concentration AND temperature in the same reading) - evaluate
+      // every one of them, not just the first match.
+      const evaluationTargets = [];
 
       if (reading.parameters && typeof reading.parameters === 'object') {
-        const candidateKeys = Object.keys(reading.parameters);
-        for (const key of candidateKeys) {
-          const match = data.checkoutConditions.find(
-            (c) => c.parameter.toLowerCase() === key.toLowerCase()
-          );
-          if (match) {
-            parameterName = match.parameter;
-            numericValue = parseFloat(reading.parameters[key]);
-            break;
-          }
-        }
+        Object.keys(reading.parameters).forEach((key) => {
+          evaluationTargets.push({
+            parameterName: key,
+            numericValue: parseFloat(reading.parameters[key]),
+          });
+        });
+      } else {
+        evaluationTargets.push({
+          parameterName: reading.parameter,
+          numericValue: parseFloat(reading.value),
+        });
       }
 
-      const checkoutCondition = data.checkoutConditions.find(
-        (c) => c.parameter.toLowerCase() === String(parameterName).toLowerCase()
-      );
+      evaluationTargets.forEach(({ parameterName, numericValue }) => {
+        const checkoutCondition = data.checkoutConditions.find(
+          (c) => c.parameter.toLowerCase() === String(parameterName).toLowerCase()
+        );
 
-      const evaluation = evaluateReading(numericValue, checkoutCondition);
+        const evaluation = evaluateReading(numericValue, checkoutCondition);
 
-      const complianceResult = {
-        id: generateId(),
-        analyticalDataId: reading.id,
-        deviceId: reading.deviceId || null,
-        ...evaluation,
-      };
+        const complianceResult = {
+          id: generateId(),
+          analyticalDataId: reading.id,
+          deviceId: reading.deviceId || null,
+          ...evaluation,
+        };
 
-      data.complianceResults.push(complianceResult);
-      newResults.push(complianceResult);
+        data.complianceResults.push(complianceResult);
+        newResults.push(complianceResult);
+      });
     });
 
     writeData(data);
