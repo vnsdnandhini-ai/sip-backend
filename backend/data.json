@@ -71,5 +71,30 @@
   ],
   "complianceResults": [],
   "auditTrail": [],
-  "reports": []
+  "reports": [
+    {
+      "id": "report-2497909b90ba845b",
+      "content": {
+        "title": "Local Test Report",
+        "generatedBy": "Sri Kanisha",
+        "projectId": null,
+        "dateRangeStart": null,
+        "dateRangeEnd": null,
+        "summary": {
+          "totalEvaluated": 0,
+          "pass": 100,
+          "warning": 0,
+          "critical": 0,
+          "invalidOrUnevaluated": 0
+        },
+        "results": [],
+        "generatedAt": "2026-07-07T06:26:07.817Z"
+      },
+      "integrity": {
+        "algorithm": "SHA-256",
+        "hash": "7350695c55e6b422269bfd472f9c26b1f2c7103dbeedc6ee69698a5fefa4d50f",
+        "generatedAt": "2026-07-07T06:26:07.817Z"
+      }
+    }
+  ]
 }
