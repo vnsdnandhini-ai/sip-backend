@@ -1,103 +1,179 @@
-{
-  "users": [],
-  "projects": [],
-  "devices": [
-    {
-      "deviceId": "id-uq98n3qc-1783323629430",
-      "apiKey": "id-amakt2l5-1783323629431",
-      "name": "ESP32-Trial-1",
-      "connectionType": "UART",
-      "monitoringPointId": "mp-001",
-      "status": "active",
-      "registeredAt": "2026-07-06T07:40:29.432Z",
-      "lastSeenAt": "2026-07-06T07:41:36.475Z"
-    }
-  ],
-  "monitoringPoints": [],
-  "parameters": [],
-  "checkoutConditions": [
-  { "id": "cond-concentration", "parameter": "concentration", "acceptance": "8-15", "warning": "5-8", "critical": "<5", "action": "Recalibrate sensor" },
-  { "id": "cond-temperature", "parameter": "temperature", "acceptance": "20-30", "warning": "15-20", "critical": "<15", "action": "Check thermal control" }
-],
-  "regulatoryRules": [
-    {
-      "id": "rule-fda-21cfr",
-      "name": "FDA 21 CFR Part 11",
-      "description": "Electronic records and signatures compliance.",
-      "status": "Active"
-    },
-    {
-      "id": "rule-gmp",
-      "name": "GMP",
-      "description": "Good Manufacturing Practices framework.",
-      "status": "Active"
-    },
-    {
-      "id": "rule-ich-q8",
-      "name": "ICH Q8",
-      "description": "Pharmaceutical development guidelines.",
-      "status": "Active"
-    },
-    {
-      "id": "rule-ich-q9",
-      "name": "ICH Q9",
-      "description": "Quality risk management guidance.",
-      "status": "Active"
-    },
-    {
-      "id": "rule-ich-q10",
-      "name": "ICH Q10",
-      "description": "Pharmaceutical quality system guidance.",
-      "status": "Active"
-    },
-    {
-      "id": "rule-sop",
-      "name": "SOP",
-      "description": "Standard operating procedures.",
-      "status": "Active"
-    }
-  ],
-  "analyticalData": [
-    {
-      "id": "id-tggkjzpg-1783323696473",
-      "deviceId": "id-uq98n3qc-1783323629430",
-      "monitoringPointId": "mp-001",
-      "readingType": "parameter",
-      "values": null,
-      "parameters": {
-        "concentration": 12.4,
-        "temperature": 24.8
-      },
-      "receivedAt": "2026-07-06T07:41:36.475Z",
-      "deviceTimestamp": null
-    }
-  ],
-  "complianceResults": [],
-  "auditTrail": [],
-  "reports": [
-    {
-      "id": "report-2497909b90ba845b",
-      "content": {
-        "title": "Local Test Report",
-        "generatedBy": "Sri Kanisha",
-        "projectId": null,
-        "dateRangeStart": null,
-        "dateRangeEnd": null,
-        "summary": {
-          "totalEvaluated": 0,
-          "pass": 100,
-          "warning": 0,
-          "critical": 0,
-          "invalidOrUnevaluated": 0
-        },
-        "results": [],
-        "generatedAt": "2026-07-07T06:26:07.817Z"
-      },
-      "integrity": {
-        "algorithm": "SHA-256",
-        "hash": "7350695c55e6b422269bfd472f9c26b1f2c7103dbeedc6ee69698a5fefa4d50f",
-        "generatedAt": "2026-07-07T06:26:07.817Z"
-      }
-    }
-  ]
+﻿{
+    "users":  [
+
+              ],
+    "projects":  [
+
+                 ],
+    "devices":  [
+                    {
+                        "deviceId":  "id-uq98n3qc-1783323629430",
+                        "apiKey":  "id-amakt2l5-1783323629431",
+                        "name":  "ESP32-Trial-1",
+                        "connectionType":  "UART",
+                        "monitoringPointId":  "mp-001",
+                        "status":  "active",
+                        "registeredAt":  "2026-07-06T07:40:29.432Z",
+                        "lastSeenAt":  "2026-07-06T07:41:36.475Z"
+                    }
+                ],
+    "monitoringPoints":  [
+
+                         ],
+    "parameters":  [
+
+                   ],
+    "checkoutConditions":  [
+                               {
+                                   "id":  "cond-concentration",
+                                   "parameter":  "concentration",
+                                   "acceptance":  "8-15",
+                                   "warning":  "5-8",
+                                   "critical":  "\u003c5",
+                                   "action":  "Recalibrate sensor"
+                               },
+                               {
+                                   "id":  "cond-temperature",
+                                   "parameter":  "temperature",
+                                   "acceptance":  "20-30",
+                                   "warning":  "15-20",
+                                   "critical":  "\u003c15",
+                                   "action":  "Check thermal control"
+                               },
+                               {
+                                   "id":  "id-3g4m1111-1783590980225",
+                                   "parameter":  "Raman Spectral Similarity",
+                                   "acceptance":  "85-100",
+                                   "warning":  "70-84",
+                                   "critical":  "\u003c70",
+                                   "action":  "Reject batch - spectral mismatch"
+                               },
+                               {
+                                   "id":  "id-9dhnfg30-1783591007440",
+                                   "parameter":  "NIR Absorbance",
+                                   "acceptance":  "0.8-1.2",
+                                   "warning":  "0.6-0.79",
+                                   "critical":  "\u003c0.6",
+                                   "action":  "Recalibrate NIR analyzer"
+                               },
+                               {
+                                   "id":  "id-95ruipp9-1783591018083",
+                                   "parameter":  "FTIR Peak Intensity",
+                                   "acceptance":  "400-500",
+                                   "warning":  "300-399",
+                                   "critical":  "\u003c300",
+                                   "action":  "Recheck sample preparation"
+                               },
+                               {
+                                   "id":  "id-poga95yo-1783591028123",
+                                   "parameter":  "Moisture Content",
+                                   "acceptance":  "2-4",
+                                   "warning":  "4-5",
+                                   "critical":  "\u003e5",
+                                   "action":  "Review drying process"
+                               },
+                               {
+                                   "id":  "id-wsmmv8pq-1783591035891",
+                                   "parameter":  "Particle Size",
+                                   "acceptance":  "50-150",
+                                   "warning":  "30-49",
+                                   "critical":  "\u003c30",
+                                   "action":  "Adjust milling parameters"
+                               },
+                               {
+                                   "id":  "id-6igx4e05-1783591043137",
+                                   "parameter":  "pH",
+                                   "acceptance":  "6.5-7.5",
+                                   "warning":  "6-6.4",
+                                   "critical":  "\u003c6",
+                                   "action":  "Add buffer solution"
+                               }
+                           ],
+    "regulatoryRules":  [
+                            {
+                                "id":  "rule-fda-21cfr",
+                                "name":  "FDA 21 CFR Part 11",
+                                "description":  "Electronic records and signatures compliance.",
+                                "status":  "Active"
+                            },
+                            {
+                                "id":  "rule-gmp",
+                                "name":  "GMP",
+                                "description":  "Good Manufacturing Practices framework.",
+                                "status":  "Active"
+                            },
+                            {
+                                "id":  "rule-ich-q8",
+                                "name":  "ICH Q8",
+                                "description":  "Pharmaceutical development guidelines.",
+                                "status":  "Active"
+                            },
+                            {
+                                "id":  "rule-ich-q9",
+                                "name":  "ICH Q9",
+                                "description":  "Quality risk management guidance.",
+                                "status":  "Active"
+                            },
+                            {
+                                "id":  "rule-ich-q10",
+                                "name":  "ICH Q10",
+                                "description":  "Pharmaceutical quality system guidance.",
+                                "status":  "Active"
+                            },
+                            {
+                                "id":  "rule-sop",
+                                "name":  "SOP",
+                                "description":  "Standard operating procedures.",
+                                "status":  "Active"
+                            }
+                        ],
+    "analyticalData":  [
+                           {
+                               "id":  "id-tggkjzpg-1783323696473",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "mp-001",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "concentration":  12.4,
+                                                  "temperature":  24.8
+                                              },
+                               "receivedAt":  "2026-07-06T07:41:36.475Z",
+                               "deviceTimestamp":  null
+                           }
+                       ],
+    "complianceResults":  [
+
+                          ],
+    "auditTrail":  [
+
+                   ],
+    "reports":  [
+                    {
+                        "id":  "report-2497909b90ba845b",
+                        "content":  {
+                                        "title":  "Local Test Report",
+                                        "generatedBy":  "Sri Kanisha",
+                                        "projectId":  null,
+                                        "dateRangeStart":  null,
+                                        "dateRangeEnd":  null,
+                                        "summary":  {
+                                                        "totalEvaluated":  0,
+                                                        "pass":  100,
+                                                        "warning":  0,
+                                                        "critical":  0,
+                                                        "invalidOrUnevaluated":  0
+                                                    },
+                                        "results":  [
+
+                                                    ],
+                                        "generatedAt":  "2026-07-07T06:26:07.817Z"
+                                    },
+                        "integrity":  {
+                                          "algorithm":  "SHA-256",
+                                          "hash":  "7350695c55e6b422269bfd472f9c26b1f2c7103dbeedc6ee69698a5fefa4d50f",
+                                          "generatedAt":  "2026-07-07T06:26:07.817Z"
+                                      }
+                    }
+                ]
 }
