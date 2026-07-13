@@ -14,7 +14,7 @@
                         "monitoringPointId":  "mp-001",
                         "status":  "active",
                         "registeredAt":  "2026-07-06T07:40:29.432Z",
-                        "lastSeenAt":  "2026-07-13T05:12:25.813Z"
+                        "lastSeenAt":  "2026-07-13T05:35:26.701Z"
                     }
                 ],
     "monitoringPoints":  [
@@ -44,7 +44,42 @@
                              }
                          ],
     "parameters":  [
-
+                       {
+                           "id":  "id-ldbbeefp-1783919855991",
+                           "name":  "NIR Absorbance",
+                           "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                           "instrument":  "NIR Analyzer",
+                           "unit":  "AU",
+                           "frequency":  "30 sec",
+                           "description":  "Near-infrared absorption check on incoming raw material"
+                       },
+                       {
+                           "id":  "id-hpry2yl3-1783919861309",
+                           "name":  "Raman Spectral Similarity",
+                           "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                           "instrument":  "Raman Spectrometer",
+                           "unit":  "%",
+                           "frequency":  "20 sec",
+                           "description":  "Spectral similarity score for blend uniformity"
+                       },
+                       {
+                           "id":  "id-wl8ef0cr-1783919866704",
+                           "name":  "Moisture Content",
+                           "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                           "instrument":  "Karl Fischer Titrator",
+                           "unit":  "%",
+                           "frequency":  "60 sec",
+                           "description":  "Water content check before tablet compression"
+                       },
+                       {
+                           "id":  "id-ycqzdcca-1783919871941",
+                           "name":  "Particle Size",
+                           "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                           "instrument":  "Laser Diffraction",
+                           "unit":  "�m",
+                           "frequency":  "120 sec",
+                           "description":  "Mean particle diameter for compression consistency"
+                       }
                    ],
     "checkoutConditions":  [
                                {
@@ -580,6 +615,771 @@
                                                   "NIR Absorbance":  1.15
                                               },
                                "receivedAt":  "2026-07-13T05:12:25.813Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-o0d5xa3i-1783919706146",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.14,
+                                                  "Particle Size":  139.3
+                                              },
+                               "receivedAt":  "2026-07-13T05:15:06.146Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-dwuxngp3-1783919725942",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.91
+                                              },
+                               "receivedAt":  "2026-07-13T05:15:25.942Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-3xu0nfld-1783919746118",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  82.35
+                                              },
+                               "receivedAt":  "2026-07-13T05:15:46.118Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-phz6tw9g-1783919766042",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.05,
+                                                  "Particle Size":  59.01
+                                              },
+                               "receivedAt":  "2026-07-13T05:16:06.042Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-jm12eyzo-1783919792516",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.84
+                                              },
+                               "receivedAt":  "2026-07-13T05:16:32.516Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-fauhakul-1783919806708",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  94.75
+                                              },
+                               "receivedAt":  "2026-07-13T05:16:46.708Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-pcs3lc31-1783919826707",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.91,
+                                                  "Particle Size":  66.62
+                                              },
+                               "receivedAt":  "2026-07-13T05:17:06.707Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-yv1ra0nl-1783919846146",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.98
+                                              },
+                               "receivedAt":  "2026-07-13T05:17:26.146Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-8qnjvbqo-1783919865979",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  95.49
+                                              },
+                               "receivedAt":  "2026-07-13T05:17:45.979Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-w18xe2r8-1783919885996",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.01,
+                                                  "Particle Size":  31.17
+                                              },
+                               "receivedAt":  "2026-07-13T05:18:05.996Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ni0o07l1-1783919906031",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.79
+                                              },
+                               "receivedAt":  "2026-07-13T05:18:26.031Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-5nzmclf5-1783919926059",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  98.87
+                                              },
+                               "receivedAt":  "2026-07-13T05:18:46.059Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-hzrw9rws-1783919953779",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  4.65,
+                                                  "Particle Size":  121.59
+                                              },
+                               "receivedAt":  "2026-07-13T05:19:13.779Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-qbjuzgy0-1783919966743",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.19
+                                              },
+                               "receivedAt":  "2026-07-13T05:19:26.743Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-n83gk939-1783919986338",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  99.11
+                                              },
+                               "receivedAt":  "2026-07-13T05:19:46.338Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-2bxemt87-1783920006090",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.29,
+                                                  "Particle Size":  48.12
+                                              },
+                               "receivedAt":  "2026-07-13T05:20:06.090Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-r2qnrgyk-1783920026245",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.94
+                                              },
+                               "receivedAt":  "2026-07-13T05:20:26.245Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ptv2supp-1783920046492",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  98.57
+                                              },
+                               "receivedAt":  "2026-07-13T05:20:46.492Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-iql0z18t-1783920066175",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.5,
+                                                  "Particle Size":  123.37
+                                              },
+                               "receivedAt":  "2026-07-13T05:21:06.175Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-iynf4ar9-1783920086127",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.12
+                                              },
+                               "receivedAt":  "2026-07-13T05:21:26.127Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-iketxnzb-1783920106138",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  86.43
+                                              },
+                               "receivedAt":  "2026-07-13T05:21:46.138Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-jfyxuu7b-1783920126253",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  8,
+                                                  "Particle Size":  142.93
+                                              },
+                               "receivedAt":  "2026-07-13T05:22:06.253Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-1alqxcpt-1783920146755",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.89
+                                              },
+                               "receivedAt":  "2026-07-13T05:22:26.755Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ei7px0a0-1783920166236",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  90.94
+                                              },
+                               "receivedAt":  "2026-07-13T05:22:46.236Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-fdp5x2xu-1783920186530",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.12,
+                                                  "Particle Size":  139.53
+                                              },
+                               "receivedAt":  "2026-07-13T05:23:06.530Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-dkppwekc-1783920207886",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.02
+                                              },
+                               "receivedAt":  "2026-07-13T05:23:27.886Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-iei2j9lq-1783920227241",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  87.53
+                                              },
+                               "receivedAt":  "2026-07-13T05:23:47.241Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-evemrett-1783920246517",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.21,
+                                                  "Particle Size":  67.64
+                                              },
+                               "receivedAt":  "2026-07-13T05:24:06.517Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-n99eanyz-1783920266720",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.93
+                                              },
+                               "receivedAt":  "2026-07-13T05:24:26.720Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-7hdjyvpm-1783920286749",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  89.93
+                                              },
+                               "receivedAt":  "2026-07-13T05:24:46.749Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-mony5dlf-1783920307128",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.33,
+                                                  "Particle Size":  40.26
+                                              },
+                               "receivedAt":  "2026-07-13T05:25:07.128Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-gnlol70u-1783920327140",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.63
+                                              },
+                               "receivedAt":  "2026-07-13T05:25:27.140Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-deprp8qx-1783920346346",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  75.1
+                                              },
+                               "receivedAt":  "2026-07-13T05:25:46.346Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-5y46ivq4-1783920366340",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.52,
+                                                  "Particle Size":  98.87
+                                              },
+                               "receivedAt":  "2026-07-13T05:26:06.340Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-3qlou8ys-1783920386474",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.72
+                                              },
+                               "receivedAt":  "2026-07-13T05:26:26.474Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-usyckqdf-1783920406365",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  93.64
+                                              },
+                               "receivedAt":  "2026-07-13T05:26:46.365Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ja3oulj9-1783920426482",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  4.85,
+                                                  "Particle Size":  134.81
+                                              },
+                               "receivedAt":  "2026-07-13T05:27:06.482Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-9brnhrx4-1783920447048",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.8
+                                              },
+                               "receivedAt":  "2026-07-13T05:27:27.048Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-nt9viixr-1783920466398",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  94.26
+                                              },
+                               "receivedAt":  "2026-07-13T05:27:46.398Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-innt5qpn-1783920486328",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  6.12,
+                                                  "Particle Size":  32.05
+                                              },
+                               "receivedAt":  "2026-07-13T05:28:06.328Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-sr2ekljw-1783920506351",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.94
+                                              },
+                               "receivedAt":  "2026-07-13T05:28:26.351Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-7v0poofg-1783920526364",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  95.17
+                                              },
+                               "receivedAt":  "2026-07-13T05:28:46.364Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-n1fsnobu-1783920546447",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.41,
+                                                  "Particle Size":  104.54
+                                              },
+                               "receivedAt":  "2026-07-13T05:29:06.447Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ld700gj0-1783920566307",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.94
+                                              },
+                               "receivedAt":  "2026-07-13T05:29:26.307Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-xtvxmwg1-1783920586524",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  99.76
+                                              },
+                               "receivedAt":  "2026-07-13T05:29:46.524Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-9xhas0z5-1783920606660",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  4.39,
+                                                  "Particle Size":  94.49
+                                              },
+                               "receivedAt":  "2026-07-13T05:30:06.660Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-m2nib4cj-1783920626473",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.17
+                                              },
+                               "receivedAt":  "2026-07-13T05:30:26.473Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-x4wd19vs-1783920646382",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  98.14
+                                              },
+                               "receivedAt":  "2026-07-13T05:30:46.382Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-dlo46fu9-1783920666475",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  2.09,
+                                                  "Particle Size":  87.86
+                                              },
+                               "receivedAt":  "2026-07-13T05:31:06.475Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-9uq93tha-1783920686629",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.61
+                                              },
+                               "receivedAt":  "2026-07-13T05:31:26.629Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ma8l76lv-1783920706384",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  92.82
+                                              },
+                               "receivedAt":  "2026-07-13T05:31:46.384Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-agw09vdc-1783920726861",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.63,
+                                                  "Particle Size":  30.8
+                                              },
+                               "receivedAt":  "2026-07-13T05:32:06.861Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-qptfdob7-1783920746433",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  0.71
+                                              },
+                               "receivedAt":  "2026-07-13T05:32:26.433Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ywd2c7bv-1783920766478",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  95.93
+                                              },
+                               "receivedAt":  "2026-07-13T05:32:46.478Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-flc2a0jc-1783920786458",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.22,
+                                                  "Particle Size":  110.18
+                                              },
+                               "receivedAt":  "2026-07-13T05:33:06.458Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-5d7c5cei-1783920806566",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.03
+                                              },
+                               "receivedAt":  "2026-07-13T05:33:26.566Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-1s03x841-1783920826949",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  91.71
+                                              },
+                               "receivedAt":  "2026-07-13T05:33:46.949Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-ssa7msic-1783920846452",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  3.47,
+                                                  "Particle Size":  58.13
+                                              },
+                               "receivedAt":  "2026-07-13T05:34:06.452Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-8seoefcn-1783920866568",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.15
+                                              },
+                               "receivedAt":  "2026-07-13T05:34:26.568Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-r8g56q9v-1783920886488",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-egpyg3rz-1783918832378",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Raman Spectral Similarity":  99.29
+                                              },
+                               "receivedAt":  "2026-07-13T05:34:46.488Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-b7sig3eh-1783920906561",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-1nga3q5u-1783918840637",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "Moisture Content":  4.62,
+                                                  "Particle Size":  145.32
+                                              },
+                               "receivedAt":  "2026-07-13T05:35:06.561Z",
+                               "deviceTimestamp":  null
+                           },
+                           {
+                               "id":  "id-iku2qbqh-1783920926701",
+                               "deviceId":  "id-uq98n3qc-1783323629430",
+                               "monitoringPointId":  "id-cwfzlpkg-1783918823703",
+                               "readingType":  "parameter",
+                               "values":  null,
+                               "parameters":  {
+                                                  "NIR Absorbance":  1.11
+                                              },
+                               "receivedAt":  "2026-07-13T05:35:26.701Z",
                                "deviceTimestamp":  null
                            }
                        ],
