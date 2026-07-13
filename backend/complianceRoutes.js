@@ -1,12 +1,15 @@
-/**
+﻿/**
  * complianceRoutes.js
  *
  * Wires the compliance engine and tamper-proof report generator into
- * your Express app. Mount alongside your existing sensorRoutes.
+ * your Express app.
  *
- * Usage in server.js:
- *   const complianceRoutes = require('./complianceRoutes');
- *   app.use('/api', complianceRoutes(readData, writeData, generateId));
+ * UPDATED: checkout conditions can now be scoped to a specific
+ * monitoring point. When evaluating a reading, the engine first looks
+ * for a condition matching BOTH the parameter name AND the reading's
+ * monitoringPointId. If none exists, it falls back to a "global"
+ * condition (one with no monitoringPointId set) for that parameter,
+ * so existing conditions keep working without changes.
  */
 
 const express = require('express');
@@ -16,12 +19,22 @@ const { generateTamperProofReport, verifyReportIntegrity } = require('./tamperPr
 module.exports = function (readData, writeData, generateId) {
   const router = express.Router();
 
-  // --- Evaluate a single analyticalData record against its checkoutCondition ---
-  // POST body: { analyticalDataId: "..." }
-  // Finds the reading, finds a matching checkoutCondition by parameter
-  // name, runs the real evaluation logic, and stores the result in
-  // complianceResults (never overwrites the raw reading - raw data stays
-  // as originally recorded, per data integrity principles).
+  function findMatchingCondition(checkoutConditions, parameterName, monitoringPointId) {
+    const lowerParam = String(parameterName).toLowerCase();
+
+    // Prefer a condition scoped to this exact monitoring point
+    const scoped = checkoutConditions.find(
+      (c) => c.parameter.toLowerCase() === lowerParam && c.monitoringPointId === monitoringPointId
+    );
+    if (scoped) return scoped;
+
+    // Fall back to a global condition (no monitoringPointId set) for this parameter
+    const global = checkoutConditions.find(
+      (c) => c.parameter.toLowerCase() === lowerParam && !c.monitoringPointId
+    );
+    return global || null;
+  }
+
   router.post('/compliance/evaluate', (req, res) => {
     const { analyticalDataId } = req.body;
     if (!analyticalDataId) {
@@ -34,20 +47,13 @@ module.exports = function (readData, writeData, generateId) {
       return res.status(404).json({ error: 'Analytical data record not found.' });
     }
 
-    // Determine the numeric value to evaluate.
-    // Supports both the manual-entry shape (item.value, item.parameter)
-    // and the sensor-ingestion shape (item.parameters = { concentration, temperature, ... }).
     let parameterName = reading.parameter;
     let numericValue = parseFloat(reading.value);
 
     if (reading.parameters && typeof reading.parameters === 'object') {
-      // Sensor readings can carry multiple parameters at once - evaluate the first one
-      // that has a matching checkoutCondition, or require the caller to specify which.
       const candidateKeys = Object.keys(reading.parameters);
       for (const key of candidateKeys) {
-        const match = data.checkoutConditions.find(
-          (c) => c.parameter.toLowerCase() === key.toLowerCase()
-        );
+        const match = findMatchingCondition(data.checkoutConditions, key, reading.monitoringPointId);
         if (match) {
           parameterName = match.parameter;
           numericValue = parseFloat(reading.parameters[key]);
@@ -56,16 +62,14 @@ module.exports = function (readData, writeData, generateId) {
       }
     }
 
-    const checkoutCondition = data.checkoutConditions.find(
-      (c) => c.parameter.toLowerCase() === String(parameterName).toLowerCase()
-    );
-
+    const checkoutCondition = findMatchingCondition(data.checkoutConditions, parameterName, reading.monitoringPointId);
     const evaluation = evaluateReading(numericValue, checkoutCondition);
 
     const complianceResult = {
       id: generateId(),
       analyticalDataId: reading.id,
       deviceId: reading.deviceId || null,
+      monitoringPointId: reading.monitoringPointId || null,
       ...evaluation,
     };
 
@@ -75,7 +79,6 @@ module.exports = function (readData, writeData, generateId) {
     res.json(complianceResult);
   });
 
-  // --- Evaluate ALL analyticalData records that haven't been evaluated yet ---
   router.post('/compliance/evaluate-all', (req, res) => {
     const data = readData();
 
@@ -85,11 +88,6 @@ module.exports = function (readData, writeData, generateId) {
     const newResults = [];
 
     pending.forEach((reading) => {
-      // Build a list of { parameterName, numericValue } pairs to evaluate.
-      // Manual-entry readings have exactly one (item.parameter / item.value).
-      // Sensor readings can carry multiple parameters at once (e.g.
-      // concentration AND temperature in the same reading) - evaluate
-      // every one of them, not just the first match.
       const evaluationTargets = [];
 
       if (reading.parameters && typeof reading.parameters === 'object') {
@@ -107,16 +105,14 @@ module.exports = function (readData, writeData, generateId) {
       }
 
       evaluationTargets.forEach(({ parameterName, numericValue }) => {
-        const checkoutCondition = data.checkoutConditions.find(
-          (c) => c.parameter.toLowerCase() === String(parameterName).toLowerCase()
-        );
-
+        const checkoutCondition = findMatchingCondition(data.checkoutConditions, parameterName, reading.monitoringPointId);
         const evaluation = evaluateReading(numericValue, checkoutCondition);
 
         const complianceResult = {
           id: generateId(),
           analyticalDataId: reading.id,
           deviceId: reading.deviceId || null,
+          monitoringPointId: reading.monitoringPointId || null,
           ...evaluation,
         };
 
@@ -129,7 +125,6 @@ module.exports = function (readData, writeData, generateId) {
     res.json({ evaluatedCount: newResults.length, results: newResults });
   });
 
-  // --- Generate a tamper-proof report from current compliance results ---
   router.post('/reports/generate', (req, res) => {
     const { title, generatedBy, projectId, dateRangeStart, dateRangeEnd } = req.body;
 
@@ -144,6 +139,23 @@ module.exports = function (readData, writeData, generateId) {
         return true;
       });
     }
+
+    // Group results by monitoring point for the report
+    const monitoringPointsById = {};
+    (data.monitoringPoints || []).forEach((mp) => { monitoringPointsById[mp.id] = mp; });
+
+    const byMonitoringPoint = {};
+    resultsInScope.forEach((r) => {
+      const key = r.monitoringPointId || 'unassigned';
+      if (!byMonitoringPoint[key]) {
+        byMonitoringPoint[key] = {
+          monitoringPointId: r.monitoringPointId || null,
+          monitoringPointName: monitoringPointsById[r.monitoringPointId]?.name || 'Unassigned / Not linked to a monitoring point',
+          results: [],
+        };
+      }
+      byMonitoringPoint[key].results.push(r);
+    });
 
     const summary = {
       totalEvaluated: resultsInScope.length,
@@ -162,6 +174,7 @@ module.exports = function (readData, writeData, generateId) {
       dateRangeStart: dateRangeStart || null,
       dateRangeEnd: dateRangeEnd || null,
       summary,
+      byMonitoringPoint: Object.values(byMonitoringPoint),
       results: resultsInScope,
     };
 
@@ -173,7 +186,6 @@ module.exports = function (readData, writeData, generateId) {
     res.json(tamperProofReport);
   });
 
-  // --- Verify a report hasn't been tampered with ---
   router.get('/reports/:id/verify', (req, res) => {
     const data = readData();
     const report = data.reports.find((r) => r.id === req.params.id);
