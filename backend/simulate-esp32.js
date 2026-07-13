@@ -1,7 +1,13 @@
 ﻿const SERVER_URL = 'https://sip-backend-1.onrender.com/api/sensor-data';
 const DEVICE_ID = 'id-uq98n3qc-1783323629430';
 const API_KEY = 'id-amakt2l5-1783323629431';
-const MONITORING_POINT_ID = 'mp-001';
+
+// Real monitoring points created in the backend
+const MONITORING_POINTS = [
+  { id: 'id-cwfzlpkg-1783918823703', name: 'Raw Material Inspection', parameter: 'NIR Absorbance', generator: () => generateNirAbsorbance() },
+  { id: 'id-egpyg3rz-1783918832378', name: 'Blending Stage', parameter: 'Raman Spectral Similarity', generator: () => generateRamanSpectralSimilarity() },
+  { id: 'id-1nga3q5u-1783918840637', name: 'Compression Stage', parameters: ['Moisture Content', 'Particle Size'] },
+];
 
 const SEND_INTERVAL_MS = 20000; // every 20 seconds for testing
 
@@ -16,7 +22,6 @@ function pickBand() {
   return 'critical';
 }
 
-// Matches the real spectroscopic checkoutConditions defined on the backend
 function generateRamanSpectralSimilarity() {
   const band = pickBand();
   if (band === 'acceptance') return randomInRange(85, 100);
@@ -29,13 +34,6 @@ function generateNirAbsorbance() {
   if (band === 'acceptance') return randomInRange(0.8, 1.2);
   if (band === 'warning') return randomInRange(0.6, 0.79);
   return randomInRange(0.2, 0.59);
-}
-
-function generateFtirPeakIntensity() {
-  const band = pickBand();
-  if (band === 'acceptance') return randomInRange(400, 500);
-  if (band === 'warning') return randomInRange(300, 399);
-  return randomInRange(150, 299);
 }
 
 function generateMoistureContent() {
@@ -52,31 +50,25 @@ function generateParticleSize() {
   return randomInRange(5, 29);
 }
 
-function generatePh() {
-  const band = pickBand();
-  if (band === 'acceptance') return randomInRange(6.5, 7.5);
-  if (band === 'warning') return randomInRange(6, 6.4);
-  return randomInRange(4, 5.9);
-}
-
-function generateMockReading() {
-  return {
-    'Raman Spectral Similarity': generateRamanSpectralSimilarity(),
-    'NIR Absorbance': generateNirAbsorbance(),
-    'FTIR Peak Intensity': generateFtirPeakIntensity(),
-    'Moisture Content': generateMoistureContent(),
-    'Particle Size': generateParticleSize(),
-    'pH': generatePh(),
-  };
-}
+let pointIndex = 0;
 
 async function sendReading() {
-  const readings = generateMockReading();
+  const point = MONITORING_POINTS[pointIndex];
+  pointIndex = (pointIndex + 1) % MONITORING_POINTS.length;
+
+  let parameters = {};
+  if (point.id === 'id-cwfzlpkg-1783918823703') {
+    parameters = { 'NIR Absorbance': generateNirAbsorbance() };
+  } else if (point.id === 'id-egpyg3rz-1783918832378') {
+    parameters = { 'Raman Spectral Similarity': generateRamanSpectralSimilarity() };
+  } else if (point.id === 'id-1nga3q5u-1783918840637') {
+    parameters = { 'Moisture Content': generateMoistureContent(), 'Particle Size': generateParticleSize() };
+  }
 
   const payload = {
-    monitoringPointId: MONITORING_POINT_ID,
+    monitoringPointId: point.id,
     readingType: 'parameter',
-    parameters: readings,
+    parameters,
   };
 
   try {
@@ -93,7 +85,7 @@ async function sendReading() {
     const data = await response.json();
 
     if (response.ok) {
-      console.log(`[${new Date().toLocaleTimeString()}] Sent ->`, readings, `| recordId: ${data.recordId}`);
+      console.log(`[${new Date().toLocaleTimeString()}] Sent to ${point.name} ->`, parameters, `| recordId: ${data.recordId}`);
     } else {
       console.error(`[${new Date().toLocaleTimeString()}] Server error:`, data);
     }
@@ -102,10 +94,9 @@ async function sendReading() {
   }
 }
 
-console.log(`Starting ESP32 simulator (spectroscopic parameters mode)...`);
-console.log(`Sending to: ${SERVER_URL}`);
+console.log(`Starting ESP32 simulator (multi-monitoring-point mode)...`);
+console.log(`Rotating across: ${MONITORING_POINTS.map((p) => p.name).join(', ')}`);
 console.log(`Interval: every ${SEND_INTERVAL_MS / 1000}s`);
-console.log(`Parameters: Raman Spectral Similarity, NIR Absorbance, FTIR Peak Intensity, Moisture Content, Particle Size, pH`);
 console.log(`Press Ctrl+C to stop.\n`);
 
 sendReading();
