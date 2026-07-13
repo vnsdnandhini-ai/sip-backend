@@ -42,12 +42,27 @@
       </header>
 
       <section class="content-section">
-        <div class="section-header">
+      <div class="section-header">
           <div>
             <h3>Project Management</h3>
             <p>Create, configure, and maintain manufacturing project records for quality lifecycle tracking.</p>
           </div>
           <button class="button button--primary" id="openProjectForm">Create Project</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input id="projectsFilterInput" type="search" placeholder="Filter by name, product, or batch..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <select id="projectsStatusFilter" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Paused">Paused</option>
+          </select>
+          <select id="projectsSortSelect" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="status-asc">Sort: Status</option>
+          </select>
+          <span id="projectsResultCount" style="color:#64748b;font-size:0.9rem;"></span>
         </div>
         <div class="data-table-wrapper">
           <table class="data-table" id="projectsTable">

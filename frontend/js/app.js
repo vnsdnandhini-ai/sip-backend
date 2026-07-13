@@ -103,20 +103,20 @@ function bindEvents() {
   if (document.getElementById('globalSearch')) {
     document.getElementById('globalSearch').addEventListener('input', handleSearch);
   }
-  if (document.getElementById('openProjectForm')) {
-    document.getElementById('openProjectForm').addEventListener('click', openProjectForm);
+ if (document.getElementById('openProjectForm')) {
+    document.getElementById('openProjectForm').addEventListener('click', () => openProjectForm());
   }
   if (document.getElementById('openMonitoringForm')) {
-    document.getElementById('openMonitoringForm').addEventListener('click', openMonitoringForm);
+    document.getElementById('openMonitoringForm').addEventListener('click', () => openMonitoringForm());
   }
   if (document.getElementById('openParameterForm')) {
-    document.getElementById('openParameterForm').addEventListener('click', openParameterForm);
+    document.getElementById('openParameterForm').addEventListener('click', () => openParameterForm());
   }
   if (document.getElementById('openConditionForm')) {
-    document.getElementById('openConditionForm').addEventListener('click', openConditionForm);
+    document.getElementById('openConditionForm').addEventListener('click', () => openConditionForm());
   }
   if (document.getElementById('openRuleForm')) {
-    document.getElementById('openRuleForm').addEventListener('click', openRuleForm);
+    document.getElementById('openRuleForm').addEventListener('click', () => openRuleForm());
   }
   if (document.getElementById('dataEntryForm')) {
     document.getElementById('dataEntryForm').addEventListener('submit', submitAnalyticalData);
@@ -161,7 +161,7 @@ function initializeCurrentModule() {
     refreshDataParameterOptions();
     refreshDataTable();
   } else if (currentFile === 'compliance.html') {
-    refreshDataTable();
+    // Compliance page loads its own data via the Run Evaluation button
   } else if (currentFile === 'reports.html') {
     renderReportPanel();
   } else if (currentFile === 'audit.html') {
@@ -266,20 +266,17 @@ function saveState() {
   window.localStorage.setItem('sipState', JSON.stringify(appState));
 }
 
-function recordAudit(activity, module, user = appState.session?.user || 'system') {
-  const entry = {
-    id: generateId(),
-    timestamp: new Date().toLocaleString(),
-    activity,
-    module,
-    user,
-  };
-  appState.auditTrail.unshift(entry);
-  saveState();
-  refreshAuditTable();
-}
-
-function openModal(title, contentHtml, onSubmitLabel, onSubmit) {
+async function recordAudit(activity, module, user = appState.session?.user || 'system') {
+  try {
+    await fetch(`${BACKEND_URL}/api/audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activity, module, user }),
+    });
+  } catch (err) {
+    console.error('Failed to record audit entry:', err);
+  }
+}function openModal(title, contentHtml, onSubmitLabel, onSubmit) {
   selectors.modalPanel.innerHTML = `<h3>${title}</h3>${contentHtml}`;
   if (onSubmitLabel && onSubmit) {
     const actions = document.createElement('div');

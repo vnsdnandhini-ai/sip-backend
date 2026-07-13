@@ -47,7 +47,16 @@
             <h3>Regulatory Rule Management</h3>
             <p>Configure regulatory and SOP compliance frameworks for your quality governance.</p>
           </div>
-          <button class="button button--primary" id="openRuleForm">Add Rule</button>
+         <button class="button button--primary" id="openRuleForm">Add Rule</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input id="rulesFilterInput" type="search" placeholder="Filter by name or description..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <select id="rulesStatusFilter" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <span id="rulesResultCount" style="color:#64748b;font-size:0.9rem;"></span>
         </div>
         <div class="data-table-wrapper">
           <table class="data-table" id="rulesTable">

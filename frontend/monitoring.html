@@ -42,12 +42,27 @@
       </header>
 
       <section class="content-section">
-        <div class="section-header">
+       <div class="section-header">
           <div>
             <h3>Monitoring Point Management</h3>
             <p>Define points of measurement across the manufacturing process. Use generic, configurable points.</p>
           </div>
           <button class="button button--primary" id="openMonitoringForm">Add Monitoring Point</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input id="monitoringFilterInput" type="search" placeholder="Filter by name or location..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <select id="monitoringStatusFilter" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Review">Review</option>
+          </select>
+          <select id="monitoringSortSelect" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="location-asc">Sort: Location (A-Z)</option>
+          </select>
+          <span id="monitoringResultCount" style="color:#64748b;font-size:0.9rem;"></span>
         </div>
         <div class="data-table-wrapper">
           <table class="data-table" id="monitoringTable">

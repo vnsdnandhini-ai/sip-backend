@@ -42,19 +42,30 @@
       </header>
 
       <section class="content-section">
-        <div class="section-header">
+       <div class="section-header">
           <div>
             <h3>Process Parameter Management</h3>
             <p>Configure analytical parameters, instruments, units, and sampling details.</p>
           </div>
           <button class="button button--primary" id="openParameterForm">Add Parameter</button>
         </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input id="parametersFilterInput" type="search" placeholder="Filter by name or instrument..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <select id="parametersSortSelect" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="instrument-asc">Sort: Instrument (A-Z)</option>
+            <option value="frequency-asc">Sort: Frequency (A-Z)</option>
+          </select>
+          <span id="parametersResultCount" style="color:#64748b;font-size:0.9rem;"></span>
+        </div>
         <div class="data-table-wrapper">
           <table class="data-table" id="parametersTable">
             <thead>
               <tr>
-                <th>Parameter</th>
-                <th>Instrument</th>
+              <th>Parameter</th>
+<th>Monitoring Point</th>
+<th>Instrument</th>
                 <th>Unit</th>
                 <th>Frequency</th>
                 <th>Description</th>
