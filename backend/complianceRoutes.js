@@ -33,10 +33,18 @@ module.exports = function (readData, writeData, generateId) {
       (c) => c.parameter.toLowerCase() === lowerParam && !c.monitoringPointId
     );
     return global || null;
-  }
+}
 
-  router.post('/compliance/evaluate', (req, res) => {
-    const { analyticalDataId } = req.body;
+  // --- Clear all compliance results (for demo resets / re-evaluation) ---
+  router.delete('/compliance/results', (req, res) => {
+    const data = readData();
+    const clearedCount = data.complianceResults.length;
+    data.complianceResults = [];
+    writeData(data);
+    res.json({ success: true, cleared: clearedCount });
+  });
+
+  router.post('/compliance/evaluate', (req, res) => {    const { analyticalDataId } = req.body;
     if (!analyticalDataId) {
       return res.status(400).json({ error: 'analyticalDataId is required.' });
     }
