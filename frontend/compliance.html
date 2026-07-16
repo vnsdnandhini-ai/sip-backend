@@ -47,7 +47,8 @@
             <h3>Compliance Evaluation Engine</h3>
             <p>Validate data against checkout conditions, identify deviations, and generate corrective guidance.</p>
           </div>
-          <button class="button button--primary" id="runCompliance">Run Evaluation</button>
+<button class="button button--primary" id="runCompliance">Run Evaluation</button>
+<button class="button button--secondary" id="clearComplianceResults">Clear Results</button>
         </div>
         <div class="grid grid--3cards">
           <div class="card card--metric">
@@ -67,11 +68,12 @@
           <table class="data-table" id="complianceTable">
             <thead>
               <tr>
-                <th>Parameter</th>
-                <th>Value</th>
-                <th>Limit Status</th>
-                <th>Result</th>
-                <th>Corrective Action</th>
+               <th>Parameter</th>
+<th>Monitoring Point</th>
+<th>Value</th>
+<th>Limit Status</th>
+<th>Result</th>
+<th>Corrective Action</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -84,7 +86,6 @@
   <div id="modalBackdrop" class="modal-backdrop hidden"></div>
   <div id="modalPanel" class="modal hidden"></div>
 
-  <script src="js/demo-data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/compliance.js"></script>
   <script src="js/nav.js"></script>

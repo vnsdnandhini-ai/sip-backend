@@ -1,25 +1,16 @@
 /**
- * sensorRoutes.js
+ * sensorRoutes.js (database version)
  *
- * Handles data ingestion from ESP32 / sensor gateway devices.
- * Kept separate from the human-facing API (/api/projects, /api/rules, etc.)
- * because devices authenticate differently (API key, not username/password).
- *
- * Mount this in server.js with:
- *   const sensorRoutes = require('./sensorRoutes');
- *   app.use('/api', sensorRoutes(readData, writeData, generateId));
+ * Handles device registration and sensor data ingestion, now backed
+ * by Postgres instead of file storage.
  */
 
 const express = require('express');
 
-module.exports = function (readData, writeData, generateId) {
+module.exports = function (pool, generateId) {
   const router = express.Router();
 
-  // --- Simple device auth middleware -----------------------------------
-  // Each ESP32 is issued a deviceId + apiKey pair, stored in data.devices.
-  // This is intentionally simple for the trial phase; swap for signed
-  // tokens / mutual TLS later if this goes to production.
-  function requireDeviceAuth(req, res, next) {
+  async function requireDeviceAuth(req, res, next) {
     const deviceId = req.header('x-device-id');
     const apiKey = req.header('x-api-key');
 
@@ -27,79 +18,66 @@ module.exports = function (readData, writeData, generateId) {
       return res.status(401).json({ error: 'Missing device credentials.' });
     }
 
-    const data = readData();
-    const device = (data.devices || []).find((d) => d.deviceId === deviceId);
+    try {
+      const result = await pool.query('SELECT * FROM devices WHERE device_id = $1', [deviceId]);
+      const device = result.rows[0];
 
-    if (!device || device.apiKey !== apiKey) {
-      return res.status(403).json({ error: 'Invalid device credentials.' });
+      if (!device || device.api_key !== apiKey) {
+        return res.status(403).json({ error: 'Invalid device credentials.' });
+      }
+      if (device.status !== 'active') {
+        return res.status(403).json({ error: 'Device is not active.' });
+      }
+
+      req.device = device;
+      next();
+    } catch (err) {
+      console.error('Device auth error:', err);
+      res.status(500).json({ error: 'Database error.' });
     }
-
-    if (device.status !== 'active') {
-      return res.status(403).json({ error: 'Device is not active.' });
-    }
-
-    req.device = device;
-    next();
   }
 
-  // --- Register a new device (called manually by you, not by ESP32) ----
-  // Use this once per ESP32 to create its credentials before deployment.
-  router.post('/devices', (req, res) => {
+  router.post('/devices', async (req, res) => {
     const { name, connectionType, monitoringPointId } = req.body;
 
     if (!name || !connectionType) {
       return res.status(400).json({ error: 'name and connectionType are required.' });
     }
-
     const validTypes = ['USB', 'UART', 'RS485'];
     if (!validTypes.includes(connectionType)) {
       return res.status(400).json({ error: `connectionType must be one of ${validTypes.join(', ')}.` });
     }
 
-    const data = readData();
-    if (!data.devices) data.devices = [];
+    const deviceId = generateId();
+    const apiKey = generateId();
 
-    const device = {
-      deviceId: generateId(),
-      apiKey: generateId(),
-      name,
-      connectionType,
-      monitoringPointId: monitoringPointId || null,
-      status: 'active',
-      registeredAt: new Date().toISOString(),
-      lastSeenAt: null,
-    };
-
-    data.devices.push(device);
-    writeData(data);
-
-    // Return credentials once — the ESP32 sketch needs deviceId + apiKey.
-    res.json(device);
+    try {
+      await pool.query(
+        'INSERT INTO devices (device_id, api_key, name, connection_type, monitoring_point_id, status) VALUES ($1,$2,$3,$4,$5,$6)',
+        [deviceId, apiKey, name, connectionType, monitoringPointId || null, 'active']
+      );
+      res.json({ deviceId, apiKey, name, connectionType, monitoringPointId, status: 'active' });
+    } catch (err) {
+      console.error('Failed to register device:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
   });
 
-  router.get('/devices', (req, res) => {
-    const data = readData();
-    res.json(data.devices || []);
+  router.get('/devices', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM devices');
+      res.json(result.rows.map((d) => ({
+        deviceId: d.device_id, apiKey: d.api_key, name: d.name,
+        connectionType: d.connection_type, monitoringPointId: d.monitoring_point_id,
+        status: d.status, registeredAt: d.registered_at, lastSeenAt: d.last_seen_at,
+      })));
+    } catch (err) {
+      console.error('Failed to list devices:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
   });
 
-  // --- Main ingestion endpoint -------------------------------------------
-  // ESP32 posts here on every reading (or batch of readings).
-  //
-  // Expected payload shape:
-  // {
-  //   "monitoringPointId": "mp-001",     // which process point this reading belongs to
-  //   "timestamp": "2026-07-06T10:15:00Z", // ISO string; ESP32 can send device time or omit and let server stamp it
-  //   "readingType": "spectral",          // "spectral" | "parameter"
-  //   "values": {                          // flexible: raw spectrum OR derived parameter values
-  //     "wavelengths": [400, 410, 420],
-  //     "intensities": [0.12, 0.34, 0.31]
-  //   },
-  //   "parameters": {                      // optional derived/computed values
-  //     "concentration": 12.4,
-  //     "temperature": 24.8
-  //   }
-  // }
-  router.post('/sensor-data', requireDeviceAuth, (req, res) => {
+  router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
     const { monitoringPointId, timestamp, readingType, values, parameters } = req.body;
 
     if (!monitoringPointId) {
@@ -109,89 +87,88 @@ module.exports = function (readData, writeData, generateId) {
       return res.status(400).json({ error: 'At least one of values or parameters is required.' });
     }
 
-    const data = readData();
+    const id = generateId();
 
-    const record = {
-      id: generateId(),
-      deviceId: req.device.deviceId,
-      monitoringPointId,
-      readingType: readingType || 'parameter',
-      values: values || null,
-      parameters: parameters || null,
-      // Prefer server-received time for audit integrity; keep device timestamp for reference.
-      receivedAt: new Date().toISOString(),
-      deviceTimestamp: timestamp || null,
-    };
+    try {
+      await pool.query(
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
+          parameters ? JSON.stringify(parameters) : null,
+          values ? JSON.stringify(values) : null,
+          timestamp || null]
+      );
+      await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
 
-    data.analyticalData.push(record);
-
-    // Update device last-seen so you can tell if an ESP32 has gone offline.
-    const deviceIndex = data.devices.findIndex((d) => d.deviceId === req.device.deviceId);
-    if (deviceIndex !== -1) {
-      data.devices[deviceIndex].lastSeenAt = record.receivedAt;
+      res.json({ success: true, recordId: id });
+    } catch (err) {
+      console.error('Failed to save sensor data:', err);
+      res.status(500).json({ error: 'Database error.' });
     }
-
-    writeData(data);
-    res.json({ success: true, recordId: record.id });
   });
 
-  // --- Batch ingestion (optional) ----------------------------------------
-  // If an ESP32 buffers readings and sends several at once (e.g. every
-  // 30s instead of every reading), use this instead.
-  router.post('/sensor-data/batch', requireDeviceAuth, (req, res) => {
+  router.post('/sensor-data/batch', requireDeviceAuth, async (req, res) => {
     const { readings } = req.body;
-
     if (!Array.isArray(readings) || readings.length === 0) {
       return res.status(400).json({ error: 'readings must be a non-empty array.' });
     }
 
-    const data = readData();
-    const now = new Date().toISOString();
-
-    const records = readings.map((r) => ({
-      id: generateId(),
-      deviceId: req.device.deviceId,
-      monitoringPointId: r.monitoringPointId,
-      readingType: r.readingType || 'parameter',
-      values: r.values || null,
-      parameters: r.parameters || null,
-      receivedAt: now,
-      deviceTimestamp: r.timestamp || null,
-    }));
-
-    data.analyticalData.push(...records);
-
-    const deviceIndex = data.devices.findIndex((d) => d.deviceId === req.device.deviceId);
-    if (deviceIndex !== -1) {
-      data.devices[deviceIndex].lastSeenAt = now;
+    try {
+      for (const r of readings) {
+        const id = generateId();
+        await pool.query(
+          `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [id, req.device.device_id, r.monitoringPointId, r.readingType || 'parameter',
+            r.parameters ? JSON.stringify(r.parameters) : null,
+            r.values ? JSON.stringify(r.values) : null,
+            r.timestamp || null]
+        );
+      }
+      await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
+      res.json({ success: true, count: readings.length });
+    } catch (err) {
+      console.error('Failed to save batch:', err);
+      res.status(500).json({ error: 'Database error.' });
     }
-
-    writeData(data);
-    res.json({ success: true, count: records.length });
   });
 
-  // --- Delete a single sensor reading by its record ID -------------------
-  router.delete('/sensor-data/:id', (req, res) => {
-    const data = readData();
-    const index = data.analyticalData.findIndex((item) => item.id === req.params.id);
-
-    if (index === -1) {
-      return res.status(404).json({ error: 'Reading not found.' });
+  router.delete('/sensor-data/range', async (req, res) => {
+    const { startDate, endDate } = req.body;
+    try {
+      const result = await pool.query(
+        `DELETE FROM analytical_data
+         WHERE ($1::timestamptz IS NULL OR received_at >= $1)
+         AND ($2::timestamptz IS NULL OR received_at <= $2)
+         RETURNING id`,
+        [startDate || null, endDate || null]
+      );
+      res.json({ success: true, deleted: result.rows.length });
+    } catch (err) {
+      console.error('Failed to delete range:', err);
+      res.status(500).json({ error: 'Database error.' });
     }
-
-    data.analyticalData.splice(index, 1);
-    writeData(data);
-    res.json({ success: true, deletedId: req.params.id });
   });
 
-  // --- Clear all sensor/analytical data (for demo resets) ---------------
-  // Use this to wipe accumulated test readings before a clean demo.
-  router.delete('/sensor-data', (req, res) => {
-    const data = readData();
-    const clearedCount = data.analyticalData.length;
-    data.analyticalData = [];
-    writeData(data);
-    res.json({ success: true, cleared: clearedCount });
+  router.delete('/sensor-data/:id', async (req, res) => {
+    try {
+      const result = await pool.query('DELETE FROM analytical_data WHERE id=$1 RETURNING id', [req.params.id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Reading not found.' });
+      res.json({ success: true, deletedId: req.params.id });
+    } catch (err) {
+      console.error('Failed to delete reading:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  router.delete('/sensor-data', async (req, res) => {
+    try {
+      const result = await pool.query('DELETE FROM analytical_data RETURNING id');
+      res.json({ success: true, cleared: result.rows.length });
+    } catch (err) {
+      console.error('Failed to clear sensor data:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
   });
 
   return router;

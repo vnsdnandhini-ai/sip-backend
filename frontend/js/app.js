@@ -21,6 +21,23 @@ async function fetchLiveAnalyticalData() {
     console.error('Could not fetch live sensor data:', err);
   }
 }
+async function refreshDataTable() {
+  await fetchLiveAnalyticalData();
+  searchTable('dataTable', appState.analyticalData, ['parameter', 'instrument', 'value', 'unit', 'timestamp', 'result'], '');
+}
+
+function submitAnalyticalData(event) {
+  event.preventDefault();
+  alert('Manual data entry is not yet connected to the backend. Please use sensor ingestion or contact the developer to enable this feature.');
+}
+function signOut() {
+  appState.session = null;
+  saveState();
+  window.location.href = 'index.html';
+}
+function handleCsvUpload(event) {
+  alert('CSV upload is not yet connected to the backend. Please use sensor ingestion or contact the developer to enable this feature.');
+}
 async function deleteSingleReading(id) {
   const confirmed = confirm('Delete this reading permanently?');
   if (!confirmed) return;
@@ -168,8 +185,7 @@ function initializeCurrentModule() {
     refreshAuditTable();
   }
 }
-
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
   const username = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value.trim();
@@ -179,23 +195,34 @@ function handleLogin(event) {
     return;
   }
 
-  appState.session = {
-    user: username,
-    token: Date.now().toString(36),
-    loggedAt: new Date().toISOString(),
-  };
-  recordAudit('User Login', 'Login', username);
-  saveState();
-  window.location.href = 'dashboard.html';
-}
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-function signOut() {
-  appState.session = null;
-  saveState();
-  localStorage.removeItem('sipState');
-  window.location.href = 'index.html';
-}
+    const data = await response.json();
 
+    if (!response.ok) {
+      alert(data.error || 'Login failed.');
+      return;
+    }
+
+    appState.session = {
+      user: data.user.username,
+      role: data.user.role,
+      token: data.token,
+      loggedAt: new Date().toISOString(),
+    };
+    saveState();
+    recordAudit('User Login', 'Login', data.user.username);
+    window.location.href = 'dashboard.html';
+  } catch (err) {
+    console.error('Login failed:', err);
+    alert('Could not reach the server. Please try again.');
+  }
+}
 function handleSearch(event) {
   const query = event.target.value.trim().toLowerCase();
   if (!query) {
@@ -365,6 +392,8 @@ function refreshDataParameterOptions() {
 
 function initializePlatform() {
   loadState();
+  console.log('DEBUG - session at check:', appState.session);
+  console.log('DEBUG - login-form exists:', !!document.getElementById('login-form'));
   if (appState.session && document.getElementById('login-form')) {
     // On login page with session - redirect to dashboard
     window.location.href = 'dashboard.html';
@@ -378,7 +407,79 @@ function initializePlatform() {
     });
   }
 }
+function getDateRangeFromPreset(preset, customStart, customEnd) {
+  const now = new Date();
+  if (preset === 'today') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { startDate: start.toISOString(), endDate: now.toISOString() };
+  }
+  if (preset === '7days') {
+    const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return { startDate: start.toISOString(), endDate: now.toISOString() };
+  }
+  if (preset === '30days') {
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return { startDate: start.toISOString(), endDate: now.toISOString() };
+  }
+  if (preset === 'custom') {
+    return {
+      startDate: customStart ? new Date(customStart).toISOString() : null,
+      endDate: customEnd ? new Date(customEnd + 'T23:59:59').toISOString() : null,
+    };
+  }
+  return null;
+}
 
+async function deleteSensorDataRange() {
+  const preset = document.getElementById('dataRangePreset').value;
+  if (!preset) {
+    alert('Please choose a range first.');
+    return;
+  }
+
+  const customStart = document.getElementById('dataRangeStart').value;
+  const customEnd = document.getElementById('dataRangeEnd').value;
+  const range = getDateRangeFromPreset(preset, customStart, customEnd);
+
+  if (preset === 'custom' && !customStart && !customEnd) {
+    alert('Please pick at least a start or end date for a custom range.');
+    return;
+  }
+
+  const confirmed = confirm(`Delete all sensor readings in the selected range? This cannot be undone.`);
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/sensor-data/range`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(range),
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(`Deleted ${data.deleted} readings in the selected range.`);
+      window.location.reload();
+    } else {
+      alert('Failed to delete range.');
+    }
+  } catch (err) {
+    console.error('Error deleting range:', err);
+    alert('Error deleting range. Check console.');
+  }
+}
+
+const rangePresetSelect = document.getElementById('dataRangePreset');
+if (rangePresetSelect) {
+  rangePresetSelect.addEventListener('change', () => {
+    const isCustom = rangePresetSelect.value === 'custom';
+    document.getElementById('dataRangeStart').style.display = isCustom ? 'inline-block' : 'none';
+    document.getElementById('dataRangeEnd').style.display = isCustom ? 'inline-block' : 'none';
+  });
+}
+
+if (document.getElementById('deleteRangeButton')) {
+  document.getElementById('deleteRangeButton').addEventListener('click', deleteSensorDataRange);
+}
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializePlatform);
 } else {

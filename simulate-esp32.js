@@ -3,12 +3,38 @@ const DEVICE_ID = 'id-uq98n3qc-1783323629430';
 const API_KEY = 'id-amakt2l5-1783323629431';
 const MONITORING_POINT_ID = 'mp-001';
 
-const SEND_INTERVAL_MS = 5000;
+const SEND_INTERVAL_MS = 20000; // every 20 seconds for faster testing
+
+function randomInRange(min, max) {
+  return +(min + Math.random() * (max - min)).toFixed(2);
+}
+
+function pickBand() {
+  const roll = Math.random();
+  if (roll < 0.80) return 'acceptance';
+  if (roll < 0.95) return 'warning';
+  return 'critical';
+}
+
+function generateConcentration() {
+  const band = pickBand();
+  if (band === 'acceptance') return randomInRange(8, 15);
+  if (band === 'warning') return randomInRange(5, 8);
+  return randomInRange(2, 5);
+}
+
+function generateTemperature() {
+  const band = pickBand();
+  if (band === 'acceptance') return randomInRange(20, 30);
+  if (band === 'warning') return randomInRange(15, 20);
+  return randomInRange(10, 15);
+}
 
 function generateMockReading() {
-  const concentration = +(8 + Math.random() * 7).toFixed(2);
-  const temperature = +(20 + Math.random() * 10).toFixed(2);
-  return { concentration, temperature };
+  return {
+    concentration: generateConcentration(),
+    temperature: generateTemperature(),
+  };
 }
 
 async function sendReading() {
@@ -45,9 +71,10 @@ async function sendReading() {
   }
 }
 
-console.log(`Starting ESP32 simulator...`);
+console.log(`Starting ESP32 simulator (realistic mix mode)...`);
 console.log(`Sending to: ${SERVER_URL}`);
 console.log(`Interval: every ${SEND_INTERVAL_MS / 1000}s`);
+console.log(`Distribution: 80% acceptance, 15% warning, 5% critical`);
 console.log(`Press Ctrl+C to stop.\n`);
 
 sendReading();

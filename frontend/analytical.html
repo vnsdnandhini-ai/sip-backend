@@ -92,7 +92,19 @@
           </article>
         </div>
         <div class="data-table-wrapper">
-<button id="clearDataButton" class="button button--secondary" style="margin-bottom: 12px;">Clear All Data</button>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+  <select id="dataRangePreset" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+    <option value="">Choose range to delete...</option>
+    <option value="today">Today</option>
+    <option value="7days">Last 7 days</option>
+    <option value="30days">Last 30 days</option>
+    <option value="custom">Custom range</option>
+  </select>
+  <input type="date" id="dataRangeStart" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;display:none;" />
+  <input type="date" id="dataRangeEnd" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;display:none;" />
+  <button id="deleteRangeButton" class="button button--secondary">Delete Selected Range</button>
+  <button id="clearDataButton" class="button button--secondary">Clear All Data</button>
+</div>
           <table class="data-table" id="dataTable">
             <thead>
               <tr>
@@ -114,7 +126,6 @@
   <div id="modalBackdrop" class="modal-backdrop hidden"></div>
   <div id="modalPanel" class="modal hidden"></div>
 
-  <script src="js/demo-data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/compliance.js"></script>
   <script src="js/nav.js"></script>
