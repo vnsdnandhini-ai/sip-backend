@@ -293,6 +293,27 @@ app.delete('/api/rules/:id', async (req, res) => {
   }
 });
 
+// --- Manual analytical data entry (CSV upload or single manual entry) ---
+app.post('/api/analytical', async (req, res) => {
+  const { parameter, instrument, value, unit, timestamp, monitoringPointId } = req.body;
+
+  if (!parameter || value === undefined) {
+    return res.status(400).json({ error: 'parameter and value are required.' });
+  }
+
+  const id = generateId();
+  try {
+    await pool.query(
+      `INSERT INTO analytical_data (id, monitoring_point_id, reading_type, parameter, value, unit, device_timestamp)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [id, monitoringPointId || null, 'manual', parameter, String(value), unit || null, timestamp || null]
+    );
+    res.json({ id, parameter, instrument, value, unit, timestamp });
+  } catch (err) {
+    console.error('Failed to save manual analytical entry:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
 app.use('/api', sensorRoutes(pool, generateId));
 app.use('/api', complianceRoutes(pool, generateId));
 
