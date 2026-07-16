@@ -48,6 +48,7 @@ function generateHash(reportContent) {
  * @returns {object} - the report wrapped with integrity metadata
  */
 function generateTamperProofReport(reportContent) {
+  reportContent = JSON.parse(JSON.stringify(reportContent)); // normalize Dates/etc to plain JSON-safe values before hashing
   const generatedAt = new Date().toISOString();
 
   const fullContent = {

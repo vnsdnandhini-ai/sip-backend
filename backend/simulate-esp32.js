@@ -1,15 +1,14 @@
 ﻿const SERVER_URL = 'https://sip-backend-1.onrender.com/api/sensor-data';
-const DEVICE_ID = 'id-uq98n3qc-1783323629430';
-const API_KEY = 'id-amakt2l5-1783323629431';
+const DEVICE_ID = 'id-11ifdn9h-1784173538536';
+const API_KEY = 'id-hl276jff-1784173538537';
 
-// Real monitoring points created in the backend
 const MONITORING_POINTS = [
-  { id: 'id-cwfzlpkg-1783918823703', name: 'Raw Material Inspection', parameter: 'NIR Absorbance', generator: () => generateNirAbsorbance() },
-  { id: 'id-egpyg3rz-1783918832378', name: 'Blending Stage', parameter: 'Raman Spectral Similarity', generator: () => generateRamanSpectralSimilarity() },
-  { id: 'id-1nga3q5u-1783918840637', name: 'Compression Stage', parameters: ['Moisture Content', 'Particle Size'] },
+  { id: 'id-iub3pa8y-1784173570079', name: 'Raw Material Inspection' },
+  { id: 'id-xejo7o5r-1784173579941', name: 'Blending Stage' },
+  { id: 'id-614un6or-1784173587531', name: 'Compression Stage' },
 ];
 
-const SEND_INTERVAL_MS = 20000; // every 20 seconds for testing
+const SEND_INTERVAL_MS = 20000;
 
 function randomInRange(min, max) {
   return +(min + Math.random() * (max - min)).toFixed(2);
@@ -57,11 +56,11 @@ async function sendReading() {
   pointIndex = (pointIndex + 1) % MONITORING_POINTS.length;
 
   let parameters = {};
-  if (point.id === 'id-cwfzlpkg-1783918823703') {
+  if (point.id === 'id-iub3pa8y-1784173570079') {
     parameters = { 'NIR Absorbance': generateNirAbsorbance() };
-  } else if (point.id === 'id-egpyg3rz-1783918832378') {
+  } else if (point.id === 'id-xejo7o5r-1784173579941') {
     parameters = { 'Raman Spectral Similarity': generateRamanSpectralSimilarity() };
-  } else if (point.id === 'id-1nga3q5u-1783918840637') {
+  } else if (point.id === 'id-614un6or-1784173587531') {
     parameters = { 'Moisture Content': generateMoistureContent(), 'Particle Size': generateParticleSize() };
   }
 
@@ -94,7 +93,7 @@ async function sendReading() {
   }
 }
 
-console.log(`Starting ESP32 simulator (multi-monitoring-point mode)...`);
+console.log(`Starting ESP32 simulator (Supabase-backed, multi-monitoring-point mode)...`);
 console.log(`Rotating across: ${MONITORING_POINTS.map((p) => p.name).join(', ')}`);
 console.log(`Interval: every ${SEND_INTERVAL_MS / 1000}s`);
 console.log(`Press Ctrl+C to stop.\n`);

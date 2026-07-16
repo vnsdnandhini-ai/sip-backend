@@ -198,7 +198,7 @@ module.exports = function (pool, generateId) {
       const row = result.rows[0];
       if (!row) return res.status(404).json({ error: 'Report not found.' });
 
-      const report = { id: row.id, content: row.content, integrity: row.integrity };
+      const report = { id: row.id, content: JSON.parse(row.content), integrity: JSON.parse(row.integrity) };
       const verification = verifyReportIntegrity(report);
       res.json(verification);
     } catch (err) {
