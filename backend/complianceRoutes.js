@@ -5,6 +5,7 @@
 const express = require('express');
 const { evaluateReading } = require('./complianceEngine');
 const { generateTamperProofReport, verifyReportIntegrity } = require('./tamperProofReports');
+const { runStatisticalAnalysis } = require('./statisticalAnalysis');
 
 module.exports = function (pool, generateId) {
   const router = express.Router();
@@ -115,6 +116,58 @@ module.exports = function (pool, generateId) {
     }
   });
 
+  // --- Statistical Process Control analysis ---
+  // For each parameter at each monitoring point (or globally, if not
+  // scoped), looks at the historical measured values and computes:
+  //   - Process Capability Index (Cpk)
+  //   - Trend detection (sustained drift, even within spec)
+  // This is a real SPC/OOT technique, not just per-reading pass/fail.
+  router.get('/compliance/statistical-analysis', async (req, res) => {
+    try {
+      const results = await pool.query(
+        `SELECT parameter, monitoring_point_id, measured_value, acceptance_criteria, evaluated_at
+         FROM compliance_results
+         WHERE measured_value IS NOT NULL
+         ORDER BY parameter, monitoring_point_id, evaluated_at ASC`
+      );
+
+      // Group by parameter + monitoring_point_id combination
+      const groups = {};
+      results.rows.forEach((r) => {
+        const key = `${r.parameter}::${r.monitoring_point_id || 'global'}`;
+        if (!groups[key]) {
+          groups[key] = {
+            parameter: r.parameter,
+            monitoringPointId: r.monitoring_point_id,
+            acceptanceCriteria: r.acceptance_criteria,
+            values: [],
+          };
+        }
+        groups[key].values.push(parseFloat(r.measured_value));
+      });
+
+      const monitoringPointsResult = await pool.query('SELECT id, name FROM monitoring_points');
+      const monitoringPointsById = {};
+      monitoringPointsResult.rows.forEach((mp) => { monitoringPointsById[mp.id] = mp.name; });
+
+      const analysis = Object.values(groups).map((group) => {
+        const spc = runStatisticalAnalysis(group.values, group.acceptanceCriteria);
+        return {
+          parameter: group.parameter,
+          monitoringPointId: group.monitoringPointId,
+          monitoringPointName: monitoringPointsById[group.monitoringPointId] || 'Unassigned',
+          acceptanceCriteria: group.acceptanceCriteria,
+          ...spc,
+        };
+      });
+
+      res.json({ analysis });
+    } catch (err) {
+      console.error('Statistical analysis failed:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
   router.post('/reports/generate', async (req, res) => {
     const { title, generatedBy, projectId, dateRangeStart, dateRangeEnd } = req.body;
 
@@ -198,7 +251,7 @@ module.exports = function (pool, generateId) {
       const row = result.rows[0];
       if (!row) return res.status(404).json({ error: 'Report not found.' });
 
-      const report = { id: row.id, content: JSON.parse(row.content), integrity: JSON.parse(row.integrity) };
+      const report = { id: row.id, content: row.content, integrity: row.integrity };
       const verification = verifyReportIntegrity(report);
       res.json(verification);
     } catch (err) {
