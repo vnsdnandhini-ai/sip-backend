@@ -5,17 +5,34 @@ async function fetchLiveAnalyticalData() {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const liveData = await response.json();
     if (liveData.analyticalData && liveData.analyticalData.length) {
-      const liveFormatted = liveData.analyticalData.map((item) => ({
-        id: item.id,
-        parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
-        instrument: item.deviceId || 'ESP32',
-        value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
-        unit: '',
-         timestamp: item.receivedAt,
-        result: 'Live',
-        isLive: true,
-      }));
-    appState.analyticalData = [...liveFormatted.reverse(), ...appState.analyticalData];
+      const liveFormatted = liveData.analyticalData.map((item) => {
+        const isManualEntry = item.readingType === 'manual' && item.parameter;
+
+        if (isManualEntry) {
+          return {
+            id: item.id,
+            parameter: item.parameter,
+            instrument: item.instrument || 'Manual Entry',
+            value: item.value,
+            unit: item.unit || '',
+            timestamp: item.deviceTimestamp || item.receivedAt,
+            result: 'Manual',
+            isLive: true,
+          };
+        }
+
+        return {
+          id: item.id,
+          parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
+          instrument: item.deviceId || 'ESP32',
+          value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
+          unit: '',
+          timestamp: item.receivedAt,
+          result: 'Live',
+          isLive: true,
+        };
+      });
+      appState.analyticalData = [...liveFormatted.reverse(), ...appState.analyticalData];
     }
   } catch (err) {
     console.error('Could not fetch live sensor data:', err);
@@ -36,9 +53,62 @@ function signOut() {
   window.location.href = 'index.html';
 }
 function handleCsvUpload(event) {
-  alert('CSV upload is not yet connected to the backend. Please use sensor ingestion or contact the developer to enable this feature.');
-}
-async function deleteSingleReading(id) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target.result;
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+
+    const requiredHeaders = ['parameter', 'instrument', 'value', 'unit', 'timestamp'];
+    const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
+    if (missingHeaders.length > 0) {
+      alert(`CSV is missing required headers: ${missingHeaders.join(', ')}`);
+      return;
+    }
+
+    const rows = lines.slice(1).filter((line) => line.trim());
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const line of rows) {
+      const values = line.split(',').map((v) => v.trim());
+      const row = {};
+      headers.forEach((h, i) => { row[h] = values[i]; });
+
+      if (!row.parameter || !row.value) {
+        failCount++;
+        continue;
+      }
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/analytical`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            parameter: row.parameter,
+            instrument: row.instrument,
+            value: row.value,
+            unit: row.unit,
+            timestamp: row.timestamp,
+          }),
+        });
+        if (response.ok) successCount++;
+        else failCount++;
+      } catch (err) {
+        console.error('CSV row upload failed:', err);
+        failCount++;
+      }
+    }
+
+    recordAudit(`CSV Upload: ${successCount} records added, ${failCount} failed`, 'Analytical Data Management');
+    alert(`CSV upload complete. ${successCount} records added, ${failCount} failed.`);
+    window.location.reload();
+  };
+  reader.readAsText(file);
+}async function deleteSingleReading(id) {
   const confirmed = confirm('Delete this reading permanently?');
   if (!confirmed) return;
 
