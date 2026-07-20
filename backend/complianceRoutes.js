@@ -45,8 +45,11 @@ module.exports = function (pool, generateId) {
       const pending = await pool.query('SELECT * FROM analytical_data');
       const newResults = [];
 
-      for (const reading of pending.rows) {
+for (const reading of pending.rows) {
         if (evaluatedIds.has(reading.id)) continue;
+
+        // Skip non-numeric readings entirely - threshold checks don't apply to strings
+        if (reading.data_type === 'string') continue;
 
         const evaluationTargets = [];
         if (reading.parameters) {

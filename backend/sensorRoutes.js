@@ -77,36 +77,38 @@ module.exports = function (pool, generateId) {
     }
   });
 
-  router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
-    const { monitoringPointId, timestamp, readingType, values, parameters } = req.body;
+router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
+    const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue } = req.body;
 
     if (!monitoringPointId) {
       return res.status(400).json({ error: 'monitoringPointId is required.' });
     }
-    if (!values && !parameters) {
-      return res.status(400).json({ error: 'At least one of values or parameters is required.' });
+    if (!values && !parameters && !stringValue) {
+      return res.status(400).json({ error: 'At least one of values, parameters, or stringValue is required.' });
     }
 
     const id = generateId();
+    const resolvedDataType = dataType || (stringValue ? 'string' : 'number');
 
     try {
       await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp, data_type, string_value)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
         [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
           parameters ? JSON.stringify(parameters) : null,
           values ? JSON.stringify(values) : null,
-          timestamp || null]
+          timestamp || null,
+          resolvedDataType,
+          stringValue || null]
       );
       await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
 
-      res.json({ success: true, recordId: id });
+      res.json({ success: true, recordId: id, dataType: resolvedDataType });
     } catch (err) {
       console.error('Failed to save sensor data:', err);
       res.status(500).json({ error: 'Database error.' });
     }
   });
-
   router.post('/sensor-data/batch', requireDeviceAuth, async (req, res) => {
     const { readings } = req.body;
     if (!Array.isArray(readings) || readings.length === 0) {

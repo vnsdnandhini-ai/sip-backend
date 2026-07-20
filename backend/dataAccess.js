@@ -58,6 +58,7 @@ async function getFullState() {
       readingType: a.reading_type, parameter: a.parameter, value: a.value, unit: a.unit,
       parameters: a.parameters, values: a.values_data,
       receivedAt: a.received_at, deviceTimestamp: a.device_timestamp,
+      dataType: a.data_type, stringValue: a.string_value,
     })),
     complianceResults: complianceResults.rows.map((r) => ({
       id: r.id, analyticalDataId: r.analytical_data_id, deviceId: r.device_id,

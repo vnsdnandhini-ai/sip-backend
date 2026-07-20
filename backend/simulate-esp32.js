@@ -8,7 +8,7 @@ const MONITORING_POINTS = [
   { id: 'id-614un6or-1784173587531', name: 'Compression Stage' },
 ];
 
-const SEND_INTERVAL_MS = 20000;
+const SEND_INTERVAL_MS = 10000;
 
 function randomInRange(min, max) {
   return +(min + Math.random() * (max - min)).toFixed(2);
