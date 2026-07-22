@@ -141,6 +141,13 @@ module.exports = function (pool, generateId) {
 
       spectrumResult = findBestMatch({ x: spectrumX, y: spectrumY }, referenceVariants);
     }
+let derivedParameter = null;
+    let derivedValue = null;
+
+    if (resolvedDataType === 'spectrum' && spectrumResult) {
+      derivedParameter = parameters.parameter;
+      derivedValue = spectrumResult.bestSimilarity;
+    }
 
     let imagePath = null;
 
@@ -162,12 +169,21 @@ module.exports = function (pool, generateId) {
         return res.status(500).json({ error: 'Failed to save image file.' });
       }
     }
-
+if (resolvedDataType === 'image') {
+      derivedParameter = 'Image';
+      derivedValue = imagePath;
+    }
+    if (resolvedDataType === 'string') {
+      derivedParameter = (parameters && parameters.parameter) || 'Status';
+      derivedValue = stringValue;
+    }
     try {
-      await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp, data_type, string_value, image_path)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+     await pool.query(
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, parameters, values_data, device_timestamp, data_type, string_value, image_path)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
+          derivedParameter,
+          derivedValue !== null ? String(derivedValue) : null,
           parameters ? JSON.stringify(parameters) : null,
           values ? JSON.stringify(values) : null,
           timestamp || null,
