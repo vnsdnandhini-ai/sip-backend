@@ -53,12 +53,12 @@ async function getFullState() {
     regulatoryRules: regulatoryRules.rows.map((r) => ({
       id: r.id, name: r.name, description: r.description, status: r.status,
     })),
-    analyticalData: analyticalData.rows.map((a) => ({
+   analyticalData: analyticalData.rows.map((a) => ({
       id: a.id, deviceId: a.device_id, monitoringPointId: a.monitoring_point_id,
       readingType: a.reading_type, parameter: a.parameter, value: a.value, unit: a.unit,
       parameters: a.parameters, values: a.values_data,
       receivedAt: a.received_at, deviceTimestamp: a.device_timestamp,
-      dataType: a.data_type, stringValue: a.string_value,
+      dataType: a.data_type, stringValue: a.string_value, imagePath: a.image_path,
     })),
     complianceResults: complianceResults.rows.map((r) => ({
       id: r.id, analyticalDataId: r.analytical_data_id, deviceId: r.device_id,

@@ -4,8 +4,10 @@
  * Handles device registration and sensor data ingestion, now backed
  * by Postgres instead of file storage.
  */
-
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
+const { findBestMatch } = require('./spectrumSimilarity');
 
 module.exports = function (pool, generateId) {
   const router = express.Router();
@@ -77,38 +79,111 @@ module.exports = function (pool, generateId) {
     }
   });
 
-router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
-    const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue } = req.body;
+  router.post('/reference-spectrum', async (req, res) => {
+    const { parameter, monitoringPointId, variantName, xValues, yValues } = req.body;
+
+    if (!parameter || !xValues || !yValues || xValues.length !== yValues.length) {
+      return res.status(400).json({ error: 'parameter, xValues, and yValues (equal length) are required.' });
+    }
+
+    const id = generateId();
+    const referenceCurve = JSON.stringify({ xValues, yValues });
+
+    try {
+      await pool.query(
+        'INSERT INTO reference_spectra (id, parameter, monitoring_point_id, variant_name, reference_curve, is_active) VALUES ($1,$2,$3,$4,$5,$6)',
+        [id, parameter, monitoringPointId || null, variantName || null, referenceCurve, true]
+      );
+      res.json({ id, parameter, monitoringPointId, variantName, xValues, yValues });
+    } catch (err) {
+      console.error('Failed to save reference spectrum:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
+    const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue, imageBase64 } = req.body;
 
     if (!monitoringPointId) {
       return res.status(400).json({ error: 'monitoringPointId is required.' });
     }
-    if (!values && !parameters && !stringValue) {
-      return res.status(400).json({ error: 'At least one of values, parameters, or stringValue is required.' });
-    }
+ if (!values && !parameters && !stringValue && !imageBase64) {
+  return res.status(400).json({ error: 'At least one of values, parameters, stringValue, or imageBase64 is required.' });
+}
 
     const id = generateId();
     const resolvedDataType = dataType || (stringValue ? 'string' : 'number');
 
+    let spectrumResult = null;
+
+    if (resolvedDataType === 'spectrum') {
+      const { xValues: spectrumX, yValues: spectrumY } = values || {};
+
+      if (!spectrumX || !spectrumY) {
+        return res.status(400).json({ error: 'Spectrum readings require values.xValues and values.yValues.' });
+      }
+      if (!parameters || !parameters.parameter) {
+        return res.status(400).json({ error: 'Spectrum readings require parameters.parameter.' });
+      }
+
+      const refResult = await pool.query(
+        'SELECT * FROM reference_spectra WHERE parameter = $1 AND is_active = true',
+        [parameters.parameter]
+      );
+      if (refResult.rows.length === 0) {
+        return res.status(400).json({ error: `No active reference spectra found for parameter "${parameters.parameter}".` });
+      }
+
+      const referenceVariants = refResult.rows.map((r) => ({
+        variantName: r.variant_name,
+        referenceCurve: { x: r.reference_curve.xValues, y: r.reference_curve.yValues },
+      }));
+
+      spectrumResult = findBestMatch({ x: spectrumX, y: spectrumY }, referenceVariants);
+    }
+
+    let imagePath = null;
+
+    if (resolvedDataType === 'image') {
+      const { imageBase64 } = req.body;
+
+      if (!imageBase64) {
+        return res.status(400).json({ error: 'Image readings require imageBase64.' });
+      }
+
+      const fileName = `${id}.jpg`;
+      const filePath = path.join(__dirname, 'uploads', fileName);
+
+      try {
+        fs.writeFileSync(filePath, Buffer.from(imageBase64, 'base64'));
+        imagePath = `uploads/${fileName}`;
+      } catch (err) {
+        console.error('Failed to save image:', err);
+        return res.status(500).json({ error: 'Failed to save image file.' });
+      }
+    }
+
     try {
       await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp, data_type, string_value)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameters, values_data, device_timestamp, data_type, string_value, image_path)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
           parameters ? JSON.stringify(parameters) : null,
           values ? JSON.stringify(values) : null,
           timestamp || null,
           resolvedDataType,
-          stringValue || null]
+          stringValue || null,
+          imagePath]
       );
       await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
 
-      res.json({ success: true, recordId: id, dataType: resolvedDataType });
+      res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath });
     } catch (err) {
       console.error('Failed to save sensor data:', err);
       res.status(500).json({ error: 'Database error.' });
     }
   });
+
   router.post('/sensor-data/batch', requireDeviceAuth, async (req, res) => {
     const { readings } = req.body;
     if (!Array.isArray(readings) || readings.length === 0) {
