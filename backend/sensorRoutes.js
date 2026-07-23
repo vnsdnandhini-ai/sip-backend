@@ -6,14 +6,14 @@
  */
 const fs = require('fs');
 const path = require('path');
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}const express = require('express');
+const express = require('express');
 const { findBestMatch } = require('./spectrumSimilarity');
-
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 module.exports = function (pool, generateId) {
   const router = express.Router();
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 
   async function requireDeviceAuth(req, res, next) {
     const deviceId = req.header('x-device-id');
@@ -162,15 +162,19 @@ let derivedParameter = null;
       }
 
       const fileName = `${id}.jpg`;
-      const filePath = path.join(__dirname, 'uploads', fileName);
+      const imageBuffer = Buffer.from(imageBase64, 'base64');
 
-      try {
-        fs.writeFileSync(filePath, Buffer.from(imageBase64, 'base64'));
-        imagePath = `uploads/${fileName}`;
-      } catch (err) {
-        console.error('Failed to save image:', err);
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(fileName, imageBuffer, { contentType: 'image/jpeg' });
+
+      if (uploadError) {
+        console.error('Failed to upload image to Supabase:', uploadError);
         return res.status(500).json({ error: 'Failed to save image file.' });
       }
+
+      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+      imagePath = publicUrlData.publicUrl;
     }
 if (resolvedDataType === 'image') {
       derivedParameter = 'Image';
