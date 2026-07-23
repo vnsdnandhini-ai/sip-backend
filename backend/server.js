@@ -11,6 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 function generateId() {
   return `id-${Math.random().toString(36).slice(2, 10)}-${Date.now()}`;
