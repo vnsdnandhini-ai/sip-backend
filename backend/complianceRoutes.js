@@ -48,8 +48,8 @@ module.exports = function (pool, generateId) {
 for (const reading of pending.rows) {
         if (evaluatedIds.has(reading.id)) continue;
 
-        // Skip non-numeric readings entirely - threshold checks don't apply to strings
-        if (reading.data_type === 'string') continue;
+        // Skip non-numeric readings entirely - threshold checks don't apply to strings or images
+        if (reading.data_type === 'string' || reading.data_type === 'image') continue;
 
         const evaluationTargets = [];
         if (reading.parameters) {
