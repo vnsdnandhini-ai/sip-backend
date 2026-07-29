@@ -38,9 +38,9 @@ async function getFullState() {
       connectionType: d.connection_type, monitoringPointId: d.monitoring_point_id,
       status: d.status, registeredAt: d.registered_at, lastSeenAt: d.last_seen_at,
     })),
-    monitoringPoints: monitoringPoints.rows.map((m) => ({
+   monitoringPoints: monitoringPoints.rows.map((m) => ({
       id: m.id, name: m.name, location: m.location, frequency: m.frequency,
-      description: m.description, status: m.status,
+      description: m.description, status: m.status, projectId: m.project_id,
     })),
     parameters: parameters.rows.map((p) => ({
       id: p.id, name: p.name, monitoringPointId: p.monitoring_point_id,

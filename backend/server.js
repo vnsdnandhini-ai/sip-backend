@@ -132,35 +132,33 @@ app.delete('/api/projects/:id', async (req, res) => {
 
 // --- Monitoring Points ---
 app.post('/api/monitoring', async (req, res) => {
-  const { name, location, frequency, description, status } = req.body;
-  const id = generateId();
-  try {
-    await pool.query(
-      'INSERT INTO monitoring_points (id, name, location, frequency, description, status) VALUES ($1,$2,$3,$4,$5,$6)',
-      [id, name, location, frequency, description, status || 'Active']
-    );
-    res.json({ id, name, location, frequency, description, status: status || 'Active' });
-  } catch (err) {
-    console.error('Failed to create monitoring point:', err);
-    res.status(500).json({ error: 'Database error.' });
-  }
-});
-
+    const { name, location, frequency, description, status, projectId } = req.body;
+    const id = generateId();
+    try {
+      await pool.query(
+        'INSERT INTO monitoring_points (id, name, location, frequency, description, status, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [id, name, location, frequency, description, status || 'Active', projectId || null]
+      );
+      res.json({ id, name, location, frequency, description, status: status || 'Active', projectId: projectId || null });
+    } catch (err) {
+      console.error('Failed to create monitoring point:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 app.put('/api/monitoring/:id', async (req, res) => {
-  const { name, location, frequency, description, status } = req.body;
-  try {
-    const result = await pool.query(
-      'UPDATE monitoring_points SET name=$1, location=$2, frequency=$3, description=$4, status=$5 WHERE id=$6 RETURNING *',
-      [name, location, frequency, description, status, req.params.id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Monitoring point not found.' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Failed to update monitoring point:', err);
-    res.status(500).json({ error: 'Database error.' });
-  }
-});
-
+    const { name, location, frequency, description, status, projectId } = req.body;
+    try {
+      const result = await pool.query(
+        'UPDATE monitoring_points SET name=$1, location=$2, frequency=$3, description=$4, status=$5, project_id=$6 WHERE id=$7 RETURNING *',
+        [name, location, frequency, description, status, projectId || null, req.params.id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Monitoring point not found.' });
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error('Failed to update monitoring point:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 app.delete('/api/monitoring/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM monitoring_points WHERE id=$1', [req.params.id]);
