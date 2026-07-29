@@ -7,19 +7,38 @@ async function renderReportPanel() {
 
   panel.innerHTML = `<p style="color:#64748b;">Select a report type above to generate a report from live data.</p>`;
 
+  await populateReportProjectFilter();
+
   const batchCard = document.getElementById('cardBatchReport');
   const complianceCard = document.getElementById('cardComplianceReport');
   const auditCard = document.getElementById('cardAuditReport');
 
-  if (batchCard) batchCard.addEventListener('click', showBatchReport);
-  if (complianceCard) complianceCard.addEventListener('click', generateComplianceReport);
-  if (auditCard) auditCard.addEventListener('click', showAuditReport);
+  if (batchCard) batchCard.addEventListener('click', () => { selectReportCard(batchCard); showBatchReport(); });
+  if (complianceCard) complianceCard.addEventListener('click', () => { selectReportCard(complianceCard); generateComplianceReport(); });
+  if (auditCard) auditCard.addEventListener('click', () => { selectReportCard(auditCard); showAuditReport(); });
+}
+
+async function populateReportProjectFilter() {
+  const select = document.getElementById('reportProjectFilter');
+  if (!select) return;
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/state`);
+    const state = await response.json();
+    const projects = state.projects || [];
+    select.innerHTML = '<option value="">All Projects</option>' +
+      projects.map((p) => `<option value="${p.id}">${p.name} (${p.batchNumber})</option>`).join('');
+  } catch (err) {
+    console.error('Failed to load projects for report filter:', err);
+  }
+}
+function selectReportCard(activeCard) {
+  document.querySelectorAll('.card--report').forEach((card) => card.classList.remove('selected'));
+  activeCard.classList.add('selected');
 }
 
 function reportLoadingState(panel, label) {
-  panel.innerHTML = `<p style="color:#64748b;">${label}...</p>`;
+  panel.innerHTML = `<p style="color:#64748b;"><span class="spinner"></span>${label}...</p>`;
 }
-
 async function showBatchReport() {
   const panel = document.getElementById('reportPanel');
   reportLoadingState(panel, 'Loading batch summary');
@@ -78,6 +97,9 @@ async function generateComplianceReport() {
   const panel = document.getElementById('reportPanel');
   reportLoadingState(panel, 'Generating tamper-proof compliance report');
 
+  const projectSelect = document.getElementById('reportProjectFilter');
+  const projectId = projectSelect ? projectSelect.value : '';
+
   try {
     const genResponse = await fetch(`${BACKEND_URL}/api/reports/generate`, {
       method: 'POST',
@@ -85,6 +107,7 @@ async function generateComplianceReport() {
       body: JSON.stringify({
         title: 'Compliance Report',
         generatedBy: appState.session?.user || 'system',
+        projectId: projectId || null,
       }),
     });
     const report = await genResponse.json();

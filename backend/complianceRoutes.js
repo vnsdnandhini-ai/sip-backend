@@ -171,12 +171,16 @@ for (const reading of pending.rows) {
     }
   });
 
-  router.post('/reports/generate', async (req, res) => {
+router.post('/reports/generate', async (req, res) => {
     const { title, generatedBy, projectId, dateRangeStart, dateRangeEnd } = req.body;
 
     try {
       let query = 'SELECT * FROM compliance_results WHERE 1=1';
       const params = [];
+      if (projectId) {
+        params.push(projectId);
+        query += ` AND monitoring_point_id IN (SELECT id FROM monitoring_points WHERE project_id = $${params.length})`;
+      }
       if (dateRangeStart) {
         params.push(dateRangeStart);
         query += ` AND evaluated_at >= $${params.length}`;
