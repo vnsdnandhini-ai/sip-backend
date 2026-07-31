@@ -72,8 +72,8 @@ async function getFullState() {
       id: a.id, activity: a.activity, module: a.module, user: a.user_name,
       timestamp: a.created_at,
     })),
-    reports: reports.rows.map((r) => ({
-      id: r.id, content: r.content, integrity: r.integrity,
+  reports: reports.rows.map((r) => ({
+      id: r.id, content: JSON.parse(r.content), integrity: JSON.parse(r.integrity),
     })),
   };
 }
