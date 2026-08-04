@@ -7,13 +7,13 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const multer = require('multer');
+const supabase = require('./supabaseClient');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { findBestMatch } = require('./spectrumSimilarity');
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
+
 module.exports = function (pool, generateId) {
   const router = express.Router();
-const { createClient } = require('@supabase/supabase-js');
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 
   async function requireDeviceAuth(req, res, next) {
     const deviceId = req.header('x-device-id');
@@ -232,7 +232,6 @@ if (resolvedDataType === 'image') {
       res.status(500).json({ error: 'Database error.' });
     }
   });
-
   router.delete('/sensor-data/range', async (req, res) => {
     const { startDate, endDate } = req.body;
     try {
