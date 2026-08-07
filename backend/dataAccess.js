@@ -59,6 +59,7 @@ async function getFullState() {
       parameters: a.parameters, values: a.values_data,
       receivedAt: a.received_at, deviceTimestamp: a.device_timestamp,
       dataType: a.data_type, stringValue: a.string_value, imagePath: a.image_path,
+      imageAnalysis: a.image_analysis,
     })),
     complianceResults: complianceResults.rows.map((r) => ({
       id: r.id, analyticalDataId: r.analytical_data_id, deviceId: r.device_id,

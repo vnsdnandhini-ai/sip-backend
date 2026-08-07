@@ -11,7 +11,7 @@ const multer = require('multer');
 const supabase = require('./supabaseClient');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { findBestMatch } = require('./spectrumSimilarity');
-
+const { analyzeImage } = require('./imageAnalysis');
 module.exports = function (pool, generateId) {
   const router = express.Router();
 
@@ -153,6 +153,7 @@ let derivedParameter = null;
     }
 
     let imagePath = null;
+    let imageAnalysisResult = null;
 
     if (resolvedDataType === 'image') {
       const { imageBase64 } = req.body;
@@ -163,6 +164,12 @@ let derivedParameter = null;
 
       const fileName = `${id}.jpg`;
       const imageBuffer = Buffer.from(imageBase64, 'base64');
+
+      try {
+        imageAnalysisResult = await analyzeImage(imageBuffer);
+      } catch (err) {
+        console.error('Image analysis failed (continuing without it):', err);
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('images')
@@ -186,8 +193,8 @@ if (resolvedDataType === 'image') {
     }
     try {
      await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, parameters, values_data, device_timestamp, data_type, string_value, image_path)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, parameters, values_data, device_timestamp, data_type, string_value, image_path, image_analysis)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
         [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
           derivedParameter,
           derivedValue !== null ? String(derivedValue) : null,
@@ -196,11 +203,12 @@ if (resolvedDataType === 'image') {
           timestamp || null,
           resolvedDataType,
           stringValue || null,
-          imagePath]
+          imagePath,
+          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null]
       );
       await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
 
-      res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath });
+      res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath, imageAnalysis: imageAnalysisResult });
     } catch (err) {
       console.error('Failed to save sensor data:', err);
       res.status(500).json({ error: 'Database error.' });
