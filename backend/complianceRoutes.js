@@ -118,6 +118,83 @@ for (const reading of pending.rows) {
       res.status(500).json({ error: 'Database error.' });
     }
   });
+// --- Combined spectral + visual verdict, per monitoring point ---
+  router.get('/compliance/combined-verdict', async (req, res) => {
+    try {
+      const monitoringPoints = await pool.query('SELECT id, name, project_id FROM monitoring_points');
+
+      const verdicts = await Promise.all(monitoringPoints.rows.map(async (mp) => {
+        const latestSpectral = await pool.query(
+          `SELECT result, parameter, measured_value, evaluated_at
+           FROM compliance_results
+           WHERE monitoring_point_id = $1
+           ORDER BY evaluated_at DESC LIMIT 1`,
+          [mp.id]
+        );
+
+        const latestImage = await pool.query(
+          `SELECT image_analysis, received_at
+           FROM analytical_data
+           WHERE monitoring_point_id = $1 AND data_type = 'image'
+           ORDER BY received_at DESC LIMIT 1`,
+          [mp.id]
+        );
+
+        const spectralRow = latestSpectral.rows[0] || null;
+        const imageRow = latestImage.rows[0] || null;
+        const imageAnalysis = imageRow ? imageRow.image_analysis : null;
+
+        const spectralStatus = spectralRow ? spectralRow.result : null;
+
+        let visualStatus = null;
+        if (imageAnalysis) {
+          if (imageAnalysis.captureQualityOk === false) {
+            visualStatus = 'INCONCLUSIVE';
+          } else if (imageAnalysis.isContaminated) {
+            visualStatus = 'CONTAMINATED';
+          } else {
+            visualStatus = 'CLEAN';
+          }
+        }
+
+        let overall;
+        if (spectralStatus === 'CRITICAL' || visualStatus === 'CONTAMINATED') {
+          overall = 'CRITICAL';
+        } else if (spectralStatus === 'WARNING' || visualStatus === 'INCONCLUSIVE') {
+          overall = 'WARNING';
+        } else if (spectralStatus === 'PASS' && visualStatus === 'CLEAN') {
+          overall = 'PASS';
+        } else if (!spectralStatus && !visualStatus) {
+          overall = 'NO_DATA';
+        } else {
+          overall = 'INCOMPLETE'; // only one of the two data types has been evaluated
+        }
+
+        return {
+          monitoringPointId: mp.id,
+          monitoringPointName: mp.name,
+          projectId: mp.project_id,
+          spectral: spectralRow ? {
+            result: spectralRow.result,
+            parameter: spectralRow.parameter,
+            measuredValue: spectralRow.measured_value,
+            evaluatedAt: spectralRow.evaluated_at,
+          } : null,
+          visual: imageAnalysis ? {
+            status: visualStatus,
+            contaminationPercent: imageAnalysis.contaminationPercent,
+            capturedAt: imageRow.received_at,
+          } : null,
+          overall,
+        };
+      }));
+
+      res.json({ verdicts });
+    } catch (err) {
+      console.error('Combined verdict failed:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 
   // --- Statistical Process Control analysis ---
   // For each parameter at each monitoring point (or globally, if not
