@@ -1,24 +1,40 @@
 /**
  * imageAnalysis.js
  *
- * Basic image quality/consistency checks using Jimp (pure JS, no native deps).
+ * Image QA checks for pharmaceutical visual inspection, using Jimp
+ * (pure JS, no native deps).
  *
- *  - brightness: average pixel luminance (0-255) - flags too-dark/overexposed captures
- *  - sharpness: Laplacian variance - a standard blur-detection technique;
- *    sharp images have high variance in pixel intensity at edges, blurry
- *    images have low variance
- *  - colorDeviation: Euclidean distance between the image's average RGB and
- *    a reference RGB, expressed as a percentage - flags color/lighting drift
+ * PRIMARY QA SIGNALS (product-relevant):
+ *  - colorDeviationPercent: average image color vs a reference color -
+ *    flags discoloration/color drift
+ *  - contaminationPercent: % of pixels that are significant outliers
+ *    from the image's own average color - flags foreign particles,
+ *    spots, contamination (a uniform sample has very few outlier
+ *    pixels; contamination shows up as a spike)
+ *
+ * SECONDARY / CAPTURE QUALITY GATE (infrastructure, not product QA):
+ *  - brightness / isTooDark / isOverexposed
+ *  - sharpness / isBlurry
+ *  These don't say anything about the product - they say whether the
+ *  photo itself is trustworthy enough to analyze at all. If capture
+ *  quality fails, the primary QA numbers above should be treated with
+ *  caution (see captureQualityOk).
  */
 
 const { Jimp } = require('jimp');
+
+const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
+const CONTAMINATION_PERCENT_THRESHOLD = 2; // % outlier pixels considered contamination
+
 async function analyzeImage(imageBuffer, referenceColor = null) {
   const image = await Jimp.read(imageBuffer);
   const { width, height } = image.bitmap;
+  const pixelCount = width * height;
 
+  // --- Pass 1: brightness, average color, sharpness (grayscale) ---
   let totalLuminance = 0;
   let sumR = 0, sumG = 0, sumB = 0;
-  const grayscale = new Float64Array(width * height);
+  const grayscale = new Float64Array(pixelCount);
 
   image.scan(0, 0, width, height, function (x, y, idx) {
     const r = this.bitmap.data[idx + 0];
@@ -31,7 +47,6 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     grayscale[y * width + x] = luminance;
   });
 
-  const pixelCount = width * height;
   const brightness = +(totalLuminance / pixelCount).toFixed(2);
   const avgColor = {
     r: +(sumR / pixelCount).toFixed(1),
@@ -42,7 +57,7 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
   // Laplacian variance for blur detection
   let laplacianSum = 0;
   let laplacianSumSq = 0;
-  let count = 0;
+  let lapCount = 0;
 
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
@@ -55,14 +70,15 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
       const laplacian = up + down + left + right - 4 * center;
       laplacianSum += laplacian;
       laplacianSumSq += laplacian * laplacian;
-      count++;
+      lapCount++;
     }
   }
 
-  const mean = laplacianSum / count;
-  const variance = laplacianSumSq / count - mean * mean;
-  const sharpness = +variance.toFixed(2);
+  const lapMean = laplacianSum / lapCount;
+  const lapVariance = laplacianSumSq / lapCount - lapMean * lapMean;
+  const sharpness = +lapVariance.toFixed(2);
 
+  // --- Color deviation vs external reference (if provided) ---
   let colorDeviationPercent = null;
   if (referenceColor) {
     const dr = avgColor.r - referenceColor.r;
@@ -73,16 +89,55 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     colorDeviationPercent = +((distance / maxDistance) * 100).toFixed(2);
   }
 
+  // --- Pass 2: contamination / defect detection ---
+  // Uses the image's own average color as the "expected uniform" color,
+  // then counts what % of pixels are significant outliers from it.
+  // A clean, uniform sample has a low outlier %; contamination, foreign
+  // particles, or spots show up as a spike in outlier %.
+  let outlierCount = 0;
+
+  image.scan(0, 0, width, height, function (x, y, idx) {
+    const r = this.bitmap.data[idx + 0];
+    const g = this.bitmap.data[idx + 1];
+    const b = this.bitmap.data[idx + 2];
+
+    const dr = r - avgColor.r;
+    const dg = g - avgColor.g;
+    const db = b - avgColor.b;
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+    if (distance > OUTLIER_DISTANCE_THRESHOLD) {
+      outlierCount++;
+    }
+  });
+
+  const contaminationPercent = +((outlierCount / pixelCount) * 100).toFixed(2);
+  const isContaminated = contaminationPercent > CONTAMINATION_PERCENT_THRESHOLD;
+
+  // --- Capture quality gate (secondary - infrastructure, not product QA) ---
+  const isTooDark = brightness < 50;
+  const isOverexposed = brightness > 220;
+  const isBlurry = sharpness < 100; // tune against real sample images
+  const captureQualityOk = !isTooDark && !isOverexposed && !isBlurry;
+
   return {
     width,
     height,
-    brightness,
-    isTooDark: brightness < 50,
-    isOverexposed: brightness > 220,
-    sharpness,
-    isBlurry: sharpness < 100, // tune this threshold against real sample images
-    avgColor,
+
+    // Primary QA signals
     colorDeviationPercent,
+    contaminationPercent,
+    isContaminated,
+
+    // Secondary capture-quality gate
+    captureQualityOk,
+    brightness,
+    isTooDark,
+    isOverexposed,
+    sharpness,
+    isBlurry,
+
+    avgColor,
   };
 }
 
