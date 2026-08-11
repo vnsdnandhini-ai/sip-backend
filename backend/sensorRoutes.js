@@ -103,6 +103,26 @@ module.exports = function (pool, generateId) {
       res.status(500).json({ error: 'Database error.' });
     }
   });
+router.post('/reference-color', async (req, res) => {
+    const { parameter, monitoringPointId, label, r, g, b } = req.body;
+
+    if (!parameter || r === undefined || g === undefined || b === undefined) {
+      return res.status(400).json({ error: 'parameter, r, g, and b are required.' });
+    }
+
+    const id = generateId();
+
+    try {
+      await pool.query(
+        'INSERT INTO reference_colors (id, parameter, monitoring_point_id, label, r, g, b, is_active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [id, parameter, monitoringPointId || null, label || null, r, g, b, true]
+      );
+      res.json({ id, parameter, monitoringPointId, label, r, g, b });
+    } catch (err) {
+      console.error('Failed to save reference color:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 
   router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
     const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue, imageBase64 } = req.body;
@@ -165,8 +185,29 @@ let derivedParameter = null;
       const fileName = `${id}.jpg`;
       const imageBuffer = Buffer.from(imageBase64, 'base64');
 
+      const imageParameter = (parameters && parameters.parameter) || null;
+      let referenceColor = null;
+
+      if (imageParameter) {
+        const scopedRef = await pool.query(
+          'SELECT r, g, b FROM reference_colors WHERE parameter = $1 AND monitoring_point_id = $2 AND is_active = true LIMIT 1',
+          [imageParameter, monitoringPointId]
+        );
+        if (scopedRef.rows.length > 0) {
+          referenceColor = scopedRef.rows[0];
+        } else {
+          const globalRef = await pool.query(
+            'SELECT r, g, b FROM reference_colors WHERE parameter = $1 AND monitoring_point_id IS NULL AND is_active = true LIMIT 1',
+            [imageParameter]
+          );
+          if (globalRef.rows.length > 0) {
+            referenceColor = globalRef.rows[0];
+          }
+        }
+      }
+
       try {
-        imageAnalysisResult = await analyzeImage(imageBuffer);
+        imageAnalysisResult = await analyzeImage(imageBuffer, referenceColor);
       } catch (err) {
         console.error('Image analysis failed (continuing without it):', err);
       }
