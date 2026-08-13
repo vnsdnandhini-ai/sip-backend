@@ -212,34 +212,33 @@ app.delete('/api/parameters/:id', async (req, res) => {
 
 // --- Checkout Conditions ---
 app.post('/api/conditions', async (req, res) => {
-  const { parameter, monitoringPointId, acceptance, warning, critical, action } = req.body;
-  const id = generateId();
-  try {
-    await pool.query(
-      'INSERT INTO checkout_conditions (id, parameter, monitoring_point_id, acceptance, warning, critical, action) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [id, parameter, monitoringPointId || null, acceptance, warning, critical, action]
-    );
-    res.json({ id, parameter, monitoringPointId, acceptance, warning, critical, action });
-  } catch (err) {
-    console.error('Failed to create condition:', err);
-    res.status(500).json({ error: 'Database error.' });
-  }
-});
-
+    const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
+    const id = generateId();
+    try {
+      await pool.query(
+        'INSERT INTO checkout_conditions (id, parameter, monitoring_point_id, acceptance, warning, critical, action, regulatory_rule_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [id, parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null]
+      );
+      res.json({ id, parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId });
+    } catch (err) {
+      console.error('Failed to create condition:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 app.put('/api/conditions/:id', async (req, res) => {
-  const { parameter, monitoringPointId, acceptance, warning, critical, action } = req.body;
-  try {
-    const result = await pool.query(
-      'UPDATE checkout_conditions SET parameter=$1, monitoring_point_id=$2, acceptance=$3, warning=$4, critical=$5, action=$6 WHERE id=$7 RETURNING *',
-      [parameter, monitoringPointId || null, acceptance, warning, critical, action, req.params.id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Condition not found.' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Failed to update condition:', err);
-    res.status(500).json({ error: 'Database error.' });
-  }
-});
+    const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
+    try {
+      const result = await pool.query(
+        'UPDATE checkout_conditions SET parameter=$1, monitoring_point_id=$2, acceptance=$3, warning=$4, critical=$5, action=$6, regulatory_rule_id=$7 WHERE id=$8 RETURNING *',
+        [parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null, req.params.id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Condition not found.' });
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error('Failed to update condition:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 
 app.delete('/api/conditions/:id', async (req, res) => {
   try {

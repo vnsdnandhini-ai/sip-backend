@@ -49,6 +49,7 @@ async function getFullState() {
     checkoutConditions: checkoutConditions.rows.map((c) => ({
       id: c.id, parameter: c.parameter, monitoringPointId: c.monitoring_point_id,
       acceptance: c.acceptance, warning: c.warning, critical: c.critical, action: c.action,
+      regulatoryRuleId: c.regulatory_rule_id,
     })),
     regulatoryRules: regulatoryRules.rows.map((r) => ({
       id: r.id, name: r.name, description: r.description, status: r.status,
