@@ -775,7 +775,7 @@ async function deleteSensorDataRange() {
 
   const confirmed = confirm(`Delete all sensor readings in the selected range? This cannot be undone.`);
   if (!confirmed) return;
-
+6
   try {
     const response = await fetch(`${BACKEND_URL}/api/sensor-data/range`, {
       method: 'DELETE',
