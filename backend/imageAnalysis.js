@@ -34,7 +34,7 @@ const { Jimp } = require('jimp');
  * edge activity.
  */
 async function detectEdges(image, edgeThreshold = 100) {
-  const grayscale = image.clone().grayscale();
+    const grayscale = image.clone().greyscale();
   const width = grayscale.bitmap.width;
   const height = grayscale.bitmap.height;
 
