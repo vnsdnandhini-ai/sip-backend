@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Gallery - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="onboarding">Guided Setup</button>
+        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link active" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports</button>
+        <button class="nav-link" data-page="audit">Audit Trail</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Image Gallery</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrapper">
+            <input id="globalSearch" type="search" placeholder="Search modules, projects, records..." />
+          </div>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Captured Images</h3>
+            <p>All images captured by ESP32-CAM devices, with automatic contamination and quality analysis.</p>
+          </div>
+          <button class="button button--secondary" id="refreshGallery">Refresh</button>
+        </div>
+<div class="calibration-panel">
+          <h4 style="margin-top:0;">Calibrate Reference Color</h4>
+          <p class="note" style="margin-top:0;">Set the expected/approved color for a parameter. Future images for that parameter will be checked for color deviation from this reference.</p>
+          <div class="calibration-row">
+            <div class="form-group" style="min-width:200px;">
+              <label>Parameter</label>
+              <input id="calibParameter" type="text" placeholder="e.g. Compression Stage" />
+            </div>
+            <div class="form-group">
+              <label>Pick Color</label>
+              <input id="calibColorPicker" type="color" value="#ffffff" style="width:60px;height:42px;padding:2px;" />
+            </div>
+            <div class="color-swatch" id="calibSwatchPreview" style="background:#ffffff;"></div>
+            <button class="button button--primary" id="saveCalibration">Save Reference</button>
+          </div>
+          <div id="calibrationStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
+        </div>
+        <div class="gallery-filters">
+          <button class="filter-button active" data-filter="all" onclick="setGalleryFilter('all')">All</button>
+          <button class="filter-button" data-filter="clean" onclick="setGalleryFilter('clean')">Clean</button>
+          <button class="filter-button" data-filter="contaminated" onclick="setGalleryFilter('contaminated')">Contaminated</button>
+          <button class="filter-button" data-filter="issue" onclick="setGalleryFilter('issue')">Capture Issue</button>
+        </div>
+        <div class="gallery-grid" id="galleryGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalPanel" class="modal hidden"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/imagegallery.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
+

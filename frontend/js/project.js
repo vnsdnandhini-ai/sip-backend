@@ -65,14 +65,25 @@ async function submitProjectForm(id) {
         body: JSON.stringify({ name, product, batchNumber, department, line, status }),
       });
     }
-   recordAudit(id ? 'Project Updated' : 'Project Created', 'Project Management');
-    closeModal();
-    await refreshProjectTable();
+  recordAudit(id ? 'Project Updated' : 'Project Created', 'Project Management');
+
+closeModal();
+
+await refreshProjectTable();
+
+// Enable Continue button
+const continueBtn = document.getElementById("continueMonitoringBtn");
+
+if (continueBtn) {
+    continueBtn.disabled = false;
+}
+
+alert("Project saved successfully. Continue to Monitoring.");
   } catch (err) {
     console.error('Failed to save project:', err);
     alert('Failed to save. Check console.');
   }
-}
+}s
 
 async function deleteProject(id) {
   try {

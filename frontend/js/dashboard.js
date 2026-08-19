@@ -6,6 +6,8 @@
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const state = await response.json();
 
+    renderSetupProgress(state);
+
     document.getElementById('metricProjects').textContent = state.projects.length;
 
     const activeDevices = state.devices.filter((d) => d.status === 'active').length;
@@ -45,5 +47,31 @@
     }
   } catch (err) {
     console.error('Failed to load dashboard data:', err);
+  }
+}
+function renderSetupProgress(state) {
+  const card = document.getElementById('setupProgressCard');
+  if (!card) return;
+
+  const steps = [
+    { label: 'Project', done: (state.projects || []).length > 0 },
+    { label: 'Monitoring Point', done: (state.monitoringPoints || []).length > 0 },
+    { label: 'Parameter', done: (state.parameters || []).length > 0 },
+    { label: 'Device', done: (state.devices || []).length > 0 },
+    { label: 'Compliance Rule', done: (state.checkoutConditions || []).length > 0 },
+  ];
+
+  const doneCount = steps.filter((s) => s.done).length;
+  const percent = Math.round((doneCount / steps.length) * 100);
+
+  document.getElementById('setupProgressFill').style.width = `${percent}%`;
+  document.getElementById('setupChecklist').innerHTML = steps
+    .map((s) => `<div class="setup-checklist-item ${s.done ? 'done' : ''}">${s.done ? '✓' : '○'} ${s.label}</div>`)
+    .join('');
+
+  if (doneCount === steps.length) {
+    card.style.display = 'none';
+  } else {
+    card.style.display = 'block';
   }
 }

@@ -5,42 +5,168 @@ async function fetchLiveAnalyticalData() {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const liveData = await response.json();
     if (liveData.analyticalData && liveData.analyticalData.length) {
-      const liveFormatted = liveData.analyticalData.map((item) => {
-        const isManualEntry = item.readingType === 'manual' && item.parameter;
-
-        if (isManualEntry) {
+     const liveFormatted = liveData.analyticalData.map((item) => {
+          const isManualEntry = item.readingType === 'manual' && item.parameter;
+if (item.dataType === 'image') {
+          const imageUrl = item.value || item.imagePath;
           return {
             id: item.id,
-            parameter: item.parameter,
-            instrument: item.instrument || 'Manual Entry',
-            value: item.value,
-            unit: item.unit || '',
-            timestamp: item.deviceTimestamp || item.receivedAt,
-            result: 'Manual',
+            parameter: 'Image',
+            instrument: item.deviceId || 'ESP32-CAM',
+            value: imageUrl,
+            unit: '',
+            timestamp: item.receivedAt,
+            result: 'Image',
             isLive: true,
+            dataType: 'image',
+            imageAnalysis: item.imageAnalysis,
           };
         }
 
-        return {
-          id: item.id,
-          parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
-          instrument: item.deviceId || 'ESP32',
-          value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
-          unit: '',
-          timestamp: item.receivedAt,
-          result: 'Live',
-          isLive: true,
-        };
-      });
-      appState.analyticalData = [...liveFormatted.reverse(), ...appState.analyticalData];
+        if (item.dataType === 'string') {
+          return {
+            id: item.id,
+            parameter: 'Status',
+            instrument: item.deviceId || 'ESP32',
+            value: item.stringValue,
+            unit: '',
+            timestamp: item.receivedAt,
+            result: 'Live',
+            isLive: true,
+          };
+        }
+         if (isManualEntry) {
+            return {
+              id: item.id,
+              parameter: item.parameter,
+              instrument: item.instrument || 'Manual Entry',
+              value: item.value,
+              unit: item.unit || '',
+              timestamp: item.deviceTimestamp || item.receivedAt,
+              result: 'Manual',
+              isLive: true,
+              dataType: 'manual',
+            };
+          }
+
+        if (item.parameter && item.value) {
+            return {
+              id: item.id,
+              parameter: item.parameter,
+              instrument: item.deviceId || 'ESP32',
+              value: item.value,
+              unit: '',
+              timestamp: item.receivedAt,
+              result: item.dataType === 'image' ? 'Image' : 'Live',
+              isLive: true,
+              dataType: item.dataType,
+              rawValues: item.values,
+              imageAnalysis: item.imageAnalysis,
+            };
+          }
+
+         return {
+            id: item.id,
+            parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
+            instrument: item.deviceId || 'ESP32',
+            value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
+            unit: '',
+            timestamp: item.receivedAt,
+            result: 'Live',
+            isLive: true,
+            dataType: item.dataType || 'number',
+          };
+        });
+     appState.analyticalData = liveFormatted.reverse();
     }
   } catch (err) {
     console.error('Could not fetch live sensor data:', err);
   }
 }
+let currentFilter = 'all';
+let currentQuery = '';
+let sortState = { field: null, direction: 'asc' };
+
 async function refreshDataTable() {
   await fetchLiveAnalyticalData();
-  searchTable('dataTable', appState.analyticalData, ['parameter', 'instrument', 'value', 'unit', 'timestamp', 'result'], '');
+  renderSummaryCards();
+  renderDataTableView();
+}
+if (window.location.pathname.split('/').pop() === 'analytical.html') {
+  setInterval(async () => {
+    await fetchLiveAnalyticalData();
+    renderSummaryCards();
+    renderDataTableView();
+  }, 8000);
+}
+
+function renderSummaryCards() {
+  const data = appState.analyticalData;
+  const counts = { number: 0, string: 0, spectrum: 0, image: 0, manual: 0 };
+  data.forEach((item) => {
+    const type = item.dataType || 'number';
+    if (counts[type] !== undefined) counts[type]++;
+  });
+
+  const cardsHtml = `
+    <div class="summary-card"><div class="count">${data.length}</div><div class="label">Total Readings</div></div>
+    <div class="summary-card"><div class="count">${counts.number}</div><div class="label">Numbers</div></div>
+    <div class="summary-card"><div class="count">${counts.string}</div><div class="label">Strings</div></div>
+    <div class="summary-card"><div class="count">${counts.spectrum}</div><div class="label">Spectra</div></div>
+    <div class="summary-card"><div class="count">${counts.image}</div><div class="label">Images</div></div>
+  `;
+  const container = document.getElementById('summaryCards');
+  if (container) container.innerHTML = cardsHtml;
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-button').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  renderDataTableView();
+}
+
+function sortTableBy(field) {
+  if (sortState.field === field) {
+    sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortState.field = field;
+    sortState.direction = 'asc';
+  }
+
+  document.querySelectorAll('.sort-arrow').forEach((el) => { el.textContent = ''; });
+  const arrowEl = document.getElementById(`arrow-${field}`);
+  if (arrowEl) arrowEl.textContent = sortState.direction === 'asc' ? '▲' : '▼';
+
+  renderDataTableView();
+}
+
+function renderDataTableView() {
+  let data = appState.analyticalData.filter((item) => {
+    const matchesFilter = currentFilter === 'all' || (item.dataType || 'number') === currentFilter;
+    const matchesQuery = !currentQuery || ['parameter', 'instrument', 'value', 'unit', 'timestamp', 'result']
+      .some((field) => String(item[field] || '').toLowerCase().includes(currentQuery));
+    return matchesFilter && matchesQuery;
+  });
+
+  if (sortState.field) {
+    data = [...data].sort((a, b) => {
+      const valA = a[sortState.field] ?? '';
+      const valB = b[sortState.field] ?? '';
+      const numA = Number(valA);
+      const numB = Number(valB);
+      let comparison;
+      if (!isNaN(numA) && !isNaN(numB) && valA !== '' && valB !== '') {
+        comparison = numA - numB;
+      } else {
+        comparison = String(valA).localeCompare(String(valB));
+      }
+      return sortState.direction === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  searchTable('dataTable', data, ['parameter', 'instrument', 'value', 'unit', 'timestamp', 'result'], '');
 }
 
 function submitAnalyticalData(event) {
@@ -312,7 +438,8 @@ function handleSearch(event) {
   } else if (currentFile === 'rules.html') {
     searchTable('rulesTable', appState.regulatoryRules, ['name', 'description', 'status'], query);
   } else if (currentFile === 'analytical.html' || currentFile === 'compliance.html') {
-    searchTable('dataTable', appState.analyticalData, ['parameter', 'instrument', 'value', 'unit', 'timestamp', 'result'], query);
+    currentQuery = query;
+    renderDataTableView();
   }
 }
 
@@ -332,10 +459,22 @@ function searchTable(tableId, data, fields, query) {
         row.innerHTML = `<td>${item.parameter}</td><td>${item.acceptance}</td><td>${item.warning}</td><td>${item.critical}</td><td>${item.action}</td><td>${createRowActions(item.id, 'condition')}</td>`;
       } else if (tableId === 'rulesTable') {
         row.innerHTML = `<td>${item.name}</td><td>${item.description}</td><td>${item.status}</td><td>${createRowActions(item.id, 'rule')}</td>`;
-     } else if (tableId === 'dataTable') {
-        const deleteBtn = item.isLive ? `<button class="table-action-button danger" onclick="deleteSingleReading('${item.id}')">Delete</button>` : '';
-        row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${item.value}</td><td>${item.unit}</td><td>${item.timestamp}</td><td>${item.result || 'Pending'}</td><td>${deleteBtn}</td>`;
-      }
+    } else if (tableId === 'dataTable') {
+          const deleteBtn = item.isLive ? `<button class="table-action-button danger" onclick="deleteSingleReading('${item.id}')">Delete</button>` : '';
+
+          let valueCell = item.value;
+         if (item.dataType === 'image' && item.value) {
+            const imageUrl = item.value.startsWith('http') ? item.value : `${BACKEND_URL}/${item.value}`;
+            const analysisJson = item.imageAnalysis ? JSON.stringify(item.imageAnalysis).replace(/"/g, '&quot;') : 'null';
+            valueCell = `<button class="table-action-button" onclick='showImagePopup("${imageUrl}", ${analysisJson})'>View Image</button>`;
+          } else if (item.dataType === 'spectrum' && item.rawValues) {
+            valueCell = `${item.value} <button class="table-action-button" onclick='showSpectrumChart(${JSON.stringify(item.rawValues)})'>View Chart</button>`;
+          }
+
+const resultLabel = item.result || 'Pending';
+const badgeClass = resultLabel === 'Live' ? 'badge--live' : resultLabel === 'Image' ? 'badge--image' : resultLabel === 'Manual' ? 'badge--manual' : 'badge--pending';
+row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${valueCell}</td><td>${item.unit}</td><td>${item.timestamp}</td><td><span class="badge ${badgeClass}">${resultLabel}</span></td><td>${deleteBtn}</td>`;
+        }
       tbody.appendChild(row);
     });
 }
@@ -455,6 +594,110 @@ function setupDataSelection() {
     document.getElementById('dataUnit').value = parameter?.unit || '';
   });
 }
+function showImagePopup(imageUrl, analysis) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;padding:20px;border-radius:8px;max-width:90%;max-height:90%;overflow:auto;';
+
+  const img = document.createElement('img');
+  img.src = imageUrl;
+  img.style.cssText = 'max-width:100%;max-height:60vh;display:block;';
+  box.appendChild(img);
+
+if (analysis) {
+    const qaBadge = analysis.isContaminated
+      ? '<span class="badge badge--critical">Contamination Detected</span>'
+      : '<span class="badge badge--pass">Sample Clean</span>';
+
+    const captureBadge = analysis.captureQualityOk
+      ? '<span class="badge badge--pass">Capture OK</span>'
+      : '<span class="badge badge--warning">Capture Quality Issue</span>';
+
+    const colorLine = analysis.colorDeviationPercent !== null
+      ? `<div><strong>Color Deviation:</strong> ${analysis.colorDeviationPercent}% from reference</div>`
+      : '';
+
+    const captureIssues = [];
+    if (analysis.isTooDark) captureIssues.push('too dark');
+    if (analysis.isOverexposed) captureIssues.push('overexposed');
+    if (analysis.isBlurry) captureIssues.push('blurry');
+    const captureIssuesText = captureIssues.length ? ` (${captureIssues.join(', ')})` : '';
+
+    const infoBox = document.createElement('div');
+    infoBox.style.cssText = 'margin-top:14px;padding:12px;background:#f8fafc;border-radius:10px;font-size:0.88rem;';
+    infoBox.innerHTML = `
+      <div style="margin-bottom:10px;">${qaBadge}</div>
+      <div><strong>Contamination:</strong> ${analysis.contaminationPercent}% of surface area</div>
+      ${colorLine}
+      <hr style="margin:10px 0;border:none;border-top:1px solid #e2e8f0;" />
+      <div style="margin-bottom:6px;">${captureBadge}${captureIssuesText}</div>
+      <div style="color:#64748b;font-size:0.82rem;">Brightness: ${analysis.brightness} · Sharpness: ${analysis.sharpness} · ${analysis.width}×${analysis.height}</div>
+    `;
+    box.appendChild(infoBox);
+  }
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = 'margin-top:14px;padding:8px 16px;';
+  closeBtn.onclick = () => document.body.removeChild(overlay);
+  box.appendChild(closeBtn);
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}function showSpectrumChart(spectrumValues) {
+  const xValues = spectrumValues.xValues || [];
+  const yValues = spectrumValues.yValues || [];
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:white;padding:20px;border-radius:8px;';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 500;
+  canvas.height = 300;
+  box.appendChild(canvas);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = 'margin-top:10px;padding:8px 16px;';
+  closeBtn.onclick = () => document.body.removeChild(overlay);
+  box.appendChild(document.createElement('br'));
+  box.appendChild(closeBtn);
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const ctx = canvas.getContext('2d');
+  const padding = 40;
+  const w = canvas.width - padding * 2;
+  const h = canvas.height - padding * 2;
+
+  const minX = Math.min(...xValues);
+  const maxX = Math.max(...xValues);
+  const minY = Math.min(...yValues);
+  const maxY = Math.max(...yValues);
+
+  ctx.strokeStyle = '#333';
+  ctx.beginPath();
+  ctx.moveTo(padding, padding);
+  ctx.lineTo(padding, padding + h);
+  ctx.lineTo(padding + w, padding + h);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#2196F3';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  xValues.forEach((x, i) => {
+    const px = padding + ((x - minX) / (maxX - minX || 1)) * w;
+    const py = padding + h - ((yValues[i] - minY) / (maxY - minY || 1)) * h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.stroke();
+}
 
 function refreshDataParameterOptions() {
   setupDataSelection();
@@ -472,7 +715,21 @@ function initializePlatform() {
     window.location.href = 'index.html';
 } else {
     // Normal initialization
-    fetchLiveAnalyticalData().then(() => {
+    fetchLiveAnalyticalData().then(async () => {
+      const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
+      const skipRedirectPages = ['onboarding.html', 'index.html'];
+      if (!skipRedirectPages.includes(currentFile)) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/state`);
+          const state = await response.json();
+          if (!state.projects || state.projects.length === 0) {
+            window.location.href = 'onboarding.html';
+            return;
+          }
+        } catch (err) {
+          console.error('Setup check failed:', err);
+        }
+      }
       initApp();
     });
   }

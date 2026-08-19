@@ -1,5 +1,6 @@
 ﻿let checkoutConditionsCache = [];
 let monitoringPointsForDropdown = [];
+let regulatoryRulesForDropdown = [];
 
 async function loadCheckoutConditions() {
   try {
@@ -7,6 +8,7 @@ async function loadCheckoutConditions() {
     const state = await response.json();
     checkoutConditionsCache = state.checkoutConditions || [];
     monitoringPointsForDropdown = state.monitoringPoints || [];
+    regulatoryRulesForDropdown = state.regulatoryRules || [];
     appState.checkoutConditions = checkoutConditionsCache;
     return checkoutConditionsCache;
   } catch (err) {
@@ -23,10 +25,15 @@ function openConditionForm(id = null) {
     critical: '',
     action: '',
     monitoringPointId: '',
+    regulatoryRuleId: '',
   };
 
   const monitoringPointOptions = monitoringPointsForDropdown
     .map((mp) => `<option value="${mp.id}" ${condition.monitoringPointId === mp.id ? 'selected' : ''}>${mp.name}</option>`)
+    .join('');
+
+  const regulatoryRuleOptions = regulatoryRulesForDropdown
+    .map((r) => `<option value="${r.id}" ${condition.regulatoryRuleId === r.id ? 'selected' : ''}>${r.name}</option>`)
     .join('');
 
   openModal(
@@ -40,6 +47,13 @@ function openConditionForm(id = null) {
           ${monitoringPointOptions}
         </select>
       </div>
+      <div class="form-group">
+        <label>Regulatory Basis (optional)</label>
+        <select id="conditionRegulatoryRule">
+          <option value="">No specific rule linked</option>
+          ${regulatoryRuleOptions}
+        </select>
+      </div>
       <div class="form-group"><label>Acceptance Limit</label><input id="conditionAcceptance" type="text" value="${condition.acceptance}" placeholder="e.g. 8-15" required /></div>
       <div class="form-group"><label>Warning Limit</label><input id="conditionWarning" type="text" value="${condition.warning}" placeholder="e.g. 5-8" required /></div>
       <div class="form-group"><label>Critical Limit</label><input id="conditionCritical" type="text" value="${condition.critical}" placeholder="e.g. <5" required /></div>
@@ -49,10 +63,10 @@ function openConditionForm(id = null) {
     () => submitConditionForm(id)
   );
 }
-
 async function submitConditionForm(id) {
   const parameter = document.getElementById('conditionParameter').value.trim();
   const monitoringPointId = document.getElementById('conditionMonitoringPoint').value;
+  const regulatoryRuleId = document.getElementById('conditionRegulatoryRule').value;
   const acceptance = document.getElementById('conditionAcceptance').value.trim();
   const warning = document.getElementById('conditionWarning').value.trim();
   const critical = document.getElementById('conditionCritical').value.trim();
@@ -63,7 +77,7 @@ async function submitConditionForm(id) {
     return;
   }
 
-  const payload = { parameter, acceptance, warning, critical, action, monitoringPointId: monitoringPointId || null };
+  const payload = { parameter, acceptance, warning, critical, action, monitoringPointId: monitoringPointId || null, regulatoryRuleId: regulatoryRuleId || null };
 
   try {
     if (id) {
@@ -226,10 +240,16 @@ function renderCheckoutRows(conditions) {
       ? `<span style="background:#2563eb1a;color:#2563eb;padding:2px 10px;border-radius:999px;font-size:0.8rem;">${mpName}</span>`
       : `<span style="color:#94a3b8;font-size:0.8rem;">Global</span>`;
 
+    const ruleName = regulatoryRulesForDropdown.find((r) => r.id === condition.regulatoryRuleId)?.name;
+    const ruleBadge = ruleName
+      ? `<span style="background:#7c3aed1a;color:#7c3aed;padding:2px 10px;border-radius:999px;font-size:0.8rem;">${ruleName}</span>`
+      : `<span style="color:#94a3b8;font-size:0.8rem;">-</span>`;
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${condition.parameter}</td>
       <td>${mpBadge}</td>
+      <td>${ruleBadge}</td>
       <td>${condition.acceptance}</td>
       <td>${condition.warning}</td>
       <td>${condition.critical}</td>

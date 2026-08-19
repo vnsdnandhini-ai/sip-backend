@@ -5,22 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Projects - Spectroscopic Intelligence Platform</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <div class="logo">SIP</div>
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
         <div class="brand-text">Spectroscopic Intelligence</div>
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="onboarding">Guided Setup</button>
         <button class="nav-link active" data-page="projects">Projects</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
         <button class="nav-link" data-page="rules">Regulatory Rules</button>
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
         <button class="nav-link" data-page="reports">Reports</button>
         <button class="nav-link" data-page="audit">Audit Trail</button>
@@ -42,12 +50,11 @@
       </header>
 
       <section class="content-section">
-      <div class="section-header">
+        <div class="section-header">
           <div>
             <h3>Project Management</h3>
             <p>Create, configure, and maintain manufacturing project records for quality lifecycle tracking.</p>
           </div>
-          <button class="button button--primary" id="openProjectForm">Create Project</button>
         </div>
         <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
           <input id="projectsFilterInput" type="search" placeholder="Filter by name, product, or batch..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
@@ -80,6 +87,14 @@
             <tbody></tbody>
           </table>
         </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <button
+            id="continueMonitoringBtn"
+            class="button button--primary"
+            onclick="window.location.href='monitoring.html'">
+            Continue to Monitoring →
+          </button>
+        </div>
       </section>
     </main>
   </div>
@@ -92,3 +107,5 @@
   <script src="js/nav.js"></script>
 </body>
 </html>
+
+

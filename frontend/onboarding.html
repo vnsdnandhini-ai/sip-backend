@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guided Setup - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link active" data-page="onboarding">Guided Setup</button>
+        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports</button>
+        <button class="nav-link" data-page="audit">Audit Trail</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Guided Setup</h2>
+          <div class="topbar-breadcrumb">Set up a new project step by step</div>
+        </div>
+        <div class="topbar-right">
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <div class="wizard-steps" id="wizardSteps"></div>
+
+        <!-- Step 1: Project -->
+        <div class="wizard-panel" data-step="project">
+          <h4>1. Create Project</h4>
+          <div class="panel-form">
+            <div class="form-row">
+              <div class="form-group"><label>Project Name</label><input id="wzProjectName" type="text" /></div>
+              <div class="form-group"><label>Product Name</label><input id="wzProductName" type="text" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Batch Number</label><input id="wzBatchNumber" type="text" /></div>
+              <div class="form-group"><label>Department</label><input id="wzDepartment" type="text" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Manufacturing Process -->
+        <div class="wizard-panel" data-step="process">
+          <h4>2. Select Manufacturing Process</h4>
+          <div class="process-choice-grid" id="processChoices">
+            <div class="process-choice" data-value="Tablets">Tablets</div>
+            <div class="process-choice" data-value="Capsules">Capsules</div>
+            <div class="process-choice" data-value="API">API</div>
+            <div class="process-choice" data-value="Injectable">Injectable</div>
+          </div>
+        </div>
+
+        <!-- Step 3: Monitoring Point -->
+        <div class="wizard-panel" data-step="monitoring">
+          <h4>3. Configure Monitoring Point</h4>
+          <div class="panel-form">
+            <div class="form-row">
+              <div class="form-group"><label>Name</label><input id="wzMonitoringName" type="text" placeholder="e.g. Drying" /></div>
+              <div class="form-group"><label>Location</label><input id="wzMonitoringLocation" type="text" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Sampling Frequency</label><input id="wzMonitoringFrequency" type="text" placeholder="e.g. 15 min" /></div>
+              <div class="form-group"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Process Parameter -->
+        <div class="wizard-panel" data-step="parameter">
+          <h4>4. Configure Process Parameter</h4>
+          <div class="panel-form">
+            <div class="form-row">
+              <div class="form-group"><label>Parameter Name</label><input id="wzParameterName" type="text" placeholder="e.g. Moisture Content" /></div>
+              <div class="form-group"><label>Instrument</label><input id="wzParameterInstrument" type="text" placeholder="e.g. NIR" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Unit</label><input id="wzParameterUnit" type="text" /></div>
+              <div class="form-group"><label>Sampling Frequency</label><input id="wzParameterFrequency" type="text" placeholder="e.g. 30 sec" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Device -->
+        <div class="wizard-panel" data-step="device">
+          <h4>5. Register &amp; Connect Device</h4>
+          <div class="panel-form">
+            <div class="form-row">
+              <div class="form-group"><label>Device Name</label><input id="wzDeviceName" type="text" placeholder="e.g. ESP32-Line1" /></div>
+              <div class="form-group">
+                <label>Connection Type</label>
+                <select id="wzConnectionType">
+                  <option value="USB">USB</option>
+                  <option value="UART">UART</option>
+                  <option value="RS485">RS485</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="wzDeviceResult" style="margin-top:1rem;"></div>
+        </div>
+
+        <!-- Step 6: Compliance Rule -->
+        <div class="wizard-panel" data-step="compliance">
+          <h4>6. Define Compliance Rule</h4>
+          <div class="panel-form">
+            <div class="form-group"><label>Parameter</label><input id="wzConditionParameter" type="text" placeholder="Should match the parameter name from step 4" /></div>
+            <div class="form-row">
+              <div class="form-group"><label>Acceptance Limit</label><input id="wzConditionAcceptance" type="text" placeholder="e.g. 8-15" /></div>
+              <div class="form-group"><label>Warning Limit</label><input id="wzConditionWarning" type="text" placeholder="e.g. 5-8" /></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Critical Limit</label><input id="wzConditionCritical" type="text" placeholder="e.g. <5" /></div>
+              <div class="form-group"><label>Corrective Action</label><input id="wzConditionAction" type="text" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 7: Summary -->
+        <div class="wizard-panel" data-step="summary">
+          <h4>Setup Complete</h4>
+          <div id="wizardSummary"></div>
+        </div>
+
+        <div class="wizard-nav">
+          <button class="button button--secondary" id="wzBackBtn">Back</button>
+          <button class="button button--primary" id="wzNextBtn">Next</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalPanel" class="modal hidden"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
+
+

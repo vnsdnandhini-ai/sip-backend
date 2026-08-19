@@ -5,22 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Spectroscopic Intelligence Platform</title>
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
 <body>
   <div class="layout">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <div class="logo">SIP</div>
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
         <div class="brand-text">Spectroscopic Intelligence</div>
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link active" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="onboarding">Project Setup Wizard</button>
         <button class="nav-link" data-page="projects">Projects</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
         <button class="nav-link" data-page="rules">Regulatory Rules</button>
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
         <button class="nav-link" data-page="reports">Reports</button>
         <button class="nav-link" data-page="audit">Audit Trail</button>
@@ -42,6 +50,11 @@
       </header>
 
       <section class="content-section content-section--active">
+        <div class="card setup-progress-card" id="setupProgressCard">
+          <div class="card-header">Setup Progress</div>
+          <div class="setup-progress-bar-track"><div class="setup-progress-bar-fill" id="setupProgressFill" style="width:0%;"></div></div>
+          <div class="setup-checklist" id="setupChecklist"></div>
+        </div>
         <div class="grid grid--4cards">
           <article class="card card--metric">
             <div class="card-title">Total Projects</div>
@@ -72,7 +85,7 @@
           <article class="card card--actions">
             <div class="card-header">Quick Actions</div>
             <div class="action-grid">
-              <button class="mini-button" onclick="window.location.href='projects.html'">New Project</button>
+              <button class="mini-button" onclick="window.location.href='onboarding.html'">New Project</button>
               <button class="mini-button" onclick="window.location.href='monitoring.html'">Configure Points</button>
               <button class="mini-button" onclick="window.location.href='analytical.html'">Upload Data</button>
               <button class="mini-button" onclick="window.location.href='compliance.html'">Evaluate Compliance</button>
@@ -91,3 +104,7 @@
   <script src="js/nav.js"></script>
 </body>
 </html>
+
+
+
+

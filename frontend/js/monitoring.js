@@ -1,10 +1,12 @@
 ﻿let monitoringPointsCache = [];
+let projectsForDropdown = [];
 
 async function loadMonitoringPoints() {
   try {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const state = await response.json();
     monitoringPointsCache = state.monitoringPoints || [];
+    projectsForDropdown = state.projects || [];
     appState.monitoringPoints = monitoringPointsCache;
     return monitoringPointsCache;
   } catch (err) {
@@ -20,10 +22,23 @@ function openMonitoringForm(id = null) {
     frequency: '',
     description: '',
     status: 'Active',
+    projectId: '',
   };
+
+  const projectOptions = projectsForDropdown
+    .map((p) => `<option value="${p.id}" ${point.projectId === p.id ? 'selected' : ''}>${p.name} (${p.batchNumber})</option>`)
+    .join('');
+
   openModal(
     id ? 'Edit Monitoring Point' : 'Add Monitoring Point',
     `<form id="monitoringForm" class="panel-form">
+      <div class="form-group">
+        <label>Project</label>
+        <select id="monitoringProject">
+          <option value="">No project linked</option>
+          ${projectOptions}
+        </select>
+      </div>
       <div class="form-group"><label>Name</label><input id="monitoringName" type="text" value="${point.name}" required /></div>
       <div class="form-group"><label>Location</label><input id="monitoringLocation" type="text" value="${point.location}" required /></div>
       <div class="form-group"><label>Sampling Frequency</label><input id="monitoringFrequency" type="text" value="${point.frequency}" placeholder="e.g. 15 min" required /></div>
@@ -35,13 +50,13 @@ function openMonitoringForm(id = null) {
   );
   document.getElementById('monitoringStatus').value = point.status;
 }
-
 async function submitMonitoringForm(id) {
   const name = document.getElementById('monitoringName').value.trim();
   const location = document.getElementById('monitoringLocation').value.trim();
   const frequency = document.getElementById('monitoringFrequency').value.trim();
   const description = document.getElementById('monitoringDescription').value.trim();
   const status = document.getElementById('monitoringStatus').value;
+  const projectId = document.getElementById('monitoringProject').value;
 
   if (!name || !location || !frequency) {
     alert('Name, Location, and Sampling Frequency are required.');
@@ -53,16 +68,15 @@ async function submitMonitoringForm(id) {
       await fetch(`${BACKEND_URL}/api/monitoring/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, location, frequency, description, status }),
+        body: JSON.stringify({ name, location, frequency, description, status, projectId: projectId || null }),
       });
     } else {
       await fetch(`${BACKEND_URL}/api/monitoring`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, location, frequency, description, status }),
+        body: JSON.stringify({ name, location, frequency, description, status, projectId: projectId || null }),
       });
-    }
-    recordAudit(id ? 'Monitoring Point Updated' : 'Monitoring Point Added', 'Monitoring Point Management');
+    }    recordAudit(id ? 'Monitoring Point Updated' : 'Monitoring Point Added', 'Monitoring Point Management');
     closeModal();
     await refreshMonitoringTable();
   } catch (err) {
@@ -99,11 +113,15 @@ function renderMonitoringRows(points) {
   }
 
   points.forEach((point) => {
+    const project = projectsForDropdown.find((p) => p.id === point.projectId);
+    const projectBadge = project
+      ? `<span style="background:#2563eb1a;color:#2563eb;padding:2px 10px;border-radius:999px;font-size:0.8rem;">${project.name}</span>`
+      : `<span style="color:#94a3b8;font-size:0.8rem;">No project</span>`;
+
     const row = document.createElement('tr');
-    row.innerHTML = `<td>${point.name}</td><td>${point.location}</td><td>${point.frequency}</td><td>${point.description || '-'}</td><td>${monitoringStatusBadge(point.status)}</td><td>${createRowActions(point.id, 'monitoring')}</td>`;
+    row.innerHTML = `<td>${point.name}</td><td>${projectBadge}</td><td>${point.location}</td><td>${point.frequency}</td><td>${monitoringStatusBadge(point.status)}</td><td>${createRowActions(point.id, 'monitoring')}</td>`;
     tbody.appendChild(row);
   });
-
   const countEl = document.getElementById('monitoringResultCount');
   if (countEl) countEl.textContent = `${points.length} point${points.length !== 1 ? 's' : ''}`;
 }

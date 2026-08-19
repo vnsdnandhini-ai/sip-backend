@@ -23,6 +23,53 @@
 
 const { Jimp } = require('jimp');
 
+/**
+ * Sobel edge detection - computes edge magnitude at each pixel using
+ * the standard Sobel operator (horizontal + vertical gradient
+ * kernels). Returns edge density (% of pixels that are strong edges)
+ * and a rough count of distinct high-edge regions - useful for
+ * detecting cracks, chips, or irregular boundaries on
+ * tablets/capsules, since a clean intact sample has a smooth,
+ * predictable edge profile while a damaged one has extra jagged
+ * edge activity.
+ */
+async function detectEdges(image, edgeThreshold = 100) {
+  const grayscale = image.clone().grayscale();
+  const width = grayscale.bitmap.width;
+  const height = grayscale.bitmap.height;
+
+  const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+  const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+
+  let edgePixelCount = 0;
+  let totalPixels = 0;
+  let totalEdgeMagnitude = 0;
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      let gx = 0, gy = 0;
+
+      for (let ky = -1; ky <= 1; ky++) {
+        for (let kx = -1; kx <= 1; kx++) {
+          const pixel = Jimp.intToRGBA(grayscale.getPixelColor(x + kx, y + ky)).r;
+          gx += pixel * sobelX[ky + 1][kx + 1];
+          gy += pixel * sobelY[ky + 1][kx + 1];
+        }
+      }
+
+      const magnitude = Math.sqrt(gx * gx + gy * gy);
+      totalEdgeMagnitude += magnitude;
+      totalPixels++;
+
+      if (magnitude > edgeThreshold) edgePixelCount++;
+    }
+  }
+
+  const edgeDensityPercent = +((edgePixelCount / totalPixels) * 100).toFixed(2);
+  const averageEdgeMagnitude = +(totalEdgeMagnitude / totalPixels).toFixed(2);
+
+  return { edgeDensityPercent, averageEdgeMagnitude };
+}
 const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
 const CONTAMINATION_PERCENT_THRESHOLD = 2; // % outlier pixels considered contamination
 
@@ -110,7 +157,7 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
       outlierCount++;
     }
   });
-
+    const edgeResult = await detectEdges(image);
   const contaminationPercent = +((outlierCount / pixelCount) * 100).toFixed(2);
   const isContaminated = contaminationPercent > CONTAMINATION_PERCENT_THRESHOLD;
 
@@ -120,15 +167,16 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
   const isBlurry = sharpness < 100; // tune against real sample images
   const captureQualityOk = !isTooDark && !isOverexposed && !isBlurry;
 
-  return {
+    return {
     width,
     height,
-
     // Primary QA signals
     colorDeviationPercent,
     contaminationPercent,
     isContaminated,
-
+    edgeDensityPercent: edgeResult.edgeDensityPercent,
+    averageEdgeMagnitude: edgeResult.averageEdgeMagnitude,
+    isIrregularEdges: edgeResult.edgeDensityPercent > 25,
     // Secondary capture-quality gate
     captureQualityOk,
     brightness,
@@ -136,9 +184,11 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     isOverexposed,
     sharpness,
     isBlurry,
-
     avgColor,
   };
 }
 
-module.exports = { analyzeImage };
+module.exports = {
+  analyzeImage,
+  detectEdges,
+};
