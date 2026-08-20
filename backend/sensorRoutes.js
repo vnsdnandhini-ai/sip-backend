@@ -123,6 +123,54 @@ router.post('/reference-color', async (req, res) => {
       res.status(500).json({ error: 'Database error.' });
     }
   });
+  router.post('/upload-image', async (req, res) => {
+    const { monitoringPointId, parameter, imageBase64 } = req.body;
+
+    if (!imageBase64) {
+      return res.status(400).json({ error: 'imageBase64 is required.' });
+    }
+
+    const id = generateId();
+    const fileName = `${id}.jpg`;
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
+
+    let imageAnalysisResult = null;
+    try {
+      imageAnalysisResult = await analyzeImage(imageBuffer);
+    } catch (err) {
+      console.error('Image analysis failed (continuing without it):', err);
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from('images')
+      .upload(fileName, imageBuffer, { contentType: 'image/jpeg' });
+
+    if (uploadError) {
+      console.error('Failed to upload image to Supabase:', uploadError);
+      return res.status(500).json({ error: 'Failed to save image file.' });
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
+    const imagePath = publicUrlData.publicUrl;
+
+    try {
+      await pool.query(
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, device_timestamp, data_type, image_path, image_analysis)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [id, null, monitoringPointId || null, 'manual',
+          parameter || 'Image',
+          imagePath,
+          null,
+          'image',
+          imagePath,
+          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null]
+      );
+      res.json({ success: true, recordId: id, imagePath, imageAnalysis: imageAnalysisResult });
+    } catch (err) {
+      console.error('Failed to save manual image upload:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
 
   router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
     const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue, imageBase64 } = req.body;
