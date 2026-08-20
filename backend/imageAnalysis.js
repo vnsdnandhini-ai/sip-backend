@@ -34,9 +34,16 @@ const { Jimp } = require('jimp');
  * edge activity.
  */
 async function detectEdges(image, edgeThreshold = 100) {
-    const grayscale = image.clone().greyscale();
-  const width = grayscale.bitmap.width;
-  const height = grayscale.bitmap.height;
+  const grayscale = image.clone().greyscale();
+  const { width, height, data } = grayscale.bitmap;
+
+  // Read the grayscale luminance value at (x, y) directly from the
+  // raw bitmap buffer - after greyscale(), R/G/B channels are equal,
+  // so we just read the R channel.
+  function pixelAt(x, y) {
+    const idx = (y * width + x) * 4;
+    return data[idx];
+  }
 
   const sobelX = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
   const sobelY = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
@@ -51,7 +58,7 @@ async function detectEdges(image, edgeThreshold = 100) {
 
       for (let ky = -1; ky <= 1; ky++) {
         for (let kx = -1; kx <= 1; kx++) {
-          const pixel = Jimp.intToRGBA(grayscale.getPixelColor(x + kx, y + ky)).r;
+          const pixel = pixelAt(x + kx, y + ky);
           gx += pixel * sobelX[ky + 1][kx + 1];
           gy += pixel * sobelY[ky + 1][kx + 1];
         }
@@ -69,8 +76,7 @@ async function detectEdges(image, edgeThreshold = 100) {
   const averageEdgeMagnitude = +(totalEdgeMagnitude / totalPixels).toFixed(2);
 
   return { edgeDensityPercent, averageEdgeMagnitude };
-}
-const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
+}const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
 const CONTAMINATION_PERCENT_THRESHOLD = 2; // % outlier pixels considered contamination
 
 async function analyzeImage(imageBuffer, referenceColor = null) {
