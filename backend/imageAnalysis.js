@@ -76,7 +76,127 @@ async function detectEdges(image, edgeThreshold = 100) {
   const averageEdgeMagnitude = +(totalEdgeMagnitude / totalPixels).toFixed(2);
 
   return { edgeDensityPercent, averageEdgeMagnitude };
-}const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
+}
+/**
+ * Local Binary Pattern (LBP) texture analysis.
+ *
+ * For each pixel, compares it to its 8 neighbors and builds an 8-bit
+ * pattern (1 if neighbor >= center, 0 if darker). Accumulates a
+ * histogram of these patterns across the image, then computes the
+ * Shannon entropy of that histogram as a single "texture chaos" score.
+ *
+ * A smooth/uniform surface produces a small number of dominant LBP
+ * patterns (low entropy). A rough/irregular surface (damage, mold,
+ * contamination) produces a wider, more chaotic spread of patterns
+ * (high entropy) - a genuinely different signal than simple pixel
+ * color variance, since two surfaces can have similar color spread
+ * but very different local texture structure.
+ */
+function computeLBPTexture(image) {
+  const grayscale = image.clone().greyscale();
+  const { width, height, data } = grayscale.bitmap;
+
+  function pixelAt(x, y) {
+    const idx = (y * width + x) * 4;
+    return data[idx];
+  }
+
+  const histogram = new Array(256).fill(0);
+  let totalPatterns = 0;
+
+  const offsets = [
+    [-1, -1], [0, -1], [1, -1],
+    [-1, 0],           [1, 0],
+    [-1, 1],  [0, 1],  [1, 1],
+  ];
+
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const center = pixelAt(x, y);
+      let pattern = 0;
+
+      offsets.forEach(([dx, dy], i) => {
+        const neighbor = pixelAt(x + dx, y + dy);
+        if (neighbor >= center) {
+          pattern |= (1 << i);
+        }
+      });
+
+      histogram[pattern]++;
+      totalPatterns++;
+    }
+  }
+
+  // Shannon entropy of the LBP pattern histogram
+  let entropy = 0;
+  for (const count of histogram) {
+    if (count === 0) continue;
+    const p = count / totalPatterns;
+    entropy -= p * Math.log2(p);
+  }
+
+  return { textureEntropy: +entropy.toFixed(3) };
+}
+/**
+ * Patch-based localized anomaly detection.
+ *
+ * Whole-image contamination % (outlier pixels / total pixels) dilutes
+ * localized defects: a small mold spot or bruise only accounts for a
+ * tiny fraction of total pixels, so it barely moves a whole-image
+ * average even though it's a real, visible defect.
+ *
+ * This divides the image into a grid of patches, computes the outlier
+ * percentage WITHIN each patch separately (relative to the image's
+ * overall average color), and reports the WORST patch instead of the
+ * whole-image average. A genuinely defective sample should have at
+ * least one patch that stands out sharply, even if the rest of the
+ * kernel looks completely normal.
+ */
+function computePatchAnomalyScore(image, globalAvgColor, gridSize = 6) {
+  const { width, height, data } = image.bitmap;
+  const patchWidth = Math.floor(width / gridSize);
+  const patchHeight = Math.floor(height / gridSize);
+
+  const patchScores = [];
+
+  for (let py = 0; py < gridSize; py++) {
+    for (let px = 0; px < gridSize; px++) {
+      const startX = px * patchWidth;
+      const startY = py * patchHeight;
+      const endX = (px === gridSize - 1) ? width : startX + patchWidth;
+      const endY = (py === gridSize - 1) ? height : startY + patchHeight;
+
+      let outlierCount = 0;
+      let totalCount = 0;
+
+      for (let y = startY; y < endY; y++) {
+        for (let x = startX; x < endX; x++) {
+          const idx = (y * width + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+
+          const dr = r - globalAvgColor.r;
+          const dg = g - globalAvgColor.g;
+          const db = b - globalAvgColor.b;
+          const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+          if (distance > OUTLIER_DISTANCE_THRESHOLD) outlierCount++;
+          totalCount++;
+        }
+      }
+
+      const patchOutlierPercent = totalCount > 0 ? (outlierCount / totalCount) * 100 : 0;
+      patchScores.push(+patchOutlierPercent.toFixed(2));
+    }
+  }
+
+  const maxPatchOutlierPercent = Math.max(...patchScores);
+  const meanPatchOutlierPercent = +(patchScores.reduce((a, b) => a + b, 0) / patchScores.length).toFixed(2);
+
+  return { maxPatchOutlierPercent, meanPatchOutlierPercent, patchScores };
+}
+const OUTLIER_DISTANCE_THRESHOLD = 60; // tune against real sample images
 const CONTAMINATION_PERCENT_THRESHOLD = 2; // % outlier pixels considered contamination
 
 async function analyzeImage(imageBuffer, referenceColor = null) {
@@ -164,6 +284,8 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     }
   });
     const edgeResult = await detectEdges(image);
+    const lbpResult = computeLBPTexture(image);
+    const patchResult = computePatchAnomalyScore(image, avgColor);
   const contaminationPercent = +((outlierCount / pixelCount) * 100).toFixed(2);
   const isContaminated = contaminationPercent > CONTAMINATION_PERCENT_THRESHOLD;
 
@@ -182,7 +304,10 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     isContaminated,
     edgeDensityPercent: edgeResult.edgeDensityPercent,
     averageEdgeMagnitude: edgeResult.averageEdgeMagnitude,
-    isIrregularEdges: edgeResult.edgeDensityPercent > 25,
+        isIrregularEdges: edgeResult.edgeDensityPercent > 3, // calibrated against a real cracked tablet (4.18% edge density)
+        textureEntropy: lbpResult.textureEntropy,
+    maxPatchContaminationPercent: patchResult.maxPatchOutlierPercent,
+    meanPatchContaminationPercent: patchResult.meanPatchOutlierPercent,
     // Secondary capture-quality gate
     captureQualityOk,
     brightness,

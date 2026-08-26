@@ -161,12 +161,68 @@ function showLiveNotification(message) {
   }, 3500);
 }
 
+function initManualUpload() {
+  const btn = document.getElementById('uploadImageBtn');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    const fileInput = document.getElementById('uploadFileInput');
+    const parameter = document.getElementById('uploadParameter').value.trim();
+    const statusEl = document.getElementById('uploadStatus');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      statusEl.innerHTML = '<span style="color:#dc2626;">Please choose an image file first.</span>';
+      return;
+    }
+
+    statusEl.innerHTML = 'Uploading and analyzing...';
+
+      const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const base64 = jpegDataUrl.split(',')[1];
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/upload-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parameter: parameter || null, imageBase64: base64 }),
+          });
+          const data = await response.json();
+
+          if (response.ok) {
+            statusEl.innerHTML = `<span style="color:#16a34a;">Uploaded successfully.</span>`;
+            fileInput.value = '';
+            document.getElementById('uploadParameter').value = '';
+            await loadGallery();
+          } else {
+            statusEl.innerHTML = `<span style="color:#dc2626;">${data.error || 'Upload failed.'}</span>`;
+          }
+        } catch (err) {
+          console.error('Manual upload failed:', err);
+          statusEl.innerHTML = '<span style="color:#dc2626;">Error uploading. Check console.</span>';
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('galleryGrid')) {
     loadGallery().then(() => {
       lastKnownImageCount = galleryImages.length;
     });
     initCalibrationPanel();
+    initManualUpload();
     setInterval(pollForNewImages, 8000);
   }
 });

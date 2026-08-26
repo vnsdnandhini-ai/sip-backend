@@ -57,7 +57,26 @@
           </div>
           <button class="button button--secondary" id="refreshGallery">Refresh</button>
         </div>
-<div class="calibration-panel">
+        <div class="calibration-panel">
+          <h4 style="margin-top:0;">Upload Image Manually</h4>
+          <p class="note" style="margin-top:0;">Upload a photo directly from your computer — useful for testing/calibration without hardware.</p>
+          <div class="calibration-row">
+            <div class="form-group" style="min-width:200px;">
+              <label>Parameter (optional)</label>
+              <input id="uploadParameter" type="text" placeholder="e.g. Tablet Color" />
+            </div>
+            <div class="form-group">
+              <label>Choose Image</label>
+              <input id="uploadFileInput" type="file" accept="image/*" />
+            </div>
+            <button class="button button--primary" id="uploadImageBtn">Upload</button>
+          </div>
+          <div id="uploadStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
+        </div>
+
+        <div class="calibration-panel">
+          <h4 style="margin-top:0;">Calibrate Reference Color</h4>
+         <div class="calibration-panel">
           <h4 style="margin-top:0;">Calibrate Reference Color</h4>
           <p class="note" style="margin-top:0;">Set the expected/approved color for a parameter. Future images for that parameter will be checked for color deviation from this reference.</p>
           <div class="calibration-row">

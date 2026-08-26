@@ -611,12 +611,20 @@ if (analysis) {
       ? '<span class="badge badge--critical">Contamination Detected</span>'
       : '<span class="badge badge--pass">Sample Clean</span>';
 
+    const edgeBadge = analysis.isIrregularEdges
+      ? '<span class="badge badge--warning">Irregular Edges</span>'
+      : '<span class="badge badge--pass">Edges Normal</span>';
+
     const captureBadge = analysis.captureQualityOk
       ? '<span class="badge badge--pass">Capture OK</span>'
       : '<span class="badge badge--warning">Capture Quality Issue</span>';
 
     const colorLine = analysis.colorDeviationPercent !== null
       ? `<div><strong>Color Deviation:</strong> ${analysis.colorDeviationPercent}% from reference</div>`
+      : '';
+
+    const edgeLine = analysis.edgeDensityPercent !== undefined
+      ? `<div><strong>Edge Density:</strong> ${analysis.edgeDensityPercent}% (avg magnitude: ${analysis.averageEdgeMagnitude})</div>`
       : '';
 
     const captureIssues = [];
@@ -628,16 +636,16 @@ if (analysis) {
     const infoBox = document.createElement('div');
     infoBox.style.cssText = 'margin-top:14px;padding:12px;background:#f8fafc;border-radius:10px;font-size:0.88rem;';
     infoBox.innerHTML = `
-      <div style="margin-bottom:10px;">${qaBadge}</div>
+      <div style="margin-bottom:10px;">${qaBadge} ${edgeBadge}</div>
       <div><strong>Contamination:</strong> ${analysis.contaminationPercent}% of surface area</div>
       ${colorLine}
+      ${edgeLine}
       <hr style="margin:10px 0;border:none;border-top:1px solid #e2e8f0;" />
       <div style="margin-bottom:6px;">${captureBadge}${captureIssuesText}</div>
       <div style="color:#64748b;font-size:0.82rem;">Brightness: ${analysis.brightness} · Sharpness: ${analysis.sharpness} · ${analysis.width}×${analysis.height}</div>
     `;
     box.appendChild(infoBox);
-  }
-  const closeBtn = document.createElement('button');
+  }  const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close';
   closeBtn.style.cssText = 'margin-top:14px;padding:8px 16px;';
   closeBtn.onclick = () => document.body.removeChild(overlay);

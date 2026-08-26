@@ -26,11 +26,11 @@ if __name__ == '__main__':
     port = 8000
     server_address = ('', port)
     httpd = HTTPServer(server_address, CORSRequestHandler)
-    print(f"🚀 Serving SIP Frontend from: {frontend_path}")
-    print(f"📍 Access at: http://localhost:{port}")
-    print(f"🔓 Press Ctrl+C to stop\n")
+    print(f"[START] Serving SIP Frontend from: {frontend_path}")
+    print(f"[INFO] Access at: http://localhost:{port}")
+    print(f"[INFO] Press Ctrl+C to stop\n")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n✓ Server stopped")
+        print("\n[DONE] Server stopped")
         sys.exit(0)
