@@ -624,7 +624,7 @@ if (analysis) {
       : '';
 
     const edgeLine = analysis.edgeDensityPercent !== undefined
-      ? `<div><strong>Edge Density:</strong> ${analysis.edgeDensityPercent}% (avg magnitude: ${analysis.averageEdgeMagnitude})</div>`
+      ? `<div><strong>Edge Density:</strong> ${analysis.edgeDensityPercent}% (avg mag: ${analysis.averageEdgeMagnitude})</div>`
       : '';
 
     const captureIssues = [];
@@ -632,6 +632,31 @@ if (analysis) {
     if (analysis.isOverexposed) captureIssues.push('overexposed');
     if (analysis.isBlurry) captureIssues.push('blurry');
     const captureIssuesText = captureIssues.length ? ` (${captureIssues.join(', ')})` : '';
+
+    // --- AI VISION SECTION ---
+    let aiHtml = '';
+    if (analysis.ai) {
+      const ai = analysis.ai;
+      let badgeCls = 'badge--pass';
+      if (ai.visual_qa_result === 'WARNING') badgeCls = 'badge--warning';
+      if (ai.visual_qa_result === 'CRITICAL') badgeCls = 'badge--critical';
+      if (ai.visual_qa_result === 'REVIEW REQUIRED') badgeCls = 'badge--warning';
+      
+      aiHtml = `
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 2px dashed #cbd5e1;">
+          <h4 style="margin:0 0 5px 0; color:#334155; font-size:0.95rem;">AI Vision Analysis <span style="font-weight:normal;font-size:0.75rem;color:#94a3b8;">(${ai.ai_model_version})</span></h4>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <div><strong>Material:</strong> ${ai.raw_material_class}</div>
+            <div><strong>Condition:</strong> ${ai.condition}</div>
+            <div><strong>Confidence:</strong> ${ai.confidence_score}%</div>
+            <div><strong>Defect:</strong> ${ai.detected_defect}</div>
+          </div>
+          <div style="margin-top:6px;">
+            <strong>AI Result:</strong> <span class="badge ${badgeCls}">${ai.visual_qa_result}</span>
+          </div>
+        </div>
+      `;
+    }
 
     const infoBox = document.createElement('div');
     infoBox.style.cssText = 'margin-top:14px;padding:12px;background:#f8fafc;border-radius:10px;font-size:0.88rem;';
@@ -642,7 +667,8 @@ if (analysis) {
       ${edgeLine}
       <hr style="margin:10px 0;border:none;border-top:1px solid #e2e8f0;" />
       <div style="margin-bottom:6px;">${captureBadge}${captureIssuesText}</div>
-      <div style="color:#64748b;font-size:0.82rem;">Brightness: ${analysis.brightness} · Sharpness: ${analysis.sharpness} · ${analysis.width}×${analysis.height}</div>
+      <div style="color:#64748b;font-size:0.82rem;">Brightness: ${analysis.brightness} | Sharpness: ${analysis.sharpness}</div>
+      ${aiHtml}
     `;
     box.appendChild(infoBox);
   }  const closeBtn = document.createElement('button');

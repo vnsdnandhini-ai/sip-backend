@@ -91,6 +91,30 @@
               <button class="mini-button" onclick="window.location.href='compliance.html'">Evaluate Compliance</button>
             </div>
           </article>
+
+          <article class="card card--actions">
+            <div class="card-header">AI Vision Settings</div>
+            <div class="card-note" style="margin-bottom: 15px;">Configure the Raw Material Analysis model parameters.</div>
+            
+            <div style="display:flex; flex-direction:column; gap: 10px;">
+                <label style="display:flex; align-items:center; gap: 8px;">
+                    <input type="checkbox" id="aiEnableToggle" checked> Enable AI Vision Analysis
+                </label>
+                
+                <div>
+                    <label style="font-size:0.85rem; color:#64748b;">Confidence Threshold (%)</label><br/>
+                    <input type="number" id="aiConfidenceThreshold" value="85" min="50" max="99" style="width: 100px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+                
+                <div>
+                    <label style="font-size:0.85rem; color:#64748b;">API URL</label><br/>
+                    <input type="text" id="aiApiUrl" value="http://localhost:5000/api/ai/analyze" style="width: 100%; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                </div>
+                
+                <button class="mini-button" onclick="alert('AI Settings Saved Successfully!')" style="margin-top: 10px;">Save Configuration</button>
+            </div>
+          </article>
+
         </div>
       </section>
     </main>

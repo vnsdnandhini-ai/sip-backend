@@ -24,8 +24,18 @@ async function loadGallery() {
 function classifyImage(item) {
   const analysis = item.imageAnalysis;
   if (!analysis) return 'unknown';
-  if (analysis.captureQualityOk === false) return 'issue';
-  if (analysis.isContaminated) return 'contaminated';
+  
+  // Combine traditional heuristics and AI
+  let isBad = analysis.isContaminated;
+  let isIssue = analysis.captureQualityOk === false;
+  
+  if (analysis.ai) {
+     if (analysis.ai.visual_qa_result === 'CRITICAL') isBad = true;
+     if (analysis.ai.visual_qa_result === 'WARNING' || analysis.ai.visual_qa_result === 'REVIEW REQUIRED') isIssue = true;
+  }
+  
+  if (isBad) return 'contaminated';
+  if (isIssue) return 'issue';
   return 'clean';
 }
 

@@ -140,6 +140,28 @@ router.post('/reference-color', async (req, res) => {
     } catch (err) {
       console.error('Image analysis failed (continuing without it):', err);
     }
+    
+    let aiResult = null;
+    try {
+        const formData = new FormData();
+        formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
+        const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
+            method: 'POST',
+            body: formData
+        });
+        if (aiResponse.ok) {
+            aiResult = await aiResponse.json();
+        }
+    } catch (err) {
+        console.error('AI analysis service unreachable:', err.message);
+    }
+    
+    if (imageAnalysisResult && aiResult) {
+        imageAnalysisResult.ai = aiResult;
+    } else if (!imageAnalysisResult && aiResult) {
+        imageAnalysisResult = { ai: aiResult };
+    }
+
 
     const { error: uploadError } = await supabase.storage
       .from('images')
@@ -256,9 +278,31 @@ let derivedParameter = null;
 
       try {
         imageAnalysisResult = await analyzeImage(imageBuffer, referenceColor);
-      } catch (err) {
-        console.error('Image analysis failed (continuing without it):', err);
-      }
+    } catch (err) {
+      console.error('Image analysis failed (continuing without it):', err);
+    }
+    
+    let aiResult = null;
+    try {
+        const formData = new FormData();
+        formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
+        const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
+            method: 'POST',
+            body: formData
+        });
+        if (aiResponse.ok) {
+            aiResult = await aiResponse.json();
+        }
+    } catch (err) {
+        console.error('AI analysis service unreachable:', err.message);
+    }
+    
+    if (imageAnalysisResult && aiResult) {
+        imageAnalysisResult.ai = aiResult;
+    } else if (!imageAnalysisResult && aiResult) {
+        imageAnalysisResult = { ai: aiResult };
+    }
+
 
       const { error: uploadError } = await supabase.storage
         .from('images')
