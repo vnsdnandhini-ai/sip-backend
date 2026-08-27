@@ -603,10 +603,10 @@ function showImagePopup(imageUrl, analysis) {
 
   const img = document.createElement('img');
   img.src = imageUrl;
-  img.style.cssText = 'max-width:100%;max-height:60vh;display:block;';
+  img.style.cssText = 'max-width:100%;max-height:55vh;display:block;';
   box.appendChild(img);
 
-if (analysis) {
+  if (analysis) {
     const qaBadge = analysis.isContaminated
       ? '<span class="badge badge--critical">Contamination Detected</span>'
       : '<span class="badge badge--pass">Sample Clean</span>';
@@ -649,46 +649,33 @@ if (analysis) {
         const cols = ai.gradcam_heatmap ? '1fr 1fr' : '1fr';
         let mapsHtml = '';
         if (ai.pixel_anomaly_map) {
-          mapsHtml += '<div>' +
-            '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">Colour Anomaly Map</div>' +
-            '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #fca5a5;cursor:pointer;" ' +
-            'onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/>' +
-            '</div>';
+          mapsHtml += '<div><div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">Colour Anomaly Map</div>' +
+            '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #fca5a5;cursor:pointer;" onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/></div>';
         }
         if (ai.gradcam_heatmap) {
-          mapsHtml += '<div>' +
-            '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">AI Grad-CAM Heatmap</div>' +
-            '<img src="' + ai.gradcam_heatmap + '" style="width:100%;border-radius:6px;border:2px solid #f97316;cursor:pointer;" ' +
-            'onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/>' +
-            '</div>';
+          mapsHtml += '<div><div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">AI Grad-CAM Heatmap</div>' +
+            '<img src="' + ai.gradcam_heatmap + '" style="width:100%;border-radius:6px;border:2px solid #f97316;cursor:pointer;" onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/></div>';
         }
         heatmapHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #fca5a5;">' +
           '<div style="font-size:0.85rem;font-weight:600;color:#dc2626;margin-bottom:8px;">&#9888; Defect Zones Highlighted</div>' +
           '<div style="display:grid;grid-template-columns:' + cols + ';gap:8px;">' + mapsHtml + '</div>' +
-          '<div style="font-size:0.72rem;color:#94a3b8;margin-top:5px;text-align:center;">Red/orange zones = suspected defect areas &bull; Click image to enlarge</div>' +
-          '</div>';
+          '<div style="font-size:0.72rem;color:#94a3b8;margin-top:5px;text-align:center;">Red/orange = suspected defect areas &bull; Click to enlarge</div></div>';
       } else if (ai.pixel_anomaly_map && !isDefective) {
-        heatmapHtml = '<div style="margin-top:10px;">' +
-          '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;">Colour Analysis Map (No anomalies detected)</div>' +
-          '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #86efac;opacity:0.85;"/>' +
-          '</div>';
+        heatmapHtml = '<div style="margin-top:10px;"><div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;">Colour Analysis Map (No anomalies)</div>' +
+          '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #86efac;opacity:0.85;"/></div>';
       }
 
       aiHtml = `
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 2px dashed #cbd5e1;">
-          <h4 style="margin:0 0 8px 0; color:#334155; font-size:0.95rem;">AI Vision Analysis <span style="font-weight:normal;font-size:0.75rem;color:#94a3b8;">(${ai.ai_model_version})</span></h4>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.85rem;">
+        <div style="margin-top:10px;padding-top:10px;border-top:2px dashed #cbd5e1;">
+          <h4 style="margin:0 0 8px 0;color:#334155;font-size:0.95rem;">AI Vision Analysis <span style="font-weight:normal;font-size:0.75rem;color:#94a3b8;">(${ai.ai_model_version})</span></h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.85rem;">
             <div><strong>Material:</strong> ${ai.raw_material_class}</div>
             <div><strong>Condition:</strong> ${ai.condition}</div>
             <div><strong>Confidence:</strong> ${ai.confidence_score}%</div>
             <div><strong>Defect:</strong> ${ai.detected_defect}</div>
           </div>
-          <div style="margin-top:6px;">
-            <strong>AI Result:</strong> <span class="badge ${badgeCls}">${ai.visual_qa_result}</span>
-          </div>
-        ` + heatmapHtml + `
-        </div>
-      `;
+          <div style="margin-top:6px;"><strong>AI Result:</strong> <span class="badge ${badgeCls}">${ai.visual_qa_result}</span></div>
+        ` + heatmapHtml + '</div>';
     }
 
     const infoBox = document.createElement('div');
@@ -698,21 +685,137 @@ if (analysis) {
       <div><strong>Contamination:</strong> ${analysis.contaminationPercent}% of surface area</div>
       ${colorLine}
       ${edgeLine}
-      <hr style="margin:10px 0;border:none;border-top:1px solid #e2e8f0;" />
+      <hr style="margin:10px 0;border:none;border-top:1px solid #e2e8f0;"/>
       <div style="margin-bottom:6px;">${captureBadge}${captureIssuesText}</div>
       <div style="color:#64748b;font-size:0.82rem;">Brightness: ${analysis.brightness} | Sharpness: ${analysis.sharpness}</div>
       ${aiHtml}
     `;
     box.appendChild(infoBox);
-  }  const closeBtn = document.createElement('button');
+  }
+
+  const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close';
   closeBtn.style.cssText = 'margin-top:14px;padding:8px 16px;';
   closeBtn.onclick = () => document.body.removeChild(overlay);
   box.appendChild(closeBtn);
 
+  // ---- CLIENT-SIDE CANVAS DEFECT HIGHLIGHTER ----
+  // Works on ALL existing images — no Python server or database AI data needed
+  const highlightWrap = document.createElement('div');
+  highlightWrap.style.cssText = 'margin-top:10px;';
+
+  const highlightBtn = document.createElement('button');
+  highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
+  highlightBtn.style.cssText = 'padding:7px 14px;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:600;width:100%;';
+  highlightWrap.appendChild(highlightBtn);
+
+  const canvasWrap = document.createElement('div');
+  canvasWrap.style.cssText = 'display:none;margin-top:8px;';
+  canvasWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:600;color:#dc2626;margin-bottom:4px;">&#9888; Defect Map — Red zones = colour anomalies detected</div>';
+
+  const defCanvas = document.createElement('canvas');
+  defCanvas.style.cssText = 'width:100%;border-radius:6px;border:2px solid #fca5a5;cursor:zoom-in;';
+  canvasWrap.appendChild(defCanvas);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'font-size:0.7rem;color:#94a3b8;margin-top:3px;';
+  legend.textContent = 'Pixel-level colour-deviation analysis (client-side). Click map to enlarge.';
+  canvasWrap.appendChild(legend);
+  highlightWrap.appendChild(canvasWrap);
+  box.appendChild(highlightWrap);
+
+  let isHighlighted = false;
+  highlightBtn.addEventListener('click', function() {
+    if (isHighlighted) {
+      canvasWrap.style.display = 'none';
+      highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
+      highlightBtn.style.background = '#dc2626';
+      isHighlighted = false;
+      return;
+    }
+    highlightBtn.innerHTML = 'Analyzing pixels...';
+    highlightBtn.disabled = true;
+
+    const probe = new Image();
+    probe.crossOrigin = 'anonymous';
+    probe.onload = function() {
+      defCanvas.width = probe.naturalWidth;
+      defCanvas.height = probe.naturalHeight;
+      const ctx = defCanvas.getContext('2d');
+      ctx.drawImage(probe, 0, 0);
+
+      const id = ctx.getImageData(0, 0, defCanvas.width, defCanvas.height);
+      const d = id.data;
+      let anomCount = 0;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const delta = maxC - minC;
+        const v = maxC / 255;
+        const s = maxC > 0 ? delta / maxC : 0;
+        let h = 0;
+        if (delta > 0) {
+          if (maxC === r) h = 60 * (((g - b) / delta) % 6);
+          else if (maxC === g) h = 60 * ((b - r) / delta + 2);
+          else h = 60 * ((r - g) / delta + 4);
+          if (h < 0) h += 360;
+        }
+        const isHealthy = (h >= 55 && h <= 175) && s > 0.12 && v > 0.1;
+        const isDark = v < 0.08;
+        if (!isHealthy && !isDark) {
+          d[i]   = Math.min(255, r + 130);
+          d[i+1] = Math.max(0,   g - 70);
+          d[i+2] = Math.max(0,   b - 70);
+          anomCount++;
+        }
+      }
+      ctx.putImageData(id, 0, 0);
+
+      // Draw bounding boxes around dense anomaly zones
+      const cell = Math.max(14, Math.floor(defCanvas.width / 22));
+      ctx.strokeStyle = 'rgba(255,20,20,0.9)';
+      ctx.lineWidth = 2;
+      for (let cy = 0; cy < defCanvas.height; cy += cell) {
+        for (let cx = 0; cx < defCanvas.width; cx += cell) {
+          const patch = ctx.getImageData(cx, cy, cell, cell).data;
+          let redPx = 0;
+          for (let k = 0; k < patch.length; k += 4) {
+            if (patch[k] > patch[k+1] + 55) redPx++;
+          }
+          if (redPx / (cell * cell) > 0.28) ctx.strokeRect(cx+1, cy+1, cell-2, cell-2);
+        }
+      }
+
+      const pct = ((anomCount / (d.length / 4)) * 100).toFixed(1);
+      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      ctx.fillRect(0, 0, defCanvas.width, 24);
+      ctx.fillStyle = '#ff8080';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Colour-Anomaly Coverage: ' + pct + '%  |  Red regions = suspected defects', 6, 16);
+
+      canvasWrap.style.display = 'block';
+      highlightBtn.innerHTML = 'Hide Defect Map';
+      highlightBtn.style.background = '#64748b';
+      highlightBtn.disabled = false;
+      isHighlighted = true;
+
+      defCanvas.onclick = () => { if (defCanvas.requestFullscreen) defCanvas.requestFullscreen(); };
+    };
+    probe.onerror = function() {
+      highlightBtn.innerHTML = '&#9888; Could not load (CORS restriction)';
+      highlightBtn.disabled = false;
+    };
+    probe.src = imageUrl;
+  });
+  // ---- END CANVAS DEFECT HIGHLIGHTER ----
+
   overlay.appendChild(box);
   document.body.appendChild(overlay);
-}function showSpectrumChart(spectrumValues) {
+}
+
+function showSpectrumChart(spectrumValues) {
   const xValues = spectrumValues.xValues || [];
   const yValues = spectrumValues.yValues || [];
 
