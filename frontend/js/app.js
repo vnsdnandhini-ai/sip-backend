@@ -642,49 +642,36 @@ if (analysis) {
       if (ai.visual_qa_result === 'CRITICAL') badgeCls = 'badge--critical';
       if (ai.visual_qa_result === 'REVIEW REQUIRED') badgeCls = 'badge--warning';
 
-      // Defect heatmap section
-      let heatmapHtml = '';
       const isDefective = ai.condition && !['healthy', 'normal'].includes(ai.condition.toLowerCase());
-      
-      if (isDefective && (ai.gradcam_heatmap || ai.pixel_anomaly_map)) {
-        const hasGradcam = !!ai.gradcam_heatmap;
-        const gradcamSrc = ai.gradcam_heatmap || '';
-        const pixelSrc = ai.pixel_anomaly_map || '';
+      let heatmapHtml = '';
 
-        heatmapHtml = `
-          <div style="margin-top:12px; padding-top:10px; border-top:1px solid #fca5a5;">
-            <div style="font-size:0.85rem; font-weight:600; color:#dc2626; margin-bottom:8px;">
-              &#9888; Defect Zones Highlighted
-            </div>
-            <div style="display:grid; grid-template-columns:${hasGradcam ? '1fr 1fr' : '1fr'}; gap:8px;">
-              ${pixelSrc ? `
-              <div>
-                <div style="font-size:0.75rem; color:#64748b; margin-bottom:3px; text-align:center;">Colour Anomaly Map</div>
-                <img src="${pixelSrc}" style="width:100%; border-radius:6px; border:2px solid #fca5a5; cursor:pointer;"
-                     onclick="this.requestFullscreen ? this.requestFullscreen() : null"
-                     title="Click to enlarge"/>
-              </div>` : ''}
-              ${gradcamSrc ? `
-              <div>
-                <div style="font-size:0.75rem; color:#64748b; margin-bottom:3px; text-align:center;">AI Grad-CAM Heatmap</div>
-                <img src="${gradcamSrc}" style="width:100%; border-radius:6px; border:2px solid #f97316; cursor:pointer;"
-                     onclick="this.requestFullscreen ? this.requestFullscreen() : null"
-                     title="Click to enlarge"/>
-              </div>` : ''}
-            </div>
-            <div style="font-size:0.72rem; color:#94a3b8; margin-top:5px; text-align:center;">
-              Red/orange zones = suspected defect areas &bull; Click image to enlarge
-            </div>
-          </div>
-        `;
+      if (isDefective && (ai.gradcam_heatmap || ai.pixel_anomaly_map)) {
+        const cols = ai.gradcam_heatmap ? '1fr 1fr' : '1fr';
+        let mapsHtml = '';
+        if (ai.pixel_anomaly_map) {
+          mapsHtml += '<div>' +
+            '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">Colour Anomaly Map</div>' +
+            '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #fca5a5;cursor:pointer;" ' +
+            'onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/>' +
+            '</div>';
+        }
+        if (ai.gradcam_heatmap) {
+          mapsHtml += '<div>' +
+            '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;text-align:center;">AI Grad-CAM Heatmap</div>' +
+            '<img src="' + ai.gradcam_heatmap + '" style="width:100%;border-radius:6px;border:2px solid #f97316;cursor:pointer;" ' +
+            'onclick="this.requestFullscreen?this.requestFullscreen():null" title="Click to enlarge"/>' +
+            '</div>';
+        }
+        heatmapHtml = '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #fca5a5;">' +
+          '<div style="font-size:0.85rem;font-weight:600;color:#dc2626;margin-bottom:8px;">&#9888; Defect Zones Highlighted</div>' +
+          '<div style="display:grid;grid-template-columns:' + cols + ';gap:8px;">' + mapsHtml + '</div>' +
+          '<div style="font-size:0.72rem;color:#94a3b8;margin-top:5px;text-align:center;">Red/orange zones = suspected defect areas &bull; Click image to enlarge</div>' +
+          '</div>';
       } else if (ai.pixel_anomaly_map && !isDefective) {
-        // Show pixel map even for healthy but greyed label
-        heatmapHtml = `
-          <div style="margin-top:10px;">
-            <div style="font-size:0.75rem; color:#64748b; margin-bottom:3px;">Colour Analysis Map (No anomalies detected)</div>
-            <img src="${ai.pixel_anomaly_map}" style="width:100%; border-radius:6px; border:2px solid #86efac; opacity:0.85;"/>
-          </div>
-        `;
+        heatmapHtml = '<div style="margin-top:10px;">' +
+          '<div style="font-size:0.75rem;color:#64748b;margin-bottom:3px;">Colour Analysis Map (No anomalies detected)</div>' +
+          '<img src="' + ai.pixel_anomaly_map + '" style="width:100%;border-radius:6px;border:2px solid #86efac;opacity:0.85;"/>' +
+          '</div>';
       }
 
       aiHtml = `
@@ -699,10 +686,9 @@ if (analysis) {
           <div style="margin-top:6px;">
             <strong>AI Result:</strong> <span class="badge ${badgeCls}">${ai.visual_qa_result}</span>
           </div>
-          ${heatmapHtml}
+        ` + heatmapHtml + `
         </div>
       `;
-    }
     }
 
     const infoBox = document.createElement('div');
