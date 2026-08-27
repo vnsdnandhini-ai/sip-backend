@@ -708,9 +708,17 @@ function showImagePopup(imageUrl, analysis) {
   highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
   highlightBtn.style.cssText = [
     'padding:8px 16px','background:#dc2626','color:white','border:none',
-    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','width:100%'
+    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width':'140px'
   ].join(';') + ';';
   highlightWrap.appendChild(highlightBtn);
+
+  const segregateBtn = document.createElement('button');
+  segregateBtn.innerHTML = '&#9986;&#65039; Segregate Defects';
+  segregateBtn.style.cssText = [
+    'padding:8px 16px','background:#7c3aed','color:white','border:none',
+    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width':'140px',''
+  ].join(';') + ';';
+  highlightWrap.appendChild(segregateBtn);
 
   // Side-by-side container (hidden until button is clicked)
   const sideBySide = document.createElement('div');
@@ -753,6 +761,108 @@ function showImagePopup(imageUrl, analysis) {
   box.appendChild(highlightWrap);
 
   let isHighlighted = false;
+  let isSegregated = false;
+
+  segregateBtn.addEventListener('click', function() {
+    if (isSegregated) {
+      sideBySide.style.display = 'none';
+      segregateBtn.innerHTML = '&#9986;&#65039; Segregate Defects';
+      segregateBtn.style.background = '#7c3aed';
+      isSegregated = false;
+      return;
+    }
+    
+    // reset other button
+    highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
+    highlightBtn.style.background = '#dc2626';
+    isHighlighted = false;
+    
+    segregateBtn.innerHTML = 'Segregating...';
+    segregateBtn.disabled = true;
+
+    const probe = new Image();
+    probe.crossOrigin = 'anonymous';
+
+    probe.onload = function() {
+      const W = probe.naturalWidth;
+      const H = probe.naturalHeight;
+
+      // --- Draw original ---
+      origCanvas.width = W; origCanvas.height = H;
+      const octx = origCanvas.getContext('2d');
+      octx.drawImage(probe, 0, 0);
+
+      // --- Compute image baseline stats (sample 4000 random pixels) ---
+      const srcData = octx.getImageData(0, 0, W, H).data;
+      const totalPx  = W * H;
+      const step     = Math.max(1, Math.floor(totalPx / 4000));
+
+      let sumR=0, sumG=0, sumB=0, count=0;
+      for (let i = 0; i < srcData.length; i += step * 4) {
+        sumR += srcData[i]; sumG += srcData[i+1]; sumB += srcData[i+2]; count++;
+      }
+      const avgR = sumR / count;
+      const avgG = sumG / count;
+      const avgB = sumB / count;
+
+      let varR=0, varG=0, varB=0;
+      for (let i = 0; i < srcData.length; i += step * 4) {
+        varR += Math.pow(srcData[i]   - avgR, 2);
+        varG += Math.pow(srcData[i+1] - avgG, 2);
+        varB += Math.pow(srcData[i+2] - avgB, 2);
+      }
+      const stdR = Math.sqrt(varR / count);
+      const stdG = Math.sqrt(varG / count);
+      const stdB = Math.sqrt(varB / count);
+
+      const THRESH = 1.5;
+
+      // --- Draw segregated map ---
+      defCanvas.width = W; defCanvas.height = H;
+      const dctx = defCanvas.getContext('2d');
+      dctx.drawImage(probe, 0, 0);
+      const defData = dctx.getImageData(0, 0, W, H);
+      const dd = defData.data;
+
+      let anomCount = 0;
+
+      for (let px = 0; px < totalPx; px++) {
+        const i  = px * 4;
+        const r  = dd[i], g = dd[i+1], b = dd[i+2];
+        const dR = Math.abs(r - avgR) / (stdR + 1);
+        const dG = Math.abs(g - avgG) / (stdG + 1);
+        const dB = Math.abs(b - avgB) / (stdB + 1);
+        const score = Math.max(dR, dG, dB);
+
+        if (score > THRESH) {
+          // Keep actual color for anomalous pixels, just maybe brighten it slightly
+          anomCount++;
+        } else {
+          // Non-anomalous → completely transparent to segregate defects
+          dd[i+3] = 0; 
+        }
+      }
+      dctx.putImageData(defData, 0, 0);
+
+      const pct = ((anomCount / totalPx) * 100).toFixed(1);
+      
+      // We change the right panel header to indicate Segregation mode
+      defPanel.innerHTML = '<div style="font-size:0.72rem;font-weight:600;color:#7c3aed;text-align:center;margin-bottom:4px;padding:3px;background:#f3e8ff;border-radius:4px;">&#9986;&#65039; Segregated Defects</div>';
+      defPanel.appendChild(defCanvas);
+
+      statsBar.innerHTML =
+        '<span><strong>Segregated Area:</strong> ' + pct + '%</span>' +
+        '<span><strong>Baseline R/G/B:</strong> ' + Math.round(avgR) + ' / ' + Math.round(avgG) + ' / ' + Math.round(avgB) + '</span>' +
+        '<span><strong>Std Dev:</strong> ' + Math.round(stdR) + ' / ' + Math.round(stdG) + ' / ' + Math.round(stdB) + '</span>';
+
+      sideBySide.style.display = 'block';
+      segregateBtn.innerHTML   = 'Hide Segregated Defects';
+      segregateBtn.style.background = '#475569';
+      segregateBtn.disabled = false;
+      isSegregated = true;
+    };
+    probe.src = imageUrl;
+  });
 
   highlightBtn.addEventListener('click', function() {
     if (isHighlighted) {
@@ -762,7 +872,13 @@ function showImagePopup(imageUrl, analysis) {
       isHighlighted = false;
       return;
     }
-    highlightBtn.innerHTML = 'Analyzing...';
+    
+    if (isSegregated) {
+      segregateBtn.innerHTML = '&#9986;&#65039; Segregate Defects';
+      segregateBtn.style.background = '#7c3aed';
+      isSegregated = false;
+    }
+highlightBtn.innerHTML = 'Analyzing...';
     highlightBtn.disabled = true;
 
     const probe = new Image();
@@ -856,6 +972,10 @@ function showImagePopup(imageUrl, analysis) {
           }
         }
       }
+
+            // We change the right panel header to indicate Highlight mode
+      defPanel.innerHTML = '<div style="font-size:0.72rem;font-weight:600;color:#dc2626;text-align:center;margin-bottom:4px;padding:3px;background:#fef2f2;border-radius:4px;">&#128308; Defect Map</div>';
+      defPanel.appendChild(defCanvas);
 
       // Header banner on defect map
       const pct = ((anomCount / totalPx) * 100).toFixed(1);

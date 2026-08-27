@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #ffffff;
-  --surface: #f8fafc;
+  --bg: #f8fafc;
+  --surface: #ffffff;
   --surface-alt: #f1f5f9;
   --text: #0f172a;
   --muted: #64748b;
-  --primary: #0ea5e9;
-  --primary-dark: #0284c7;
-  --accent: #10b981;
+  --primary: #6366f1; /* Soft Indigo */
+  --primary-dark: #4f46e5;
+  --accent: #14b8a6; /* Soft Teal */
   --danger: #ef4444;
   --warning: #f59e0b;
   --card: #ffffff;
@@ -25,7 +25,7 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
-  background: linear-gradient(160deg, #f1f5f9 0%, #ffffff 45%, #f8fafc 100%);
+  background: linear-gradient(160deg, #eff6ff 0%, #f8fafc 45%, #eef2ff 100%);
   letter-spacing: -0.01em;
 }
 
