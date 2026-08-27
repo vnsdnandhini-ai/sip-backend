@@ -24,16 +24,15 @@ async function loadGallery() {
 function classifyImage(item) {
   const analysis = item.imageAnalysis;
   if (!analysis) return 'unknown';
-  
-  // Combine traditional heuristics and AI
+
   let isBad = analysis.isContaminated;
   let isIssue = analysis.captureQualityOk === false;
-  
+
   if (analysis.ai) {
-     if (analysis.ai.visual_qa_result === 'CRITICAL') isBad = true;
-     if (analysis.ai.visual_qa_result === 'WARNING' || analysis.ai.visual_qa_result === 'REVIEW REQUIRED') isIssue = true;
+    if (analysis.ai.visual_qa_result === 'CRITICAL') isBad = true;
+    if (analysis.ai.visual_qa_result === 'WARNING' || analysis.ai.visual_qa_result === 'REVIEW REQUIRED') isIssue = true;
   }
-  
+
   if (isBad) return 'contaminated';
   if (isIssue) return 'issue';
   return 'clean';
@@ -76,23 +75,39 @@ function renderGallery() {
 
     const analysisJson = analysis ? JSON.stringify(analysis).replace(/"/g, '&quot;') : 'null';
 
+    // AI badge and defect map thumbnail
+    const ai = analysis && analysis.ai;
+    let aiBadgeHtml = '';
+    let defectOverlayHtml = '';
+
+    if (ai) {
+      const aiCls = ai.visual_qa_result === 'PASS' ? 'badge--pass'
+        : ai.visual_qa_result === 'CRITICAL' ? 'badge--critical' : 'badge--warning';
+      aiBadgeHtml = `<span class="badge ${aiCls}" style="font-size:0.65rem;margin-left:4px;">AI: ${ai.visual_qa_result}</span>`;
+
+      const isDefective = ai.condition && !['healthy', 'normal'].includes(ai.condition.toLowerCase());
+      if (isDefective && ai.pixel_anomaly_map) {
+        defectOverlayHtml = `
+          <div style="position:relative; margin-top:4px;">
+            <img src="${ai.pixel_anomaly_map}" style="width:100%;height:48px;object-fit:cover;border-radius:4px;border:1px solid #fca5a5;opacity:0.9;" loading="lazy"/>
+            <span style="position:absolute;top:2px;left:4px;font-size:0.6rem;color:#dc2626;font-weight:bold;background:rgba(255,255,255,0.8);padding:1px 4px;border-radius:3px;">&#9888; Defect Map</span>
+          </div>`;
+      }
+    }
+
     return `
       <div class="gallery-card" onclick='showImagePopup("${imageUrl}", ${analysisJson})'>
         <img src="${imageUrl}" loading="lazy" />
         <div class="gallery-card-body">
-          <div class="gallery-card-badge">${badgeHtml}</div>
+          <div class="gallery-card-badge">${badgeHtml}${aiBadgeHtml}</div>
           <div class="gallery-card-meta">${contaminationText}</div>
+          ${defectOverlayHtml}
           <div class="gallery-card-meta">${new Date(item.receivedAt).toLocaleString()}</div>
         </div>
       </div>
     `;
   }).join('');
 }
-
-if (document.getElementById('refreshGallery')) {
-  document.getElementById('refreshGallery').addEventListener('click', loadGallery);
-}
-
 
 function initCalibrationPanel() {
   const picker = document.getElementById('calibColorPicker');
@@ -188,7 +203,7 @@ function initManualUpload() {
 
     statusEl.innerHTML = 'Uploading and analyzing...';
 
-      const reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = async () => {

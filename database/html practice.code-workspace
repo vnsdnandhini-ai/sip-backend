@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "esp32cam-sip",
+			"path": "../../esp32cam-sip"
+		}
+	],
+	"settings": {}
+}

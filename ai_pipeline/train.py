@@ -35,7 +35,7 @@ def train_model():
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x), data_transforms[x])
                       for x in ['train', 'val'] if os.path.exists(os.path.join(data_dir, x))}
     
-    dataloaders = {x: DataLoader(image_datasets[x], batch_size=32, shuffle=True, num_workers=2)
+    dataloaders = {x: DataLoader(image_datasets[x], batch_size=4, shuffle=True, num_workers=0)
                    for x in image_datasets.keys()}
     
     dataset_sizes = {x: len(image_datasets[x]) for x in image_datasets.keys()}
@@ -53,7 +53,7 @@ def train_model():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     
-    num_epochs = 10
+    num_epochs = 1
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
     
