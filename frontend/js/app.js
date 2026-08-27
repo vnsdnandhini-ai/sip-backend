@@ -708,7 +708,7 @@ function showImagePopup(imageUrl, analysis) {
   highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
   highlightBtn.style.cssText = [
     'padding:8px 16px','background:#dc2626','color:white','border:none',
-    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width':'140px'
+    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width:140px'
   ].join(';') + ';';
   highlightWrap.appendChild(highlightBtn);
 
@@ -716,7 +716,7 @@ function showImagePopup(imageUrl, analysis) {
   segregateBtn.innerHTML = '&#9986;&#65039; Segregate Defects';
   segregateBtn.style.cssText = [
     'padding:8px 16px','background:#7c3aed','color:white','border:none',
-    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width':'140px',''
+    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','flex:1', 'min-width:140px',''
   ].join(';') + ';';
   highlightWrap.appendChild(segregateBtn);
 
