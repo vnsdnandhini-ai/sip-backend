@@ -700,112 +700,190 @@ function showImagePopup(imageUrl, analysis) {
   box.appendChild(closeBtn);
 
   // ---- CLIENT-SIDE CANVAS DEFECT HIGHLIGHTER ----
-  // Works on ALL existing images — no Python server or database AI data needed
+  // Works on ALL existing images using adaptive local anomaly detection
   const highlightWrap = document.createElement('div');
   highlightWrap.style.cssText = 'margin-top:10px;';
 
   const highlightBtn = document.createElement('button');
   highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
-  highlightBtn.style.cssText = 'padding:7px 14px;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.85rem;font-weight:600;width:100%;';
+  highlightBtn.style.cssText = [
+    'padding:8px 16px','background:#dc2626','color:white','border:none',
+    'border-radius:6px','cursor:pointer','font-size:0.85rem','font-weight:600','width:100%'
+  ].join(';') + ';';
   highlightWrap.appendChild(highlightBtn);
 
-  const canvasWrap = document.createElement('div');
-  canvasWrap.style.cssText = 'display:none;margin-top:8px;';
-  canvasWrap.innerHTML = '<div style="font-size:0.75rem;font-weight:600;color:#dc2626;margin-bottom:4px;">&#9888; Defect Map — Red zones = colour anomalies detected</div>';
+  // Side-by-side container (hidden until button is clicked)
+  const sideBySide = document.createElement('div');
+  sideBySide.style.cssText = 'display:none;margin-top:10px;';
 
+  sideBySide.innerHTML = '<div style="font-size:0.8rem;font-weight:600;color:#dc2626;margin-bottom:6px;">&#9888; Defect Analysis — Anomalous regions highlighted in red</div>';
+
+  const panelRow = document.createElement('div');
+  panelRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+
+  // Left panel — Original
+  const origPanel = document.createElement('div');
+  origPanel.innerHTML = '<div style="font-size:0.72rem;font-weight:600;color:#475569;text-align:center;margin-bottom:4px;padding:3px;background:#f1f5f9;border-radius:4px;">&#128248; Original Image</div>';
+  const origCanvas = document.createElement('canvas');
+  origCanvas.style.cssText = 'width:100%;border-radius:6px;border:2px solid #cbd5e1;';
+  origPanel.appendChild(origCanvas);
+
+  // Right panel — Defect map
+  const defPanel = document.createElement('div');
+  defPanel.innerHTML = '<div style="font-size:0.72rem;font-weight:600;color:#dc2626;text-align:center;margin-bottom:4px;padding:3px;background:#fef2f2;border-radius:4px;">&#128308; Defect Map</div>';
   const defCanvas = document.createElement('canvas');
   defCanvas.style.cssText = 'width:100%;border-radius:6px;border:2px solid #fca5a5;cursor:zoom-in;';
-  canvasWrap.appendChild(defCanvas);
+  defPanel.appendChild(defCanvas);
 
-  const legend = document.createElement('div');
-  legend.style.cssText = 'font-size:0.7rem;color:#94a3b8;margin-top:3px;';
-  legend.textContent = 'Pixel-level colour-deviation analysis (client-side). Click map to enlarge.';
-  canvasWrap.appendChild(legend);
-  highlightWrap.appendChild(canvasWrap);
+  panelRow.appendChild(origPanel);
+  panelRow.appendChild(defPanel);
+  sideBySide.appendChild(panelRow);
+
+  // Stats bar
+  const statsBar = document.createElement('div');
+  statsBar.style.cssText = 'margin-top:6px;padding:6px 10px;background:#fef2f2;border-radius:6px;font-size:0.75rem;color:#64748b;display:flex;gap:16px;flex-wrap:wrap;';
+  sideBySide.appendChild(statsBar);
+
+  const legendRow = document.createElement('div');
+  legendRow.style.cssText = 'margin-top:5px;font-size:0.68rem;color:#94a3b8;';
+  legendRow.textContent = 'Method: Adaptive local colour deviation from image baseline. Click defect map to fullscreen.';
+  sideBySide.appendChild(legendRow);
+
+  highlightWrap.appendChild(sideBySide);
   box.appendChild(highlightWrap);
 
   let isHighlighted = false;
+
   highlightBtn.addEventListener('click', function() {
     if (isHighlighted) {
-      canvasWrap.style.display = 'none';
+      sideBySide.style.display = 'none';
       highlightBtn.innerHTML = '&#128269; Highlight Defect Areas';
       highlightBtn.style.background = '#dc2626';
       isHighlighted = false;
       return;
     }
-    highlightBtn.innerHTML = 'Analyzing pixels...';
+    highlightBtn.innerHTML = 'Analyzing...';
     highlightBtn.disabled = true;
 
     const probe = new Image();
     probe.crossOrigin = 'anonymous';
+
     probe.onload = function() {
-      defCanvas.width = probe.naturalWidth;
-      defCanvas.height = probe.naturalHeight;
-      const ctx = defCanvas.getContext('2d');
-      ctx.drawImage(probe, 0, 0);
+      const W = probe.naturalWidth;
+      const H = probe.naturalHeight;
 
-      const id = ctx.getImageData(0, 0, defCanvas.width, defCanvas.height);
-      const d = id.data;
+      // --- Draw original ---
+      origCanvas.width = W; origCanvas.height = H;
+      const octx = origCanvas.getContext('2d');
+      octx.drawImage(probe, 0, 0);
+
+      // --- Compute image baseline stats (sample 4000 random pixels) ---
+      const srcData = octx.getImageData(0, 0, W, H).data;
+      const totalPx  = W * H;
+      const step     = Math.max(1, Math.floor(totalPx / 4000));
+
+      let sumR=0, sumG=0, sumB=0, count=0;
+      for (let i = 0; i < srcData.length; i += step * 4) {
+        sumR += srcData[i]; sumG += srcData[i+1]; sumB += srcData[i+2]; count++;
+      }
+      const avgR = sumR / count;
+      const avgG = sumG / count;
+      const avgB = sumB / count;
+
+      // Std deviation
+      let varR=0, varG=0, varB=0;
+      for (let i = 0; i < srcData.length; i += step * 4) {
+        varR += Math.pow(srcData[i]   - avgR, 2);
+        varG += Math.pow(srcData[i+1] - avgG, 2);
+        varB += Math.pow(srcData[i+2] - avgB, 2);
+      }
+      const stdR = Math.sqrt(varR / count);
+      const stdG = Math.sqrt(varG / count);
+      const stdB = Math.sqrt(varB / count);
+
+      // Threshold: pixels that deviate > 1.5 std from image baseline are anomalous
+      const THRESH = 1.5;
+
+      // --- Draw defect map ---
+      defCanvas.width = W; defCanvas.height = H;
+      const dctx = defCanvas.getContext('2d');
+      dctx.drawImage(probe, 0, 0);
+      const defData = dctx.getImageData(0, 0, W, H);
+      const dd = defData.data;
+
       let anomCount = 0;
+      const anomalyMask = new Uint8Array(totalPx);  // 1 = anomalous
 
-      for (let i = 0; i < d.length; i += 4) {
-        const r = d[i], g = d[i+1], b = d[i+2];
-        const maxC = Math.max(r, g, b);
-        const minC = Math.min(r, g, b);
-        const delta = maxC - minC;
-        const v = maxC / 255;
-        const s = maxC > 0 ? delta / maxC : 0;
-        let h = 0;
-        if (delta > 0) {
-          if (maxC === r) h = 60 * (((g - b) / delta) % 6);
-          else if (maxC === g) h = 60 * ((b - r) / delta + 2);
-          else h = 60 * ((r - g) / delta + 4);
-          if (h < 0) h += 360;
-        }
-        const isHealthy = (h >= 55 && h <= 175) && s > 0.12 && v > 0.1;
-        const isDark = v < 0.08;
-        if (!isHealthy && !isDark) {
-          d[i]   = Math.min(255, r + 130);
-          d[i+1] = Math.max(0,   g - 70);
-          d[i+2] = Math.max(0,   b - 70);
+      for (let px = 0; px < totalPx; px++) {
+        const i  = px * 4;
+        const r  = dd[i], g = dd[i+1], b = dd[i+2];
+        const dR = Math.abs(r - avgR) / (stdR + 1);
+        const dG = Math.abs(g - avgG) / (stdG + 1);
+        const dB = Math.abs(b - avgB) / (stdB + 1);
+        const score = Math.max(dR, dG, dB);
+
+        if (score > THRESH) {
+          // Mark anomalous: keep some colour but punch red channel
+          dd[i]   = Math.min(255, r + 140);
+          dd[i+1] = Math.max(0,   Math.round(g * 0.3));
+          dd[i+2] = Math.max(0,   Math.round(b * 0.3));
+          anomalyMask[px] = 1;
           anomCount++;
+        } else {
+          // Non-anomalous → greyscale with slight opacity to make defects pop
+          const grey = Math.round(r * 0.299 + g * 0.587 + b * 0.114);
+          const dim  = Math.round(grey * 0.6);
+          dd[i] = dim; dd[i+1] = dim; dd[i+2] = dim;
         }
       }
-      ctx.putImageData(id, 0, 0);
+      dctx.putImageData(defData, 0, 0);
 
-      // Draw bounding boxes around dense anomaly zones
-      const cell = Math.max(14, Math.floor(defCanvas.width / 22));
-      ctx.strokeStyle = 'rgba(255,20,20,0.9)';
-      ctx.lineWidth = 2;
-      for (let cy = 0; cy < defCanvas.height; cy += cell) {
-        for (let cx = 0; cx < defCanvas.width; cx += cell) {
-          const patch = ctx.getImageData(cx, cy, cell, cell).data;
-          let redPx = 0;
-          for (let k = 0; k < patch.length; k += 4) {
-            if (patch[k] > patch[k+1] + 55) redPx++;
+      // Outline bounding boxes around dense defect clusters
+      const cell = Math.max(12, Math.floor(W / 24));
+      dctx.strokeStyle = 'rgba(255,30,30,0.9)';
+      dctx.lineWidth   = 2;
+      for (let cy = 0; cy < H; cy += cell) {
+        for (let cx = 0; cx < W; cx += cell) {
+          let cnt = 0, total = 0;
+          for (let dy = 0; dy < cell && cy+dy < H; dy++) {
+            for (let dx = 0; dx < cell && cx+dx < W; dx++) {
+              if (anomalyMask[(cy+dy)*W + (cx+dx)]) cnt++;
+              total++;
+            }
           }
-          if (redPx / (cell * cell) > 0.28) ctx.strokeRect(cx+1, cy+1, cell-2, cell-2);
+          if (total > 0 && cnt/total > 0.35) {
+            dctx.strokeRect(cx+1, cy+1, Math.min(cell, W-cx)-2, Math.min(cell, H-cy)-2);
+          }
         }
       }
 
-      const pct = ((anomCount / (d.length / 4)) * 100).toFixed(1);
-      ctx.fillStyle = 'rgba(0,0,0,0.72)';
-      ctx.fillRect(0, 0, defCanvas.width, 24);
-      ctx.fillStyle = '#ff8080';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('Colour-Anomaly Coverage: ' + pct + '%  |  Red regions = suspected defects', 6, 16);
+      // Header banner on defect map
+      const pct = ((anomCount / totalPx) * 100).toFixed(1);
+      dctx.fillStyle = 'rgba(0,0,0,0.75)';
+      dctx.fillRect(0, 0, W, 22);
+      dctx.fillStyle = '#ff8080';
+      dctx.font = 'bold 11px sans-serif';
+      dctx.fillText('Defect Coverage: ' + pct + '%  |  Grey = normal  |  Red = anomaly', 5, 15);
 
-      canvasWrap.style.display = 'block';
-      highlightBtn.innerHTML = 'Hide Defect Map';
-      highlightBtn.style.background = '#64748b';
+      // Update stats bar
+      statsBar.innerHTML =
+        '<span><strong>Defect Coverage:</strong> ' + pct + '%</span>' +
+        '<span><strong>Baseline R/G/B:</strong> ' + Math.round(avgR) + ' / ' + Math.round(avgG) + ' / ' + Math.round(avgB) + '</span>' +
+        '<span><strong>Std Dev:</strong> ' + Math.round(stdR) + ' / ' + Math.round(stdG) + ' / ' + Math.round(stdB) + '</span>' +
+        '<span><strong>Threshold:</strong> ' + THRESH + 'σ</span>';
+
+      sideBySide.style.display = 'block';
+      highlightBtn.innerHTML   = 'Hide Defect Map';
+      highlightBtn.style.background = '#475569';
       highlightBtn.disabled = false;
       isHighlighted = true;
 
       defCanvas.onclick = () => { if (defCanvas.requestFullscreen) defCanvas.requestFullscreen(); };
     };
+
     probe.onerror = function() {
-      highlightBtn.innerHTML = '&#9888; Could not load (CORS restriction)';
-      highlightBtn.disabled = false;
+      highlightBtn.innerHTML = '&#9888; Could not load image (CORS)';
+      highlightBtn.disabled  = false;
     };
     probe.src = imageUrl;
   });
