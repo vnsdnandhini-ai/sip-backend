@@ -286,8 +286,27 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
     const edgeResult = await detectEdges(image);
     const lbpResult = computeLBPTexture(image);
     const patchResult = computePatchAnomalyScore(image, avgColor);
-  const contaminationPercent = +((outlierCount / pixelCount) * 100).toFixed(2);
+    const contaminationPercent = +((outlierCount / pixelCount) * 100).toFixed(2);
   const isContaminated = contaminationPercent > CONTAMINATION_PERCENT_THRESHOLD;
+
+  // --- Generate a highlighted version marking contaminated/outlier pixels in red ---
+  const highlightedImage = image.clone();
+  highlightedImage.scan(0, 0, width, height, function (x, y, idx) {
+    const r = this.bitmap.data[idx + 0];
+    const g = this.bitmap.data[idx + 1];
+    const b = this.bitmap.data[idx + 2];
+    const dr = r - avgColor.r;
+    const dg = g - avgColor.g;
+    const db = b - avgColor.b;
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+    if (distance > OUTLIER_DISTANCE_THRESHOLD) {
+      // Mark this pixel bright red/magenta to highlight the defect
+      this.bitmap.data[idx + 0] = 255;
+      this.bitmap.data[idx + 1] = 0;
+      this.bitmap.data[idx + 2] = 255;
+    }
+  });
+  const highlightedImageBuffer = await highlightedImage.getBuffer('image/jpeg');
 
   // --- Capture quality gate (secondary - infrastructure, not product QA) ---
   const isTooDark = brightness < 50;
@@ -295,9 +314,10 @@ async function analyzeImage(imageBuffer, referenceColor = null) {
   const isBlurry = sharpness < 100; // tune against real sample images
   const captureQualityOk = !isTooDark && !isOverexposed && !isBlurry;
 
-    return {
+      return {
     width,
     height,
+    highlightedImageBuffer,
     // Primary QA signals
     colorDeviationPercent,
     contaminationPercent,
