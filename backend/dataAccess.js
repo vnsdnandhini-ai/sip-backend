@@ -21,8 +21,8 @@ async function getFullState() {
     pool.query('SELECT * FROM parameters ORDER BY created_at'),
     pool.query('SELECT * FROM checkout_conditions ORDER BY created_at'),
     pool.query('SELECT * FROM regulatory_rules ORDER BY created_at'),
-    pool.query('SELECT * FROM analytical_data ORDER BY received_at'),
-    pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at'),
+        pool.query('SELECT * FROM analytical_data ORDER BY received_at DESC LIMIT 100'),
+        pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at DESC LIMIT 200'),
     pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC'),
     pool.query('SELECT * FROM reports ORDER BY created_at'),
   ]);

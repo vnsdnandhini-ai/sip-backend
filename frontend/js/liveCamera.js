@@ -69,7 +69,7 @@ function initLiveCameraPage() {
   }
 
   if (cameraRefreshInterval) clearInterval(cameraRefreshInterval);
-  cameraRefreshInterval = setInterval(loadLatestImages, 8000);
+   cameraRefreshInterval = setInterval(loadLatestImages, 30000);
 }
 
 if (document.getElementById('cameraGrid')) {
