@@ -353,7 +353,7 @@ app.get('/api/batches/:id/timeline', async (req, res) => {
     const timeline = stages.map((stageName, index) => {
       const stageReadings = analyticalRes.rows.filter(
         (r) => (r.process_stage || '').toLowerCase() === stageName.toLowerCase() ||
-               (stageName === 'Dispensing' && dispensingRes.rows.length > 0)
+          (stageName === 'Dispensing' && dispensingRes.rows.length > 0)
       );
       const stageDispensing = stageName === 'Dispensing' ? dispensingRes.rows : [];
       const isCompleted = stages.indexOf(stageName) < stages.indexOf(batch.current_stage || stages[0]);
@@ -438,7 +438,7 @@ app.post('/api/spectroscopy/preprocess-and-match', async (req, res) => {
     } else {
       // Standard synthetic pharmaceutical API NIR fingerprint (900 nm - 1700 nm)
       const xRef = Array.from({ length: 81 }, (_, i) => 900 + i * 10);
-      const yRef = xRef.map((w) => 
+      const yRef = xRef.map((w) =>
         +(0.2 + 0.6 * Math.exp(-Math.pow((w - 1180) / 45, 2)) + 0.85 * Math.exp(-Math.pow((w - 1450) / 60, 2)) + 0.4 * Math.exp(-Math.pow((w - 1620) / 35, 2))).toFixed(4)
       );
       referenceVariants = [{ variantName: 'Certified Pharmacopeia Reference Standard (EP/USP)', referenceCurve: { x: xRef, y: yRef } }];
@@ -529,9 +529,9 @@ app.get('/api/stage1/live-stream', async (req, res) => {
 
   try {
     const wavelengths = Array.from({ length: 41 }, (_, i) => 900 + i * 20);
-    
+
     // Master Reference (EP/USP Certified Standard)
-    const referenceY = wavelengths.map(w => 
+    const referenceY = wavelengths.map(w =>
       +(0.2 + 0.6 * Math.exp(-Math.pow((w - 1180) / 45, 2)) + 0.85 * Math.exp(-Math.pow((w - 1450) / 60, 2)) + 0.4 * Math.exp(-Math.pow((w - 1620) / 35, 2))).toFixed(4)
     );
 
@@ -543,14 +543,14 @@ app.get('/api/stage1/live-stream', async (req, res) => {
     let gateStatus;
 
     if (mode === 'fail') {
-      sampleY = wavelengths.map(w => 
+      sampleY = wavelengths.map(w =>
         +(0.2 + 0.22 * Math.exp(-Math.pow((w - 1100) / 50, 2)) + 0.38 * Math.exp(-Math.pow((w - 1350) / 70, 2)) + 0.72 * Math.exp(-Math.pow((w - 1550) / 40, 2)) + jitter()).toFixed(4)
       );
       pearsonR = +(0.72 + Math.random() * 0.05).toFixed(4);
       moisture = +(3.2 + Math.random() * 0.4).toFixed(2);
       gateStatus = 'CRITICAL_QUARANTINE';
     } else if (mode === 'warning') {
-      sampleY = wavelengths.map(w => 
+      sampleY = wavelengths.map(w =>
         +(0.22 + 0.54 * Math.exp(-Math.pow((w - 1180) / 46, 2)) + 0.78 * Math.exp(-Math.pow((w - 1450) / 64, 2)) + 0.36 * Math.exp(-Math.pow((w - 1620) / 37, 2)) + jitter()).toFixed(4)
       );
       pearsonR = +(0.908 + Math.random() * 0.02).toFixed(4);
@@ -558,7 +558,7 @@ app.get('/api/stage1/live-stream', async (req, res) => {
       gateStatus = 'WARNING_REVIEW';
     } else {
       // Pass mode (High purity API match)
-      sampleY = wavelengths.map(w => 
+      sampleY = wavelengths.map(w =>
         +(0.2 + 0.6 * Math.exp(-Math.pow((w - 1180) / 45, 2)) + 0.85 * Math.exp(-Math.pow((w - 1450) / 60, 2)) + 0.4 * Math.exp(-Math.pow((w - 1620) / 35, 2)) + jitter()).toFixed(4)
       );
       pearsonR = +(0.982 + Math.random() * 0.014).toFixed(4);
@@ -730,7 +730,7 @@ app.post('/api/dispensing', async (req, res) => {
   const target = parseFloat(targetQuantity);
   const actual = parseFloat(actualQuantity);
   const deviation = target > 0 ? parseFloat((((actual - target) / target) * 100).toFixed(2)) : 0;
-  
+
   // Standard pharmaceutical tolerance limit for dispensing: +/- 1.0% pass, 1.0-2.0% warning, >2.0% critical
   let status = 'PASS';
   if (Math.abs(deviation) > 2.0) {
@@ -780,33 +780,33 @@ app.get('/api/dispensing/:batchId', async (req, res) => {
 
 // --- Monitoring Points ---
 app.post('/api/monitoring', async (req, res) => {
-    const { name, location, frequency, description, status, projectId } = req.body;
-    const id = generateId();
-    try {
-      await pool.query(
-        'INSERT INTO monitoring_points (id, name, location, frequency, description, status, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [id, name, location, frequency, description, status || 'Active', projectId || null]
-      );
-      res.json({ id, name, location, frequency, description, status: status || 'Active', projectId: projectId || null });
-    } catch (err) {
-      console.error('Failed to create monitoring point:', err);
-      res.status(500).json({ error: 'Database error.' });
-    }
-  });
+  const { name, location, frequency, description, status, projectId } = req.body;
+  const id = generateId();
+  try {
+    await pool.query(
+      'INSERT INTO monitoring_points (id, name, location, frequency, description, status, project_id) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+      [id, name, location, frequency, description, status || 'Active', projectId || null]
+    );
+    res.json({ id, name, location, frequency, description, status: status || 'Active', projectId: projectId || null });
+  } catch (err) {
+    console.error('Failed to create monitoring point:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
 app.put('/api/monitoring/:id', async (req, res) => {
-    const { name, location, frequency, description, status, projectId } = req.body;
-    try {
-      const result = await pool.query(
-        'UPDATE monitoring_points SET name=$1, location=$2, frequency=$3, description=$4, status=$5, project_id=$6 WHERE id=$7 RETURNING *',
-        [name, location, frequency, description, status, projectId || null, req.params.id]
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: 'Monitoring point not found.' });
-      res.json(result.rows[0]);
-    } catch (err) {
-      console.error('Failed to update monitoring point:', err);
-      res.status(500).json({ error: 'Database error.' });
-    }
-  });
+  const { name, location, frequency, description, status, projectId } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE monitoring_points SET name=$1, location=$2, frequency=$3, description=$4, status=$5, project_id=$6 WHERE id=$7 RETURNING *',
+      [name, location, frequency, description, status, projectId || null, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Monitoring point not found.' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Failed to update monitoring point:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
 app.delete('/api/monitoring/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM monitoring_points WHERE id=$1', [req.params.id]);
@@ -860,33 +860,33 @@ app.delete('/api/parameters/:id', async (req, res) => {
 
 // --- Checkout Conditions ---
 app.post('/api/conditions', async (req, res) => {
-    const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
-    const id = generateId();
-    try {
-      await pool.query(
-        'INSERT INTO checkout_conditions (id, parameter, monitoring_point_id, acceptance, warning, critical, action, regulatory_rule_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-        [id, parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null]
-      );
-      res.json({ id, parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId });
-    } catch (err) {
-      console.error('Failed to create condition:', err);
-      res.status(500).json({ error: 'Database error.' });
-    }
-  });
+  const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
+  const id = generateId();
+  try {
+    await pool.query(
+      'INSERT INTO checkout_conditions (id, parameter, monitoring_point_id, acceptance, warning, critical, action, regulatory_rule_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [id, parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null]
+    );
+    res.json({ id, parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId });
+  } catch (err) {
+    console.error('Failed to create condition:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
 app.put('/api/conditions/:id', async (req, res) => {
-    const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
-    try {
-      const result = await pool.query(
-        'UPDATE checkout_conditions SET parameter=$1, monitoring_point_id=$2, acceptance=$3, warning=$4, critical=$5, action=$6, regulatory_rule_id=$7 WHERE id=$8 RETURNING *',
-        [parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null, req.params.id]
-      );
-      if (result.rows.length === 0) return res.status(404).json({ error: 'Condition not found.' });
-      res.json(result.rows[0]);
-    } catch (err) {
-      console.error('Failed to update condition:', err);
-      res.status(500).json({ error: 'Database error.' });
-    }
-  });
+  const { parameter, monitoringPointId, acceptance, warning, critical, action, regulatoryRuleId } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE checkout_conditions SET parameter=$1, monitoring_point_id=$2, acceptance=$3, warning=$4, critical=$5, action=$6, regulatory_rule_id=$7 WHERE id=$8 RETURNING *',
+      [parameter, monitoringPointId || null, acceptance, warning, critical, action, regulatoryRuleId || null, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Condition not found.' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Failed to update condition:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
 
 app.delete('/api/conditions/:id', async (req, res) => {
   try {
@@ -970,6 +970,6 @@ app.use('/api', sensorRoutes(pool, generateId));
 app.use('/api', complianceRoutes(pool, generateId));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Spectroscopic Intelligence backend running on port ${PORT} (PostgreSQL/Supabase)`);
 });
