@@ -21,8 +21,8 @@
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link active" data-page="dashboard">Dashboard</button>
-        <button class="nav-link" data-page="onboarding">Project Setup Wizard</button>
-        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
@@ -30,9 +30,10 @@
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
         <button class="nav-link" data-page="gallery">Image Gallery</button>
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
-        <button class="nav-link" data-page="reports">Reports</button>
-        <button class="nav-link" data-page="audit">Audit Trail</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
       </nav>
+
     </aside>
 
     <main class="main-content">
@@ -57,61 +58,66 @@
         </div>
         <div class="grid grid--4cards">
           <article class="card card--metric">
-            <div class="card-title">Total Projects</div>
+            <div class="card-title">Total Batches</div>
             <div class="card-value" id="metricProjects">0</div>
           </article>
           <article class="card card--metric">
-            <div class="card-title">Active Sessions</div>
+            <div class="card-title">Active Lines / Batches</div>
             <div class="card-value" id="metricSessions">0</div>
           </article>
           <article class="card card--metric">
-            <div class="card-title">Compliance Score</div>
+            <div class="card-title">cGMP Quality Score</div>
             <div class="card-value" id="metricCompliance">0%</div>
           </article>
           <article class="card card--metric">
-            <div class="card-title">Pending Deviations</div>
+            <div class="card-title">Active Deviations</div>
             <div class="card-value" id="metricDeviations">0</div>
           </article>
         </div>
         <div class="grid grid--cards">
           <article class="card card--chart">
-            <div class="card-header">Critical Alerts</div>
+            <div class="card-header">Critical Line Alerts</div>
             <div class="card-note" id="criticalAlerts">No critical alerts at the moment.</div>
           </article>
           <article class="card card--chart">
-            <div class="card-header">Recent Reports</div>
+            <div class="card-header">Recent Batch Quality Reports</div>
             <ul class="report-list" id="dashboardReports"></ul>
           </article>
           <article class="card card--actions">
-            <div class="card-header">Quick Actions</div>
+            <div class="card-header">Core Workflow Navigation</div>
             <div class="action-grid">
-              <button class="mini-button" onclick="window.location.href='onboarding.html'">New Project</button>
-              <button class="mini-button" onclick="window.location.href='monitoring.html'">Configure Points</button>
-              <button class="mini-button" onclick="window.location.href='analytical.html'">Upload Data</button>
-              <button class="mini-button" onclick="window.location.href='compliance.html'">Evaluate Compliance</button>
+              <button class="mini-button" onclick="window.location.href='batches.html'">1. Batch Management</button>
+              <button class="mini-button" onclick="window.location.href='manufacturing-process.html'">2. 8-Step Manufacturing</button>
+              <button class="mini-button" onclick="window.location.href='imagegallery.html'">3. Image QA Gallery</button>
+              <button class="mini-button" onclick="window.location.href='compliance.html'">4. Compliance Engine</button>
+              <button class="mini-button" onclick="window.location.href='reports.html'">5. Quality Reports</button>
+              <button class="mini-button" onclick="window.location.href='reports.html?tab=audit'">6. 21 CFR Part 11 Audit Trail</button>
             </div>
           </article>
 
           <article class="card card--actions">
-            <div class="card-header">AI Vision Settings</div>
-            <div class="card-note" style="margin-bottom: 15px;">Configure the Raw Material Analysis model parameters.</div>
+            <div class="card-header">AI Vision Inspection Settings</div>
+            <div class="card-note" style="margin-bottom: 12px;">Real-time botanical raw material leaf & powder defect model.</div>
             
             <div style="display:flex; flex-direction:column; gap: 10px;">
-                <label style="display:flex; align-items:center; gap: 8px;">
-                    <input type="checkbox" id="aiEnableToggle" checked> Enable AI Vision Analysis
+                <label style="display:flex; align-items:center; gap: 8px; font-weight:600; font-size:0.88rem;">
+                    <input type="checkbox" id="aiEnableToggle" checked> Enable AI Vision Quality Classifier
                 </label>
                 
-                <div>
-                    <label style="font-size:0.85rem; color:#64748b;">Confidence Threshold (%)</label><br/>
-                    <input type="number" id="aiConfidenceThreshold" value="85" min="50" max="99" style="width: 100px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                  <div>
+                      <label style="font-size:0.8rem; color:#64748b;">Tolerance Threshold</label><br/>
+                      <input type="text" id="aiConfidenceThreshold" value="4.0% Defect Limit" readonly style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size:0.85rem; background:#f8fafc;">
+                  </div>
+                  <div>
+                      <label style="font-size:0.8rem; color:#64748b;">Model Status</label><br/>
+                      <input type="text" value="Active (Precision ExG)" readonly style="width: 100%; padding: 6px; border: 1px solid #86efac; border-radius: 6px; font-size:0.85rem; color:#15803d; font-weight:600; background:#f0fdf4;">
+                  </div>
                 </div>
                 
-                <div>
-                    <label style="font-size:0.85rem; color:#64748b;">API URL</label><br/>
-                    <input type="text" id="aiApiUrl" value="http://localhost:5000/api/ai/analyze" style="width: 100%; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                <div style="margin-top:4px; display:flex; gap:8px;">
+                  <button class="button button--primary" onclick="window.location.href='imagegallery.html'" style="flex:1; font-size:0.85rem; padding:8px 12px;">Open Image Gallery QA →</button>
                 </div>
-                
-                <button class="mini-button" onclick="alert('AI Settings Saved Successfully!')" style="margin-top: 10px;">Save Configuration</button>
             </div>
           </article>
 

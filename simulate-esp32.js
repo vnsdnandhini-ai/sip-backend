@@ -1,6 +1,6 @@
-const SERVER_URL = 'https://sip-backend-1.onrender.com/api/sensor-data';
-const DEVICE_ID = 'id-uq98n3qc-1783323629430';
-const API_KEY = 'id-amakt2l5-1783323629431';
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000/api/sensor-data';
+const DEVICE_ID = process.env.DEVICE_ID || 'id-11ifdn9h-1784173538536';
+const API_KEY = process.env.API_KEY || 'id-hl276jff-1784173538537';
 const MONITORING_POINT_ID = 'mp-001';
 
 const SEND_INTERVAL_MS = 20000; // every 20 seconds for faster testing

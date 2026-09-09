@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batches - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link active" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
+
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Batches</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrapper">
+            <input id="globalSearch" type="search" placeholder="Search modules, batches, records..." />
+          </div>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>Batch Management & Quality Lifecycle</h3>
+            <p>Create, configure, and maintain end-to-end pharmaceutical manufacturing batch records.</p>
+          </div>
+          <button class="button button--primary" onclick="openBatchForm()">+ Register New Batch</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <input id="batchesFilterInput" type="search" placeholder="Filter by name, product, batch #, or material..." style="flex:1;min-width:200px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;" />
+          <select id="batchesStatusFilter" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Paused">Paused</option>
+          </select>
+          <select id="batchesSortSelect" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;">
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="name-desc">Sort: Name (Z-A)</option>
+            <option value="status-asc">Sort: Status</option>
+          </select>
+          <span id="batchesResultCount" style="color:#64748b;font-size:0.9rem;"></span>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table" id="batchesTable">
+            <thead>
+              <tr>
+                <th>Batch & Material</th>
+                <th>Product / Formulation</th>
+                <th>Batch / Lot #</th>
+                <th>Current Stage</th>
+                <th>Dept / Line</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='dashboard.html'">
+            ← Return to Dashboard
+          </button>
+          <button id="continueMonitoringBtn" class="button button--primary" onclick="window.location.href='manufacturing-process.html'">
+            Proceed to 8-Step Manufacturing Studio →
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden"></div>
+  <div id="modalPanel" class="modal hidden"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/batches.js"></script>
+  <script src="js/nav.js"></script>
+</body>
+</html>
+
+

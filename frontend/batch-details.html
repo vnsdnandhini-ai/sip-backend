@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batch Quality Passport - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link active" data-page="workflow">8-Step Manufacturing</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Batch Quality Passport</h2>
+          <div class="topbar-breadcrumb">Pharmaceutical Process Monitoring & Traceability</div>
+        </div>
+        <div class="topbar-right">
+          <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">⚡ 8-Step Studio</button>
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">← Back to Batches</button>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <!-- Batch Quality Header Card -->
+        <div class="data-card" style="padding: 24px; margin-bottom: 24px; border-left: 5px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+                <h3 id="batchHeaderName" style="margin: 0; font-size: 1.4rem;">Loading Batch Passport...</h3>
+                <span id="batchStatusBadge" class="badge badge--live">Active</span>
+                <span id="batchQcBadge" class="badge badge--warning">QC: In Progress</span>
+              </div>
+              <div id="batchHeaderInfo" style="color: var(--muted); font-size: 0.9rem; line-height: 1.6;">
+                Product: - | Lot: - | Line: -
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="button button--primary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">⚡ Open 8-Step Studio ➔</button>
+              <button class="button button--secondary" id="addStageDataBtn" onclick="openAddStageDataModal()">+ Record Stage Reading</button>
+              <button class="button button--secondary" id="advanceStageBtn" onclick="openAdvanceStageModal()">Advance Stage →</button>
+              <button class="button button--secondary" id="generateBatchReportBtn" onclick="generateCurrentBatchReport()">📄 Hashed Dossier</button>
+            </div>
+          </div>
+
+
+          <!-- Metadata Quick Badges -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div>
+              <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">Raw Material</div>
+              <strong id="metaMaterialName" style="font-size: 0.95rem;">-</strong>
+              <div id="metaMaterialId" style="font-size: 0.75rem; color: var(--muted);">-</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">Approved Supplier</div>
+              <strong id="metaSupplier" style="font-size: 0.95rem;">-</strong>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">Target vs Actual Qty</div>
+              <strong id="metaQuantity" style="font-size: 0.95rem;">-</strong>
+              <div id="metaDeviation" style="font-size: 0.75rem;">-</div>
+            </div>
+            <div>
+              <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase;">Current Manufacturing Stage</div>
+              <strong id="metaCurrentStage" style="font-size: 0.95rem; color: var(--primary);">Raw Material Receipt</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8-Stage Interactive Process Flow Stepper -->
+        <div style="margin-bottom: 24px;">
+          <h4 style="margin: 0 0 12px 0; font-size: 1rem; color: var(--muted);">Manufacturing Process Lifecycle</h4>
+          <div class="flow-strip" id="stageTabs" style="display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px;">
+            <!-- Populated dynamically with 8 stages -->
+          </div>
+        </div>
+
+        <!-- Dynamic Stage View Container -->
+        <div id="stageContentArea">
+          <!-- Populated by JavaScript depending on selected stage -->
+        </div>
+
+        <!-- Stage Data Table Log -->
+        <div class="data-card" style="padding: 20px; margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+              <h4 id="stageTableTitle" style="margin: 0; font-size: 1.05rem;">Stage Measurement Log</h4>
+              <p style="margin: 2px 0 0; color: var(--muted); font-size: 0.85rem;">All analytical readings, scans, and inspections recorded for this stage.</p>
+            </div>
+            <button class="button button--secondary" style="font-size: 0.85rem; padding: 6px 12px;" onclick="renderStageData()">↻ Refresh Log</button>
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table" id="stageDataTable">
+              <thead>
+                <tr>
+                  <th>Parameter / Type</th>
+                  <th>Instrument / Device</th>
+                  <th>Measured Value / Result</th>
+                  <th>Unit</th>
+                  <th>Timestamp</th>
+                  <th>Quality Status</th>
+                  <th>Action / Details</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">
+            ← Back to Batch Management
+          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">
+              ⚡ 8-Step Studio
+            </button>
+            <button class="button button--primary" onclick="window.location.href='reports.html'">
+              View Batch Compliance Reports →
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <div class="modal-backdrop hidden" id="modalBackdrop"></div>
+  <div class="modal hidden" id="modalPanel"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/batch-details.js"></script>
+</body>
+</html>

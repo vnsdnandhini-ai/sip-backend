@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Audit Trail - Spectroscopic Intelligence Platform</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta http-equiv="refresh" content="0; url=reports.html?tab=audit" />
+  <title>Redirecting to Reports & Audit...</title>
+  <script>window.location.replace('reports.html?tab=audit');</script>
 </head>
 <body>
   <div class="layout">
@@ -21,8 +21,8 @@
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link" data-page="dashboard">Dashboard</button>
-        <button class="nav-link" data-page="onboarding">Guided Setup</button>
-        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
@@ -32,7 +32,9 @@
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
         <button class="nav-link" data-page="reports">Reports</button>
         <button class="nav-link active" data-page="audit">Audit Trail</button>
+        <button class="nav-link" data-page="settings">Settings</button>
       </nav>
+
     </aside>
 
     <main class="main-content">
@@ -68,6 +70,16 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='reports.html'">
+            ← Back to Reports
+          </button>
+          <button class="button button--primary" onclick="window.location.href='dashboard.html'">
+            Return to Dashboard ➔
+          </button>
         </div>
       </section>
     </main>

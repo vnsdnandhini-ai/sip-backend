@@ -1,6 +1,6 @@
-﻿const SERVER_URL = 'https://sip-backend-1.onrender.com/api/sensor-data';
-const DEVICE_ID = 'id-11ifdn9h-1784173538536';
-const API_KEY = 'id-hl276jff-1784173538537';
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000/api/sensor-data';
+const DEVICE_ID = process.env.DEVICE_ID || 'id-11ifdn9h-1784173538536';
+const API_KEY = process.env.API_KEY || 'id-hl276jff-1784173538537';
 
 const MONITORING_POINTS = [
   { id: 'id-iub3pa8y-1784173570079', name: 'Raw Material Inspection' },

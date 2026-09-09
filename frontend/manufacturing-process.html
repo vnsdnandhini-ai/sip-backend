@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8-Step Pharmaceutical Manufacturing Workflow - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link active" data-page="workflow">8-Step Manufacturing</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">8-Step Pharmaceutical Manufacturing Process</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS & Process Analytics</div>
+        </div>
+        <div class="topbar-right">
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">Manage Batches</button>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        
+        <!-- Batch Quality Header Card -->
+        <div class="batch-studio-header">
+          <div class="batch-studio-top">
+            <div class="batch-title-group">
+              <div class="batch-label-row">
+                <span class="batch-code-tag" id="headerBatchCodeTag">LOT-PCM-2026-01</span>
+                <span id="headerStatusBadge" class="badge badge--live">Active</span>
+                <span id="headerQcBadge" class="badge badge--pass">QC: In Progress</span>
+              </div>
+              <h3 id="batchHeaderTitle" class="batch-main-title">8-Step Pharmaceutical Manufacturing Studio</h3>
+              <p id="batchMetaSummary" class="batch-meta-desc">Select an active batch to review and advance process stages.</p>
+            </div>
+            <div class="batch-selector-box">
+              <label for="batchSelectDropdown" class="selector-label">Active Manufacturing Batch</label>
+              <select id="batchSelectDropdown" class="batch-select-input" onchange="onBatchSelectChange(this.value)">
+                <option value="">Loading batches...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8-Stage Filter Stepper Bar (Positioned right below header for intuitive flow) -->
+        <div class="stepper-section-wrapper">
+          <div class="stepper-section-title">Process Workflow Stages (1 – 8)</div>
+          <div class="filter-buttons" id="workflowStepper">
+            <button class="filter-button active" onclick="selectStage('Raw Material Receipt')">1. Raw Material ID</button>
+            <button class="filter-button" onclick="selectStage('Dispensing')">2. Dispensing</button>
+            <button class="filter-button" onclick="selectStage('Blending')">3. Pre-Blending</button>
+            <button class="filter-button" onclick="selectStage('Granulation')">4. Wet Granulation</button>
+            <button class="filter-button" onclick="selectStage('Drying')">5. Fluid Bed Drying</button>
+            <button class="filter-button" onclick="selectStage('Final Blending')">6. Final Blending</button>
+            <button class="filter-button" onclick="selectStage('Compression')">7. Tablet Press</button>
+            <button class="filter-button" onclick="selectStage('Final QC')">8. Final Inspection</button>
+          </div>
+        </div>
+
+        <!-- Active Stage Main Workspace Studio (2-Column Spacious Cards) -->
+        <div id="stageStudioContainer">
+          <div class="grid grid--2cols">
+            <!-- Left Card: Raw Material Verification Form -->
+            <article class="card card--form">
+              <h4>Raw Material Verification</h4>
+              <form id="stage1VerifyForm" class="panel-form" onsubmit="event.preventDefault(); reconcileContainerBarcode();">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Raw Material</label>
+                    <input type="text" value="Paracetamol API Micronized" readonly />
+                  </div>
+                  <div class="form-group">
+                    <label>Approved Supplier</label>
+                    <input type="text" value="Apex Pharma Botanicals" readonly />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Batch / Lot Number</label>
+                    <input type="text" value="LOT-PCM-2026-01" readonly />
+                  </div>
+                  <div class="form-group">
+                    <label>Container Barcode</label>
+                    <input id="stage1Barcode" type="text" value="BC-RM-9942-01 (DRUM-01)" readonly />
+                  </div>
+                </div>
+                <div class="form-actions" style="justify-content: flex-start; margin-top: 0.5rem;">
+                  <button type="submit" class="button button--secondary">Scan / Change Drum</button>
+                </div>
+              </form>
+            </article>
+
+            <!-- Right Card: Quality Gate & Release Sign-Off -->
+            <article class="card card--form">
+              <h4>Quality Gate & Release</h4>
+              <form id="stage1ReleaseForm" class="panel-form" onsubmit="event.preventDefault(); signOffStage1Release();">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Chemical Identity Match</label>
+                    <input type="text" value="99.3% (PASS)" readonly style="color: #16a34a; font-weight: 700;" />
+                  </div>
+                  <div class="form-group">
+                    <label>Residual Moisture (LOD)</label>
+                    <input type="text" value="1.25% (PASS)" readonly style="color: #16a34a; font-weight: 700;" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Stage 1 Verification Status</label>
+                  <input type="text" value="Approved for Dispensing" readonly style="color: #16a34a; font-weight: 700;" />
+                </div>
+                <div class="form-actions" style="margin-top: 1rem;">
+                  <button type="submit" class="button button--primary" style="width: 100%;">Approve & Advance to Stage 2 (Dispensing) →</button>
+                </div>
+              </form>
+            </article>
+          </div>
+        </div>
+
+        <!-- Analytical & In-Process Quality Controls Telemetry Table -->
+        <div class="data-table-wrapper">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface);">
+            <div style="font-weight: 700; font-size: 0.95rem; color: var(--text);">
+              In-Process Quality Controls (IPQC) Telemetry Log
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="simulateStageTelemetry()">+ Record Reading</button>
+              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="renderStageLogTable()">↻ Refresh</button>
+            </div>
+          </div>
+          <table class="data-table" id="workflowDataTable">
+            <thead>
+              <tr>
+                <th>PARAMETER</th>
+                <th>INSTRUMENT</th>
+                <th>VALUE</th>
+                <th>UNIT</th>
+                <th>TIMESTAMP</th>
+                <th>RESULT</th>
+              </tr>
+            </thead>
+            <tbody id="workflowDataTableBody">
+              <tr>
+                <td><strong>NIR Spectral Identity (R)</strong></td>
+                <td>FT-NIR InGaAs Spectrometer</td>
+                <td>0.993</td>
+                <td>Pearson R</td>
+                <td>Live</td>
+                <td><span class="badge badge--pass">PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>Residual Moisture (LOD)</strong></td>
+                <td>Halogen Moisture Analyzer</td>
+                <td>1.25</td>
+                <td>%</td>
+                <td>Live</td>
+                <td><span class="badge badge--pass">PASS</span></td>
+              </tr>
+              <tr>
+                <td><strong>Container Barcode Reconciliation</strong></td>
+                <td>2D Optical Matrix Scanner</td>
+                <td>BC-RM-9942-01</td>
+                <td>ID</td>
+                <td>Live</td>
+                <td><span class="badge badge--pass">PASS</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">
+            ← Back to Batch Management
+          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="button button--secondary" onclick="window.location.href='imagegallery.html'">
+              📷 Raw Material Image QA
+            </button>
+            <button class="button button--primary" onclick="window.location.href='monitoring.html'">
+              Proceed to Monitoring Points →
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Standard Platform Modals -->
+  <div class="modal-backdrop hidden" id="modalBackdrop"></div>
+  <div class="modal hidden" id="modalPanel" style="max-width: 650px;"></div>
+
+  <div class="modal-backdrop hidden" id="coaModalBackdrop"></div>
+  <div class="modal hidden" id="coaModalPanel" style="max-width: 800px;"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/manufacturing-process.js"></script>
+</body>
+</html>

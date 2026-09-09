@@ -21,8 +21,8 @@
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link" data-page="dashboard">Dashboard</button>
-        <button class="nav-link" data-page="onboarding">Guided Setup</button>
-        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
@@ -30,9 +30,10 @@
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
         <button class="nav-link active" data-page="gallery">Image Gallery</button>
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
-        <button class="nav-link" data-page="reports">Reports</button>
-        <button class="nav-link" data-page="audit">Audit Trail</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
       </nav>
+
     </aside>
 
     <main class="main-content">
@@ -53,53 +54,82 @@
         <div class="section-header">
           <div>
             <h3>Captured Images</h3>
-            <p>All images captured by ESP32-CAM devices, with automatic contamination and quality analysis.</p>
+            <p>All images captured by ESP32-CAM devices and manual uploads, with automated contamination and AI quality inspection.</p>
           </div>
-          <button class="button button--secondary" id="refreshGallery">Refresh</button>
+          <div style="display:flex; gap:8px;">
+            <button class="button button--secondary" id="refreshGallery">&#x21bb; Refresh</button>
+          </div>
         </div>
+
+        <!-- Manual Image Upload Panel -->
         <div class="calibration-panel">
           <h4 style="margin-top:0;">Upload Image Manually</h4>
-          <p class="note" style="margin-top:0;">Upload a photo directly from your computer — useful for testing/calibration without hardware.</p>
+          <p class="note" style="margin-top:0;">Upload an inspection photo directly from your device to run automated contamination, edge density, and AI QA analysis.</p>
           <div class="calibration-row">
             <div class="form-group" style="min-width:200px;">
-              <label>Parameter (optional)</label>
-              <input id="uploadParameter" type="text" placeholder="e.g. Tablet Color" />
+              <label for="uploadParameter">Parameter (optional)</label>
+              <input id="uploadParameter" type="text" placeholder="e.g. Tablet Color, Raw Material QA" />
             </div>
             <div class="form-group">
-              <label>Choose Image</label>
-              <input id="uploadFileInput" type="file" accept="image/*" />
+              <label for="uploadFileInput">Choose Image</label>
+              <input id="uploadFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/jpg" />
             </div>
-            <button class="button button--primary" id="uploadImageBtn">Upload</button>
+            <div id="uploadPreviewContainer" style="display:none; align-items:center; gap:8px;">
+              <img id="uploadPreviewImg" style="width:42px; height:42px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" />
+              <button type="button" class="button button--secondary" id="clearUploadPreview" style="padding:4px 8px; font-size:0.75rem;">Clear</button>
+            </div>
+            <button class="button button--primary" id="uploadImageBtn">Upload & Analyze</button>
           </div>
           <div id="uploadStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
         </div>
 
+        <!-- Calibrate Reference Color Panel -->
         <div class="calibration-panel">
           <h4 style="margin-top:0;">Calibrate Reference Color</h4>
-         <div class="calibration-panel">
-          <h4 style="margin-top:0;">Calibrate Reference Color</h4>
-          <p class="note" style="margin-top:0;">Set the expected/approved color for a parameter. Future images for that parameter will be checked for color deviation from this reference.</p>
+          <p class="note" style="margin-top:0;">Set the expected/approved standard color for a parameter. Future images will be evaluated for color deviation against this reference.</p>
           <div class="calibration-row">
             <div class="form-group" style="min-width:200px;">
-              <label>Parameter</label>
+              <label for="calibParameter">Parameter</label>
               <input id="calibParameter" type="text" placeholder="e.g. Compression Stage" />
             </div>
             <div class="form-group">
-              <label>Pick Color</label>
-              <input id="calibColorPicker" type="color" value="#ffffff" style="width:60px;height:42px;padding:2px;" />
+              <label for="calibColorPicker">Pick Reference Color</label>
+              <input id="calibColorPicker" type="color" value="#ffffff" style="width:60px;height:42px;padding:2px;cursor:pointer;" />
             </div>
-            <div class="color-swatch" id="calibSwatchPreview" style="background:#ffffff;"></div>
+            <div class="color-swatch" id="calibSwatchPreview" style="background:#ffffff;" title="Current selected color"></div>
             <button class="button button--primary" id="saveCalibration">Save Reference</button>
           </div>
           <div id="calibrationStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
         </div>
-        <div class="gallery-filters">
-          <button class="filter-button active" data-filter="all" onclick="setGalleryFilter('all')">All</button>
-          <button class="filter-button" data-filter="clean" onclick="setGalleryFilter('clean')">Clean</button>
-          <button class="filter-button" data-filter="contaminated" onclick="setGalleryFilter('contaminated')">Contaminated</button>
-          <button class="filter-button" data-filter="issue" onclick="setGalleryFilter('issue')">Capture Issue</button>
+
+        <!-- Filters -->
+        <div class="gallery-filters" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="filter-button active" data-filter="all" onclick="setGalleryFilter('all')">All Raw Materials <span id="countAll" class="filter-count"></span></button>
+            <button class="filter-button" data-filter="clean" onclick="setGalleryFilter('clean')">🟢 Healthy (Approved) <span id="countClean" class="filter-count"></span></button>
+            <button class="filter-button" data-filter="contaminated" onclick="setGalleryFilter('contaminated')">🔴 Defective (Infected/Disease) <span id="countContaminated" class="filter-count"></span></button>
+            <button class="filter-button" data-filter="issue" onclick="setGalleryFilter('issue')">⚠️ Review / Flagged <span id="countIssue" class="filter-count"></span></button>
+          </div>
+          <div id="galleryStatsSummary" style="font-size:0.85rem; color:#64748b; font-weight:500;"></div>
         </div>
+
+        <!-- Grid -->
         <div class="gallery-grid" id="galleryGrid"></div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='analytical.html'">
+            ← Back to Analytical Data
+          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html'">
+              8-Step Manufacturing Studio
+            </button>
+            <button class="button button--primary" onclick="window.location.href='compliance.html'">
+              Proceed to Compliance Engine →
+            </button>
+          </div>
+        </div>
       </section>
     </main>
   </div>
@@ -112,4 +142,3 @@
   <script src="js/nav.js"></script>
 </body>
 </html>
-

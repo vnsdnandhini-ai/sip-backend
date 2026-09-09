@@ -6,8 +6,10 @@
  * a local .env file for local development).
  */
 
+const path = require('path');
 const { Pool } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config(); // fallback to cwd
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

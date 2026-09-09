@@ -1,4 +1,4 @@
-﻿// Reports page - connects to the real backend compliance engine and
+// Reports page - connects to the real backend compliance engine and
 // tamper-proof report generator. Replaces the old static-data version.
 
 async function renderReportPanel() {
@@ -7,7 +7,7 @@ async function renderReportPanel() {
 
   panel.innerHTML = `<p style="color:#64748b;">Select a report type above to generate a report from live data.</p>`;
 
-  await populateReportProjectFilter();
+  await populateReportBatchFilter();
 
   const batchCard = document.getElementById('cardBatchReport');
   const complianceCard = document.getElementById('cardComplianceReport');
@@ -16,19 +16,31 @@ async function renderReportPanel() {
   if (batchCard) batchCard.addEventListener('click', () => { selectReportCard(batchCard); showBatchReport(); });
   if (complianceCard) complianceCard.addEventListener('click', () => { selectReportCard(complianceCard); generateComplianceReport(); });
   if (auditCard) auditCard.addEventListener('click', () => { selectReportCard(auditCard); showAuditReport(); });
+
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  if (urlTab === 'audit' && auditCard) {
+    selectReportCard(auditCard);
+    showAuditReport();
+  } else if (urlTab === 'batch' && batchCard) {
+    selectReportCard(batchCard);
+    showBatchReport();
+  } else if (urlTab === 'compliance' && complianceCard) {
+    selectReportCard(complianceCard);
+    generateComplianceReport();
+  }
 }
 
-async function populateReportProjectFilter() {
-  const select = document.getElementById('reportProjectFilter');
+async function populateReportBatchFilter() {
+  const select = document.getElementById('reportBatchFilter');
   if (!select) return;
   try {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const state = await response.json();
     const projects = state.projects || [];
-    select.innerHTML = '<option value="">All Projects</option>' +
+    select.innerHTML = '<option value="">All Batches</option>' +
       projects.map((p) => `<option value="${p.id}">${p.name} (${p.batchNumber})</option>`).join('');
   } catch (err) {
-    console.error('Failed to load projects for report filter:', err);
+    console.error('Failed to load batches for report filter:', err);
   }
 }
 function selectReportCard(activeCard) {
@@ -39,52 +51,54 @@ function selectReportCard(activeCard) {
 function reportLoadingState(panel, label) {
   panel.innerHTML = `<p style="color:#64748b;"><span class="spinner"></span>${label}...</p>`;
 }
-async function showBatchReport() {
-  const panel = document.getElementById('reportPanel');
-  reportLoadingState(panel, 'Loading batch summary');
-
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/state`);
-    const state = await response.json();
-
-    panel.innerHTML = `
-      <div class="report-card">
-        <h4>Batch Report Summary</h4>
-        <p>Registered devices: <strong>${state.devices.length}</strong></p>
-        <p>Monitoring points: <strong>${state.monitoringPoints.length}</strong></p>
-        <p>Checkout conditions defined: <strong>${state.checkoutConditions.length}</strong></p>
-        <p>Total sensor readings recorded: <strong>${state.analyticalData.length}</strong></p>
-        <p>Generated: ${new Date().toLocaleString()}</p>
-      </div>
-    `;
-  } catch (err) {
-    panel.innerHTML = `<p style="color:#dc2626;">Failed to load batch data. Check console.</p>`;
-    console.error(err);
-  }
-}
 
 async function showAuditReport() {
   const panel = document.getElementById('reportPanel');
-  reportLoadingState(panel, 'Loading audit trail');
+  reportLoadingState(panel, 'Loading complete 21 CFR Part 11 audit trail');
 
   try {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const state = await response.json();
-    const entries = (state.auditTrail || []).slice(0, 10);
+    const entries = state.auditTrail || [];
 
     const rows = entries.length
-      ? entries.map((e) => `<tr><td>${e.timestamp || '-'}</td><td>${e.activity || '-'}</td><td>${e.module || '-'}</td><td>${e.user || '-'}</td></tr>`).join('')
-      : `<tr><td colspan="4" style="text-align:center;color:#94a3b8;">No audit entries yet.</td></tr>`;
+      ? entries.map((e) => `
+          <tr>
+            <td style="white-space:nowrap;font-family:monospace;font-size:0.85rem;color:#475569;">${e.timestamp ? new Date(e.timestamp).toLocaleString() : '-'}</td>
+            <td style="font-weight:500;color:#1e293b;">${e.activity || '-'}</td>
+            <td><span class="badge" style="background:#e0e7ff;color:#3730a3;font-size:0.8rem;padding:3px 8px;border-radius:6px;">${e.module || 'QMS Core'}</span></td>
+            <td><strong>${e.user || 'System QA'}</strong></td>
+          </tr>
+        `).join('')
+      : `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px;">No audit records found.</td></tr>`;
 
     panel.innerHTML = `
-      <div class="report-card">
-        <h4>Audit Trail (last 10 entries)</h4>
-        <div class="data-table-wrapper">
+      <div class="report-card" id="printableAuditReport">
+        <div style="border-bottom:3px solid #2563eb;padding-bottom:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:44px;height:44px;background:#2563eb;color:white;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;">SIP</div>
+            <div>
+              <h3 style="margin:0;color:#0f172a;">21 CFR Part 11 Electronic Audit Trail</h3>
+              <p style="margin:2px 0 0 0;color:#64748b;font-size:0.85rem;">Tamper-Proof Traceability &middot; Total Recorded Activities: <strong>${entries.length}</strong></p>
+            </div>
+          </div>
+          <span style="background:#16a34a1a;color:#16a34a;padding:4px 14px;border-radius:999px;font-weight:700;font-size:0.88rem;">✓ Audit Log Active</span>
+        </div>
+
+        <div class="data-table-wrapper" style="margin-top:16px;max-height:550px;overflow-y:auto;">
           <table class="data-table">
-            <thead><tr><th>Timestamp</th><th>Activity</th><th>Module</th><th>User</th></tr></thead>
+            <thead>
+              <tr>
+                <th style="position:sticky;top:0;background:#f8fafc;z-index:2;">Timestamp</th>
+                <th style="position:sticky;top:0;background:#f8fafc;z-index:2;">Activity & Audit Details</th>
+                <th style="position:sticky;top:0;background:#f8fafc;z-index:2;">Module</th>
+                <th style="position:sticky;top:0;background:#f8fafc;z-index:2;">Verified User</th>
+              </tr>
+            </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
+        <p style="margin-top:16px;font-size:0.85rem;color:#64748b;">Full Regulatory Audit Export Available &middot; Generated: ${new Date().toLocaleString()}</p>
       </div>
     `;
   } catch (err) {
@@ -97,8 +111,8 @@ async function generateComplianceReport() {
   const panel = document.getElementById('reportPanel');
   reportLoadingState(panel, 'Generating tamper-proof compliance report');
 
-  const projectSelect = document.getElementById('reportProjectFilter');
-  const projectId = projectSelect ? projectSelect.value : '';
+  const batchSelect = document.getElementById('reportBatchFilter');
+  const batchId = batchSelect ? batchSelect.value : '';
 
   try {
     const genResponse = await fetch(`${BACKEND_URL}/api/reports/generate`, {
@@ -107,7 +121,7 @@ async function generateComplianceReport() {
       body: JSON.stringify({
         title: 'Compliance Report',
         generatedBy: appState.session?.user || 'system',
-        projectId: projectId || null,
+        batchId: batchId || null,
       }),
     });
     const report = await genResponse.json();
@@ -216,7 +230,7 @@ function renderComplianceReport(report, verification) {
         </div>
         <div class="card card--metric">
           <div class="card-title">Total Deviations</div>
-          <div class="card-value" style="color:#dc2626;">${summary.warning + summary.critical}</div>
+          <div class="card-value" style="color:${(summary.warning + summary.critical) === 0 ? '#16a34a' : '#dc2626'};">${summary.warning + summary.critical}</div>
         </div>
       </div>
 

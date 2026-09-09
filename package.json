@@ -1,0 +1,24 @@
+{
+  "name": "spectroscopic-intelligence-platform-root",
+  "version": "1.0.0",
+  "description": "Spectroscopic Intelligence Platform deployment root",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "build": "cd backend && npm install",
+    "install:backend": "cd backend && npm install"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.18.4",
+    "jimp": "^1.6.1",
+    "multer": "^2.2.0",
+    "pg": "^8.22.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -165,8 +165,14 @@ if (document.getElementById('refreshCombinedVerdict')) {
   document.getElementById('refreshCombinedVerdict').addEventListener('click', loadCombinedVerdict);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('combinedVerdictTable')) {
+      loadCombinedVerdict();
+    }
+  });
+} else {
   if (document.getElementById('combinedVerdictTable')) {
     loadCombinedVerdict();
   }
-});
+}

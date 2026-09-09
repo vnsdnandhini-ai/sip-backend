@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link active" data-page="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Settings</h2>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrapper">
+            <input id="globalSearch" type="search" placeholder="Search modules, settings, records..." />
+          </div>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        <div class="section-header">
+          <div>
+            <h3>System Settings</h3>
+            <p>Configure platform preferences, telemetry refresh rates, AI vision quality thresholds, and regulatory compliance.</p>
+          </div>
+          <button class="button button--primary" id="saveSettingsBtn">Save Settings</button>
+        </div>
+
+        <div id="settingsNotification" class="settings-notification hidden">
+          <span id="settingsNotificationMsg">✓ Platform settings successfully saved and applied.</span>
+          <button type="button" onclick="document.getElementById('settingsNotification').classList.add('hidden')" style="background:none; border:none; color:inherit; font-size:1.1rem; cursor:pointer; line-height:1;">×</button>
+        </div>
+
+        <div class="grid grid--2cols">
+          
+          <!-- Card 1: In-Process Telemetry -->
+          <article class="card card--form">
+            <div class="card-header">In-Process Telemetry</div>
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="refreshIntervalSelect">In-Process Telemetry Refresh Rate</label>
+                <select id="refreshIntervalSelect">
+                  <option value="5000">5 seconds (High-Speed In-Process Sampling)</option>
+                  <option value="10000" selected>10 seconds (Standard cGMP Continuous Stream)</option>
+                  <option value="30000">30 seconds (Low Bandwidth Economy Mode)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Controls background telemetry refresh frequency for live sensor streams.</div>
+              </div>
+
+              <div class="form-group">
+                <label>Data Stream Protocol</label>
+                <input type="text" value="Continuous Real-Time IPQC Telemetry" readonly />
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Synchronous acquisition across active stage monitoring points.</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2: Regulatory Security & Traceability -->
+          <article class="card card--form">
+            <div class="card-header">Regulatory & Traceability</div>
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="auditLogSelect">21 CFR Part 11 Electronic Audit Logging</label>
+                <select id="auditLogSelect">
+                  <option value="true" selected>Enabled (All approvals, parameter edits & stage transitions logged)</option>
+                  <option value="false">Disabled</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Maintains unalterable audit trails with timestamped electronic records.</div>
+              </div>
+
+              <div class="form-group">
+                <label>Cryptographic Integrity Standard</label>
+                <input type="text" value="SHA-256 (FDA 21 CFR Part 11 Certified Hashing)" readonly />
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Standard checksum hashing applied to all batch reports and release signatures.</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 3: AI Vision Inspection -->
+          <article class="card card--form">
+            <div class="card-header">AI Vision Inspection</div>
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="aiEnableSelect">AI Botanical & Tablet Defect Classifier</label>
+                <select id="aiEnableSelect">
+                  <option value="true">Enabled (Deep Learning Inference Active)</option>
+                  <option value="false">Disabled (Rule-Based Computer Vision Only)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Enables automated botanical raw material leaf and tablet defect classification.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="aiThresholdInput">AI Confidence Acceptance Threshold (%)</label>
+                <input type="number" id="aiThresholdInput" value="70" min="50" max="99" />
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Predictions below this score require manual QA review.</div>
+              </div>
+
+              <div class="form-group">
+                <label>Active Vision Model Engine</label>
+                <input type="text" id="aiModelVersionDisplay" value="MobileNetV2 (Botanical Leaf & Defect Vision v3.0)" readonly />
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 4: Quality Gate Thresholds -->
+          <article class="card card--form">
+            <div class="card-header">Computer Vision Quality Gates</div>
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="contaminationThresholdInput">Surface Contamination Limit (%)</label>
+                <input type="number" id="contaminationThresholdInput" value="3.0" step="0.1" min="0.5" max="15.0" />
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Maximum allowable outlier pixel ratio before triggering Out-of-Spec alert.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="edgeSensitivityInput">Sobel Edge Gradient Sensitivity</label>
+                <input type="number" id="edgeSensitivityInput" value="3.0" step="0.1" min="1.0" max="10.0" />
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Detects broken tablet edges, chips, and irregular surface contours.</div>
+              </div>
+            </div>
+          </article>
+
+        </div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='reports.html'">
+            ← Back to Quality Reports & Audit
+          </button>
+          <button class="button button--primary" onclick="window.location.href='dashboard.html'">
+            Return to Dashboard →
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

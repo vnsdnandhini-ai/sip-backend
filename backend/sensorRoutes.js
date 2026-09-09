@@ -124,12 +124,13 @@ router.post('/reference-color', async (req, res) => {
     }
   });
   router.post('/upload-image', async (req, res) => {
-    const { monitoringPointId, parameter, imageBase64 } = req.body;
+    const { monitoringPointId, parameter, imageBase64, projectId, batchId, processStage, stageStep, defectTags, sampleMetadata } = req.body;
 
     if (!imageBase64) {
       return res.status(400).json({ error: 'imageBase64 is required.' });
     }
 
+    const targetBatchId = batchId || projectId || null;
     const id = generateId();
     const fileName = `${id}.jpg`;
     const imageBuffer = Buffer.from(imageBase64, 'base64');
@@ -162,32 +163,28 @@ router.post('/reference-color', async (req, res) => {
         imageAnalysisResult = { ai: aiResult };
     }
 
-
-    const { error: uploadError } = await supabase.storage
-      .from('images')
-      .upload(fileName, imageBuffer, { contentType: 'image/jpeg' });
-
-    if (uploadError) {
-      console.error('Failed to upload image to Supabase:', uploadError);
-      return res.status(500).json({ error: 'Failed to save image file.' });
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
+    const filePath = path.join(uploadDir, fileName);
+    fs.writeFileSync(filePath, imageBuffer);
 
-    const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
-    const imagePath = publicUrlData.publicUrl;
+    const imagePath = `/uploads/${fileName}`;
 
     try {
       await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, device_timestamp, data_type, image_path, image_analysis)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [id, null, monitoringPointId || null, 'manual',
-          parameter || 'Image',
-          imagePath,
-          null,
-          'image',
-          imagePath,
-          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null]
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, project_id, process_stage, stage_step, defect_tags, sample_metadata, reading_type, parameter, value, device_timestamp, data_type, image_path, image_analysis)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [
+          id, null, monitoringPointId || null, targetBatchId, processStage || null,
+          stageStep || null, defectTags || (imageAnalysisResult?.detectedDefect || null),
+          sampleMetadata ? (typeof sampleMetadata === 'object' ? JSON.stringify(sampleMetadata) : sampleMetadata) : null,
+          'manual', parameter || 'Image', imagePath, null, 'image', imagePath,
+          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null
+        ]
       );
-      res.json({ success: true, recordId: id, imagePath, imageAnalysis: imageAnalysisResult });
+      res.json({ success: true, recordId: id, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {
       console.error('Failed to save manual image upload:', err);
       res.status(500).json({ error: 'Database error.' });
@@ -195,15 +192,16 @@ router.post('/reference-color', async (req, res) => {
   });
 
   router.post('/sensor-data', requireDeviceAuth, async (req, res) => {
-    const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue, imageBase64 } = req.body;
+    const { monitoringPointId, timestamp, readingType, values, parameters, dataType, stringValue, imageBase64, projectId, batchId, processStage, stageStep, defectTags, sampleMetadata } = req.body;
 
     if (!monitoringPointId) {
       return res.status(400).json({ error: 'monitoringPointId is required.' });
     }
- if (!values && !parameters && !stringValue && !imageBase64) {
-  return res.status(400).json({ error: 'At least one of values, parameters, stringValue, or imageBase64 is required.' });
-}
+    if (!values && !parameters && !stringValue && !imageBase64) {
+      return res.status(400).json({ error: 'At least one of values, parameters, stringValue, or imageBase64 is required.' });
+    }
 
+    const targetBatchId = batchId || projectId || null;
     const id = generateId();
     const resolvedDataType = dataType || (stringValue ? 'string' : 'number');
 
@@ -234,7 +232,7 @@ router.post('/reference-color', async (req, res) => {
 
       spectrumResult = findBestMatch({ x: spectrumX, y: spectrumY }, referenceVariants);
     }
-let derivedParameter = null;
+    let derivedParameter = null;
     let derivedValue = null;
 
     if (resolvedDataType === 'spectrum' && spectrumResult) {
@@ -278,45 +276,41 @@ let derivedParameter = null;
 
       try {
         imageAnalysisResult = await analyzeImage(imageBuffer, referenceColor);
-    } catch (err) {
-      console.error('Image analysis failed (continuing without it):', err);
-    }
-    
-    let aiResult = null;
-    try {
-        const formData = new FormData();
-        formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
-        const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
-            method: 'POST',
-            body: formData
-        });
-        if (aiResponse.ok) {
-            aiResult = await aiResponse.json();
-        }
-    } catch (err) {
-        console.error('AI analysis service unreachable:', err.message);
-    }
-    
-    if (imageAnalysisResult && aiResult) {
-        imageAnalysisResult.ai = aiResult;
-    } else if (!imageAnalysisResult && aiResult) {
-        imageAnalysisResult = { ai: aiResult };
-    }
-
-
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(fileName, imageBuffer, { contentType: 'image/jpeg' });
-
-      if (uploadError) {
-        console.error('Failed to upload image to Supabase:', uploadError);
-        return res.status(500).json({ error: 'Failed to save image file.' });
+      } catch (err) {
+        console.error('Image analysis failed (continuing without it):', err);
+      }
+      
+      let aiResult = null;
+      try {
+          const formData = new FormData();
+          formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
+          const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
+              method: 'POST',
+              body: formData
+          });
+          if (aiResponse.ok) {
+              aiResult = await aiResponse.json();
+          }
+      } catch (err) {
+          console.error('AI analysis service unreachable:', err.message);
+      }
+      
+      if (imageAnalysisResult && aiResult) {
+          imageAnalysisResult.ai = aiResult;
+      } else if (!imageAnalysisResult && aiResult) {
+          imageAnalysisResult = { ai: aiResult };
       }
 
-      const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
-      imagePath = publicUrlData.publicUrl;
+      const uploadDir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, imageBuffer);
+
+      imagePath = `/uploads/${fileName}`;
     }
-if (resolvedDataType === 'image') {
+    if (resolvedDataType === 'image') {
       derivedParameter = 'Image';
       derivedValue = imagePath;
     }
@@ -325,10 +319,14 @@ if (resolvedDataType === 'image') {
       derivedValue = stringValue;
     }
     try {
-     await pool.query(
-        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, reading_type, parameter, value, parameters, values_data, device_timestamp, data_type, string_value, image_path, image_analysis)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [id, req.device.device_id, monitoringPointId, readingType || 'parameter',
+      await pool.query(
+        `INSERT INTO analytical_data (id, device_id, monitoring_point_id, project_id, process_stage, stage_step, defect_tags, sample_metadata, reading_type, parameter, value, parameters, values_data, device_timestamp, data_type, string_value, image_path, image_analysis)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+        [
+          id, req.device.device_id, monitoringPointId, targetBatchId, processStage || null,
+          stageStep || null, defectTags || (imageAnalysisResult?.detectedDefect || null),
+          sampleMetadata ? (typeof sampleMetadata === 'object' ? JSON.stringify(sampleMetadata) : sampleMetadata) : null,
+          readingType || 'parameter',
           derivedParameter,
           derivedValue !== null ? String(derivedValue) : null,
           parameters ? JSON.stringify(parameters) : null,
@@ -337,11 +335,12 @@ if (resolvedDataType === 'image') {
           resolvedDataType,
           stringValue || null,
           imagePath,
-          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null]
+          imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null
+        ]
       );
       await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
 
-      res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath, imageAnalysis: imageAnalysisResult });
+      res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {
       console.error('Failed to save sensor data:', err);
       res.status(500).json({ error: 'Database error.' });

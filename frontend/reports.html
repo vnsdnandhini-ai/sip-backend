@@ -21,8 +21,8 @@
       </div>
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link" data-page="dashboard">Dashboard</button>
-        <button class="nav-link" data-page="onboarding">Guided Setup</button>
-        <button class="nav-link" data-page="projects">Projects</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">8-Step Manufacturing</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
@@ -30,9 +30,10 @@
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
         <button class="nav-link" data-page="gallery">Image Gallery</button>
         <button class="nav-link" data-page="compliance">Compliance Engine</button>
-        <button class="nav-link active" data-page="reports">Reports</button>
-        <button class="nav-link" data-page="audit">Audit Trail</button>
+        <button class="nav-link active" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
       </nav>
+
     </aside>
 
     <main class="main-content">
@@ -43,44 +44,59 @@
         </div>
         <div class="topbar-right">
           <div class="search-wrapper">
-            <input id="globalSearch" type="search" placeholder="Search modules, projects, records..." />
+            <input id="globalSearch" type="search" placeholder="Search modules, batchs, records..." />
           </div>
           <button class="button button--secondary" id="signOutButton">Sign Out</button>
         </div>
       </header>
 
       <section class="content-section">
-        <div class="section-header">
-          <div>
-            <h3>Report Generation</h3>
-            <p>Generate batch, compliance, QA, trend, and audit reports for quality assurance oversight.</p>
-          </div>
-          <div class="button-group">
-            <button class="button button--secondary" id="exportExcel">Excel Export</button>
-            <button class="button button--secondary" id="exportPdf">Print / PDF</button>
+        
+        <!-- Modern De-congested Reports Studio Header -->
+        <div class="reports-studio-header">
+          <div class="reports-studio-top">
+            <div class="reports-title-area">
+              <div class="reports-badge-row">
+                <span class="batch-code-tag">21 CFR PART 11</span>
+                <span class="badge badge--pass">cGMP Quality Oversight</span>
+              </div>
+              <h2 class="reports-main-title">Pharmaceutical Quality & Compliance Reports</h2>
+              <p class="reports-meta-desc">Generate official Certificates of Analysis (CoA), In-Process Quality Controls (IPQC) telemetry, and 21 CFR Part 11 Electronic Audit Trails.</p>
+            </div>
+            
+            <div class="reports-actions-box">
+              <div class="reports-batch-selector">
+                <label for="reportBatchFilter">Filter By Batch:</label>
+                <select id="reportBatchFilter">
+                  <option value="">All Batches</option>
+                </select>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="button button--secondary" id="exportExcel" style="font-size:0.85rem; padding:6px 14px;">📊 Excel Export</button>
+                <button class="button button--secondary" id="exportPdf" style="font-size:0.85rem; padding:6px 14px;">🖨️ Print / PDF</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="form-group" style="max-width:400px;margin-bottom:1.4rem;">
-          <label>Filter Compliance Report by Project</label>
-          <select id="reportProjectFilter">
-            <option value="">All Projects</option>
-          </select>
-        </div>
-    <div class="grid grid--3cards">
+
+        <!-- 3-Card Interactive Report Selector -->
+        <div class="grid grid--3cards">
           <div class="card card--report" id="cardBatchReport" style="cursor:pointer;">
-            <h4>Batch Report</h4>
-            <p>Summary of project activities, monitoring points, and data validation status.</p>
+            <h4><span>📦</span> Batch Manufacturing Report</h4>
+            <p>Comprehensive batch genealogy, operational stages, target vs actual yields, and release dispositions.</p>
           </div>
           <div class="card card--report" id="cardComplianceReport" style="cursor:pointer;">
-            <h4>Compliance Report</h4>
-            <p>Evaluation results, deviations, and regulatory alignment for current dataset.</p>
+            <h4><span>🛡️</span> cGMP Compliance Report</h4>
+            <p>Full IPQC acceptance criteria validation, automated spectroscopy identity match, and tolerance compliance.</p>
           </div>
           <div class="card card--report" id="cardAuditReport" style="cursor:pointer;">
-            <h4>Audit Report</h4>
-            <p>Historical trail of user actions, configuration updates, data uploads, and approvals.</p>
+            <h4><span>📋</span> Electronic Audit Trail</h4>
+            <p>Chronological 21 CFR Part 11 electronic records of operator approvals, line stage transitions, and sign-offs.</p>
           </div>
         </div>
-        <div class="report-panel" id="reportPanel"></div>
+
+        <!-- Dynamic Report Workspace Panel -->
+        <div class="report-panel" id="reportPanel" style="margin-top: 24px;"></div>
       </section>
     </main>
   </div>

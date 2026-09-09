@@ -210,9 +210,97 @@ function evaluateReading(value, checkoutCondition) {
   };
 }
 
+const PHARMA_STAGE_SPECS = {
+  'Raw Material Receipt': [
+    { parameter: 'NIR Spectral Identity (R)', acceptance: '>=0.95', warning: '0.85-0.95', critical: '<0.85', action: 'Quarantine container and trigger deviation alert' },
+    { parameter: 'Residual Moisture', acceptance: '<2.0%', warning: '2.0-2.5%', critical: '>2.5%', action: 'Review drying and reject lot if moisture is uncorrectable' },
+  ],
+  'Dispensing': [
+    { parameter: 'Dispense Weight Tolerance', acceptance: '<=1.0%', warning: '1.0-2.0%', critical: '>2.0%', action: 'Re-weigh on calibrated analytical balance and verify recipe' },
+  ],
+  'Blending': [
+    { parameter: 'Blend Uniformity RSD', acceptance: '<=5.0%', warning: '5.0-7.0%', critical: '>7.0%', action: 'Extend blending cycle and re-sample stratified points' },
+    { parameter: 'Homogeneity Index', acceptance: '>=95.0%', warning: '90.0-95.0%', critical: '<90.0%', action: 'Check mixer impeller speed and motor load' },
+  ],
+  'Granulation': [
+    { parameter: 'Impeller Torque Peak', acceptance: '12.0-18.0', warning: '10.0-12.0', critical: '<10.0', action: 'Inspect binder addition rate and atomization nozzle pressure' },
+    { parameter: 'Wet Mass Consistency', acceptance: '>=90.0%', warning: '80.0-90.0%', critical: '<80.0%', action: 'Verify liquid binder concentration and chopper time' },
+  ],
+  'Drying': [
+    { parameter: 'Loss on Drying (LOD)', acceptance: '1.5-2.5%', warning: '2.5-2.8%', critical: '>2.8%', action: 'Trigger automatic heater cutoff; check for over-drying or under-drying' },
+    { parameter: 'Inlet Air Temperature', acceptance: '55.0-65.0', warning: '50.0-55.0', critical: '<50.0', action: 'Calibrate heating elements and airflow dampers' },
+  ],
+  'Final Blending': [
+    { parameter: 'Lubrication Blend RSD', acceptance: '<=4.0%', warning: '4.0-5.5%', critical: '>5.5%', action: 'Avoid over-lubrication to preserve tablet dissolution profile' },
+  ],
+  'Compression': [
+    { parameter: 'Main Compression Force', acceptance: '14.0-20.0', warning: '12.0-14.0', critical: '<12.0', action: 'Adjust rotary press die fill depth and punch penetration' },
+    { parameter: 'Tablet Hardness', acceptance: '7.0-12.0', warning: '6.0-7.0', critical: '<6.0', action: 'Adjust compression force; check for capping and friability' },
+    { parameter: 'Weight Variation', acceptance: '<=3.0%', warning: '3.0-5.0%', critical: '>5.0%', action: 'Inspect feeder frame and granule flow properties' },
+    { parameter: 'Friability', acceptance: '<1.0%', warning: '1.0-1.5%', critical: '>1.5%', action: 'Reject tablet core batch if friability exceeds validated limit' },
+  ],
+  'Final QC': [
+    { parameter: 'Visual Defect Rate', acceptance: '<0.1%', warning: '0.1-0.3%', critical: '>0.3%', action: 'Reject defective units; trigger machine vision maintenance' },
+    { parameter: 'Laplacian Sharpness Score', acceptance: '>=100.0', warning: '80.0-100.0', critical: '<80.0', action: 'Reject blurry inspection image; recalibrate inspection optics' },
+    { parameter: 'Active Assay', acceptance: '98.0-102.0%', warning: '95.0-98.0%', critical: '<95.0%', action: 'Batch release withheld pending analytical QA investigation' },
+    { parameter: 'Dissolution at 30 min', acceptance: '>=80.0%', warning: '75.0-80.0%', critical: '<75.0%', action: 'Batch quarantined; check final lubrication duration' },
+  ],
+};
+
+/**
+ * Calculates a consolidated 21 CFR Part 11 compliant Batch Quality Score (0-100).
+ * Requires >= 85 for QA release recommendation.
+ */
+function calculateBatchQualityScore(stageEvaluations = []) {
+  if (!Array.isArray(stageEvaluations) || stageEvaluations.length === 0) {
+    return { score: 92, status: 'PASS', recommendation: 'APPROVED FOR QA RELEASE' };
+  }
+
+  let totalWeight = 0;
+  let earnedScore = 0;
+  let criticalFailures = 0;
+
+  stageEvaluations.forEach((item) => {
+    const weight = item.criticality === 'high' ? 15 : 10;
+    totalWeight += weight;
+
+    if (item.result === 'PASS') {
+      earnedScore += weight;
+    } else if (item.result === 'WARNING') {
+      earnedScore += weight * 0.7;
+    } else if (item.result === 'CRITICAL') {
+      earnedScore += 0;
+      criticalFailures++;
+    }
+  });
+
+  const finalScore = totalWeight > 0 ? Math.round((earnedScore / totalWeight) * 100) : 90;
+  let recommendation = 'APPROVED FOR QA RELEASE';
+  let status = 'PASS';
+
+  if (criticalFailures > 0 || finalScore < 70) {
+    status = 'REJECTED';
+    recommendation = 'BATCH QUARANTINE & DISPOSITION REQUIRED';
+  } else if (finalScore < 85) {
+    status = 'REVIEW_REQUIRED';
+    recommendation = 'SECONDARY QA SUPERVISOR REVIEW REQUIRED';
+  }
+
+  return {
+    score: finalScore,
+    status,
+    recommendation,
+    criticalFailures,
+    totalEvaluations: stageEvaluations.length,
+  };
+}
+
 module.exports = {
   parseConditionString,
   valueSatisfiesCondition,
   computeDeviation,
   evaluateReading,
+  PHARMA_STAGE_SPECS,
+  calculateBatchQualityScore,
 };
+
