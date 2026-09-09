@@ -1,4 +1,4 @@
-var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) ? window.BACKEND_URL : 'http://127.0.0.1:3000';
+var BACKEND_URL = 'https://sip-backend-1.onrender.com';
 window.BACKEND_URL = BACKEND_URL;
 
 // Clean UI initialization
@@ -23,9 +23,9 @@ async function fetchLiveAnalyticalData() {
     const response = await fetch(`${BACKEND_URL}/api/state`);
     const liveData = await response.json();
     if (liveData.analyticalData && liveData.analyticalData.length) {
-     const liveFormatted = liveData.analyticalData.map((item) => {
-          const isManualEntry = item.readingType === 'manual' && item.parameter;
-if (item.dataType === 'image') {
+      const liveFormatted = liveData.analyticalData.map((item) => {
+        const isManualEntry = item.readingType === 'manual' && item.parameter;
+        if (item.dataType === 'image') {
           const imageUrl = resolveImageUrl(item.value || item.imagePath);
           return {
             id: item.id,
@@ -55,55 +55,55 @@ if (item.dataType === 'image') {
             isLive: true,
           };
         }
-         if (isManualEntry) {
-            return {
-              id: item.id,
-              parameter: item.parameter,
-              instrument: item.instrument || 'Manual Entry',
-              value: item.value,
-              unit: item.unit || '',
-              timestamp: item.deviceTimestamp || item.receivedAt,
-              result: 'Manual',
-              isLive: true,
-              dataType: 'manual',
-              projectId: item.projectId,
-              processStage: item.processStage,
-            };
-          }
-
-        if (item.parameter && item.value) {
-            return {
-              id: item.id,
-              parameter: item.parameter,
-              instrument: item.deviceId || 'ESP32',
-              value: item.value,
-              unit: '',
-              timestamp: item.receivedAt,
-            result: item.dataType === 'image' ? 'Image' : 'Live',
-              isLive: true,
-              dataType: item.dataType,
-              rawValues: item.values,
-              imageAnalysis: item.imageAnalysis,
-              projectId: item.projectId,
-              processStage: item.processStage,
-            };
-          }
-
-         return {
+        if (isManualEntry) {
+          return {
             id: item.id,
-            parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
-            instrument: item.deviceId || 'ESP32',
-            value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
-            unit: '',
-            timestamp: item.receivedAt,
-            result: 'Live',
+            parameter: item.parameter,
+            instrument: item.instrument || 'Manual Entry',
+            value: item.value,
+            unit: item.unit || '',
+            timestamp: item.deviceTimestamp || item.receivedAt,
+            result: 'Manual',
             isLive: true,
-            dataType: item.dataType || 'number',
+            dataType: 'manual',
             projectId: item.projectId,
             processStage: item.processStage,
           };
-        });
-     appState.analyticalData = liveFormatted.reverse();
+        }
+
+        if (item.parameter && item.value) {
+          return {
+            id: item.id,
+            parameter: item.parameter,
+            instrument: item.deviceId || 'ESP32',
+            value: item.value,
+            unit: '',
+            timestamp: item.receivedAt,
+            result: item.dataType === 'image' ? 'Image' : 'Live',
+            isLive: true,
+            dataType: item.dataType,
+            rawValues: item.values,
+            imageAnalysis: item.imageAnalysis,
+            projectId: item.projectId,
+            processStage: item.processStage,
+          };
+        }
+
+        return {
+          id: item.id,
+          parameter: item.parameters ? Object.keys(item.parameters).join(', ') : (item.readingType || 'Sensor Reading'),
+          instrument: item.deviceId || 'ESP32',
+          value: item.parameters ? Object.values(item.parameters).join(' / ') : '',
+          unit: '',
+          timestamp: item.receivedAt,
+          result: 'Live',
+          isLive: true,
+          dataType: item.dataType || 'number',
+          projectId: item.projectId,
+          processStage: item.processStage,
+        };
+      });
+      appState.analyticalData = liveFormatted.reverse();
     }
   } catch (err) {
     console.error('Could not fetch live sensor data:', err);
@@ -260,7 +260,7 @@ function handleCsvUpload(event) {
     window.location.reload();
   };
   reader.readAsText(file);
-}async function deleteSingleReading(id) {
+} async function deleteSingleReading(id) {
   const confirmed = confirm('Delete this reading permanently?');
   if (!confirmed) return;
 
@@ -334,7 +334,7 @@ function initApp() {
   if (selectors.signOutButton) {
     selectors.signOutButton.addEventListener('click', signOut);
   }
-  
+
   // Only initialize module-specific UI if not on login page
   if (!document.getElementById('login-screen')) {
     bindEvents();
@@ -346,7 +346,7 @@ function bindEvents() {
   if (document.getElementById('globalSearch')) {
     document.getElementById('globalSearch').addEventListener('input', handleSearch);
   }
- if (document.getElementById('openBatchForm')) {
+  if (document.getElementById('openBatchForm')) {
     document.getElementById('openBatchForm').addEventListener('click', () => openBatchForm());
   }
   if (document.getElementById('openMonitoringForm')) {
@@ -376,7 +376,7 @@ function bindEvents() {
   if (document.getElementById('exportPdf')) {
     document.getElementById('exportPdf').addEventListener('click', () => exportReport('pdf'));
   }
- if (document.getElementById('modalBackdrop')) {
+  if (document.getElementById('modalBackdrop')) {
     document.getElementById('modalBackdrop').addEventListener('click', closeModal);
   }
   if (document.getElementById('clearDataButton')) {
@@ -386,7 +386,7 @@ function bindEvents() {
 
 function initializeCurrentModule() {
   const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
-  
+
   if (currentFile === 'dashboard.html') {
     refreshDashboard();
   } else if (currentFile === 'batches.html') {
@@ -489,20 +489,20 @@ function searchTable(tableId, data, fields, query) {
         row.innerHTML = `<td>${item.parameter}</td><td>${item.acceptance}</td><td>${item.warning}</td><td>${item.critical}</td><td>${item.action}</td><td>${createRowActions(item.id, 'condition')}</td>`;
       } else if (tableId === 'rulesTable') {
         row.innerHTML = `<td>${item.name}</td><td>${item.description}</td><td>${item.status}</td><td>${createRowActions(item.id, 'rule')}</td>`;
-    } else if (tableId === 'dataTable') {
-          const deleteBtn = item.isLive ? `<button class="table-action-button danger" onclick="deleteSingleReading('${item.id}')">Delete</button>` : '';
+      } else if (tableId === 'dataTable') {
+        const deleteBtn = item.isLive ? `<button class="table-action-button danger" onclick="deleteSingleReading('${item.id}')">Delete</button>` : '';
 
-          let valueCell = item.value;
-         if (item.dataType === 'image' && item.value) {
-            valueCell = `<button class="table-action-button" onclick="viewAnalyticalImage('${item.id}')">&#128247; View Image</button>`;
-          } else if (item.dataType === 'spectrum' && item.rawValues) {
-            valueCell = `${item.value} <button class="table-action-button" onclick='showSpectrumChart(${JSON.stringify(item.rawValues)})'>View Chart</button>`;
-          }
-
-const resultLabel = item.result || 'Pending';
-const badgeClass = resultLabel === 'Live' ? 'badge--live' : resultLabel === 'Image' ? 'badge--image' : resultLabel === 'Manual' ? 'badge--manual' : 'badge--pending';
-row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${valueCell}</td><td>${item.unit}</td><td>${item.timestamp}</td><td><span class="badge ${badgeClass}">${resultLabel}</span></td><td>${deleteBtn}</td>`;
+        let valueCell = item.value;
+        if (item.dataType === 'image' && item.value) {
+          valueCell = `<button class="table-action-button" onclick="viewAnalyticalImage('${item.id}')">&#128247; View Image</button>`;
+        } else if (item.dataType === 'spectrum' && item.rawValues) {
+          valueCell = `${item.value} <button class="table-action-button" onclick='showSpectrumChart(${JSON.stringify(item.rawValues)})'>View Chart</button>`;
         }
+
+        const resultLabel = item.result || 'Pending';
+        const badgeClass = resultLabel === 'Live' ? 'badge--live' : resultLabel === 'Image' ? 'badge--image' : resultLabel === 'Manual' ? 'badge--manual' : 'badge--pending';
+        row.innerHTML = `<td>${item.parameter}</td><td>${item.instrument}</td><td>${valueCell}</td><td>${item.unit}</td><td>${item.timestamp}</td><td><span class="badge ${badgeClass}">${resultLabel}</span></td><td>${deleteBtn}</td>`;
+      }
       tbody.appendChild(row);
     });
 }
@@ -540,7 +540,7 @@ async function recordAudit(activity, module, user = appState.session?.user || 's
   } catch (err) {
     console.error('Failed to record audit entry:', err);
   }
-}function openModal(title, contentHtml, onSubmitLabel, onSubmit) {
+} function openModal(title, contentHtml, onSubmitLabel, onSubmit) {
   selectors.modalPanel.innerHTML = `<h3>${title}</h3>${contentHtml}`;
   if (onSubmitLabel && onSubmit) {
     const actions = document.createElement('div');
@@ -795,7 +795,7 @@ function showImagePopup(imageUrl, analysis) {
   viewArea.appendChild(origImg);
   viewArea.appendChild(defCanvas);
   viewArea.appendChild(aiImg);
-  
+
   const visualStatus = document.createElement('div');
   visualStatus.style.cssText = 'position:absolute;top:24px;left:24px;background:rgba(15,23,42,0.85);color:#38bdf8;padding:8px 16px;border-radius:30px;font-size:0.75rem;font-weight:700;backdrop-filter:blur(6px);border:1px solid rgba(56,189,248,0.3);display:none;align-items:center;gap:6px;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
   viewArea.appendChild(visualStatus);
@@ -806,7 +806,7 @@ function showImagePopup(imageUrl, analysis) {
   const btnOrig = document.createElement('button');
   btnOrig.className = 'modern-btn modern-btn-outline active';
   btnOrig.innerHTML = '&#128428; Original Image';
-  
+
   const btnHighlight = document.createElement('button');
   btnHighlight.className = 'modern-btn modern-btn-danger';
   btnHighlight.innerHTML = '&#128269; Highlight Defects';
@@ -855,7 +855,7 @@ function showImagePopup(imageUrl, analysis) {
   } else {
     badges.push('<span style="background:#dcfce7;color:#15803d;padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:800;letter-spacing:0.02em;border:1px solid #86efac;">🟢 HEALTHY (APPROVED)</span>');
   }
-  
+
   if (analysis.captureQualityOk !== false) badges.push('<span style="background:#dcfce7;color:#15803d;padding:6px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">&#10004; Capture OK</span>');
   else badges.push('<span style="background:#fef3c7;color:#b45309;padding:6px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.02em;">&#9888; Capture Issue</span>');
 
@@ -876,7 +876,7 @@ function showImagePopup(imageUrl, analysis) {
 
   let aiConfidence = ai.confidence_score !== undefined ? parseFloat(ai.confidence_score) : 98.4;
   let verdictLabel = isDefectiveSample ? 'FAIL / REJECT' : 'PASS / APPROVED';
-  
+
   if (aiConfidence < 70) {
     verdictLabel = 'REVIEW REQUIRED';
     badgeCls = 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;';
@@ -927,7 +927,7 @@ function showImagePopup(imageUrl, analysis) {
     <div class="data-row"><span class="data-label">Sharpness</span> <span class="data-value">${analysis.sharpness !== undefined ? analysis.sharpness : 'High Definition'}</span></div>
   `;
   rightPanel.appendChild(capCard);
-  
+
   // Dynamic Defect Card (ALWAYS CREATED)
   const dynamicStats = document.createElement('div');
   dynamicStats.id = 'dynamic-analysis-stats';
@@ -997,7 +997,7 @@ function showImagePopup(imageUrl, analysis) {
     if (currentMode === mode) return;
     resetButtons();
     currentMode = mode;
-    
+
     const activeBtn = mode === 'highlight' ? btnHighlight : btnSegregate;
     activeBtn.innerHTML = '<span style="opacity:0.7">Processing...</span>';
     activeBtn.disabled = true;
@@ -1105,13 +1105,13 @@ function showImagePopup(imageUrl, analysis) {
 
           // 1. Black Rot / Necrotic Leaf Spot (sunken dark spots/lesions)
           const isBlackRot = (lum < 75 && exg < -4) || (r < 70 && g < 65 && b < 65 && !isGreenHealthy);
-          
+
           // 2. Rust / Blight / Anthracnose (reddish-brown/orange decay)
           const isRustBlight = (r > g * 1.15 && r > b * 1.25 && (r - g) > 18);
-          
+
           // 3. Severe Chlorosis / Yellow Rot Halo
           const isYellowRot = (r > 155 && g > 150 && b < 85 && exg < 8);
-          
+
           // 4. Powdery Mildew / White Mold Coating
           const isPowderyMildew = (r > 175 && g > 175 && b > 170 && Math.abs(r - g) < 20 && !isGreenHealthy);
 
@@ -1244,7 +1244,7 @@ function showImagePopup(imageUrl, analysis) {
       defCanvas.style.display = 'block';
       aiImg.style.display = 'none';
       visualStatus.style.display = 'flex';
-      
+
       const surfaceDefectPercent = ((defectCount / effectiveFg) * 100).toFixed(1);
       const fgCoveragePercent = ((effectiveFg / totalPx) * 100).toFixed(1);
 
@@ -1358,7 +1358,7 @@ function initializePlatform() {
   } else if (!appState.session && !document.getElementById('login-form')) {
     // On module page without session - redirect to login
     window.location.href = 'index.html';
-} else {
+  } else {
     // Normal initialization
     fetchLiveAnalyticalData().then(async () => {
       const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
@@ -1420,7 +1420,7 @@ async function deleteSensorDataRange() {
 
   const confirmed = confirm(`Delete all sensor readings in the selected range? This cannot be undone.`);
   if (!confirmed) return;
-6
+  6
   try {
     const response = await fetch(`${BACKEND_URL}/api/sensor-data/range`, {
       method: 'DELETE',
