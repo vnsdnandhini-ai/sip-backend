@@ -10,6 +10,8 @@ async function runMigrations() {
       await pool.query(`ALTER TABLE analytical_data ADD COLUMN IF NOT EXISTS stage_step VARCHAR(255);`);
       await pool.query(`ALTER TABLE analytical_data ADD COLUMN IF NOT EXISTS defect_tags VARCHAR(255);`);
       await pool.query(`ALTER TABLE analytical_data ADD COLUMN IF NOT EXISTS sample_metadata TEXT;`);
+      await pool.query(`ALTER TABLE analytical_data ADD COLUMN IF NOT EXISTS instrument VARCHAR(255);`);
+      await pool.query(`ALTER TABLE analytical_data ADD COLUMN IF NOT EXISTS result VARCHAR(50);`);
 
       // Add pharmaceutical fields to projects (batches)
       await pool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS material_id VARCHAR(255);`);

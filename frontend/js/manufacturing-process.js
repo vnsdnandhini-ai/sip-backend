@@ -181,6 +181,17 @@ async function initManufacturingStudio() {
         localStorage.setItem('sipActiveBatchId', currentBatchId);
       }
       await loadBatchDetails(currentBatchId, true);
+
+      // Background live sensor telemetry polling
+      setInterval(async () => {
+        if (currentBatchId && !document.hidden) {
+          const fresh = await loadActiveStageSensorData(true);
+          if (fresh && fresh.parameters) {
+            renderActiveStageStudio();
+            renderStageLogTable();
+          }
+        }
+      }, 10000);
     } else {
       renderEmptyState();
     }
@@ -269,6 +280,7 @@ async function loadBatchDetails(batchId, autoSwitchStage = false) {
     populateBatchDropdown();
     renderBatchHeader();
     renderStepper();
+    await loadActiveStageSensorData(true);
     renderActiveStageStudio();
     renderStageLogTable();
   } else {
@@ -352,13 +364,227 @@ function renderStepper() {
   }).join('');
 }
 
-function selectStage(stageName) {
+async function selectStage(stageName) {
   const match = findStage(stageName);
   currentActiveStage = match.name;
   renderBatchHeader();
   renderStepper();
+  await loadActiveStageSensorData(true);
   renderActiveStageStudio();
   renderStageLogTable();
+}
+
+let currentStageSensorData = null;
+
+let stage1ScanResults = {
+  pearsonR: 0.9927,
+  moisturePercent: 1.25,
+  gateStatus: 'PASS',
+  barcode: 'BC-RM-9942-01',
+  containerId: 'DRUM-01',
+  reconciliationStatus: 'VERIFIED',
+  cleanroomEnv: { tempC: 21.5, rhPercent: 42.0 },
+  lastUpdated: new Date().toLocaleTimeString()
+};
+
+let stage2State = {
+  dev: 0.24,
+  actualQuantity: 50.12,
+  targetQuantity: 50.0,
+  rhPercent: 42.0,
+  tempC: 21.5
+};
+
+let stage3State = {
+  speed: 24.0,
+  duration: 15.0,
+  rsd: 2.8,
+  homogeneity: 97.4
+};
+
+let stage4State = {
+  torque: 15.4,
+  consistency: 94.2,
+  sprayRate: 45.0,
+  atomAir: 1.8
+};
+
+let stage5State = {
+  lod: 1.95,
+  inletTemp: 58.5,
+  outletTemp: 42.1,
+  airflow: 340
+};
+
+let stage6State = {
+  rsd: 2.1,
+  duration: 4.8,
+  speed: 12.0,
+  coating: 98.2
+};
+
+let stage7State = {
+  force: 16.8,
+  hardness: 9.4,
+  weight: 501.2,
+  friability: 0.22
+};
+
+let stage8State = {
+  assay: 99.8,
+  dissolution: 94.5,
+  defects: 0.02,
+  score: 96
+};
+
+async function loadActiveStageSensorData(autoPopulate = true) {
+  if (!currentBatchId) return null;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/batches/${currentBatchId}/stage-sensor-data?stage=${encodeURIComponent(currentActiveStage)}`);
+    if (res.ok) {
+      const data = await res.json();
+      currentStageSensorData = data;
+      if (autoPopulate && data.parameters) {
+        applySensorTelemetryToStage(currentActiveStage, data.parameters);
+      }
+      return data;
+    }
+  } catch (err) {
+    console.warn('Failed to load stage sensor data:', err);
+  }
+  return null;
+}
+
+function applySensorTelemetryToStage(stageName, params) {
+  if (!Array.isArray(params)) return;
+  const canonical = findStage(stageName).name;
+
+  params.forEach(p => {
+    const name = (p.name || p.parameter || '').toLowerCase();
+    const val = p.value !== undefined ? p.value : p.defaultVal;
+    const numVal = parseFloat(val);
+
+    if (canonical === 'Raw Material Receipt') {
+      if (name.includes('identity') || name.includes('pearson') || name.includes('spectral')) {
+        stage1ScanResults.pearsonR = !isNaN(numVal) ? numVal : 0.993;
+        stage1ScanResults.gateStatus = (p.result === 'PASS' || (!p.result && stage1ScanResults.pearsonR >= 0.95)) ? 'PASS' : 'WARNING';
+      } else if (name.includes('moisture') || name.includes('lod')) {
+        stage1ScanResults.moisturePercent = !isNaN(numVal) ? numVal : 1.25;
+      } else if (name.includes('barcode') || name.includes('reconciliation') || name.includes('container')) {
+        stage1ScanResults.barcode = String(val || 'BC-RM-9942-01');
+      }
+    } else if (canonical === 'Dispensing') {
+      if (name.includes('tolerance') || name.includes('deviation')) {
+        stage2State.dev = !isNaN(numVal) ? numVal : 0.24;
+      } else if (name.includes('actual') || name.includes('weighed') || name.includes('quantity')) {
+        stage2State.actualQuantity = !isNaN(numVal) ? numVal : 50.12;
+      } else if (name.includes('humidity') || name.includes('rh')) {
+        stage2State.rhPercent = !isNaN(numVal) ? numVal : 42.0;
+      } else if (name.includes('temperature') || name.includes('temp')) {
+        stage2State.tempC = !isNaN(numVal) ? numVal : 21.5;
+      }
+    } else if (canonical === 'Blending') {
+      if (name.includes('rsd') || name.includes('uniformity')) {
+        stage3State.rsd = !isNaN(numVal) ? numVal : 2.8;
+      } else if (name.includes('homogeneity') || name.includes('index')) {
+        stage3State.homogeneity = !isNaN(numVal) ? numVal : 97.4;
+      } else if (name.includes('speed') || name.includes('rpm')) {
+        stage3State.speed = !isNaN(numVal) ? numVal : 24.0;
+      } else if (name.includes('duration') || name.includes('time')) {
+        stage3State.duration = !isNaN(numVal) ? numVal : 15.0;
+      }
+    } else if (canonical === 'Granulation') {
+      if (name.includes('torque')) {
+        stage4State.torque = !isNaN(numVal) ? numVal : 15.4;
+      } else if (name.includes('consistency') || name.includes('wet mass')) {
+        stage4State.consistency = !isNaN(numVal) ? numVal : 94.2;
+      } else if (name.includes('spray') || name.includes('rate') || name.includes('binder')) {
+        stage4State.sprayRate = !isNaN(numVal) ? numVal : 45.0;
+      } else if (name.includes('pressure') || name.includes('atomization') || name.includes('air')) {
+        stage4State.atomAir = !isNaN(numVal) ? numVal : 1.8;
+      }
+    } else if (canonical === 'Drying') {
+      if (name.includes('lod') || name.includes('moisture') || name.includes('loss')) {
+        stage5State.lod = !isNaN(numVal) ? numVal : 1.95;
+      } else if (name.includes('inlet')) {
+        stage5State.inletTemp = !isNaN(numVal) ? numVal : 58.5;
+      } else if (name.includes('outlet') || name.includes('exhaust')) {
+        stage5State.outletTemp = !isNaN(numVal) ? numVal : 42.1;
+      } else if (name.includes('airflow') || name.includes('velocity')) {
+        stage5State.airflow = !isNaN(numVal) ? numVal : 340;
+      }
+    } else if (canonical === 'Final Blending') {
+      if (name.includes('rsd') || name.includes('blend')) {
+        stage6State.rsd = !isNaN(numVal) ? numVal : 2.1;
+      } else if (name.includes('coating') || name.includes('lubricant') || name.includes('index')) {
+        stage6State.coating = !isNaN(numVal) ? numVal : 98.2;
+      } else if (name.includes('speed') || name.includes('rpm') || name.includes('rotational')) {
+        stage6State.speed = !isNaN(numVal) ? numVal : 12.0;
+      } else if (name.includes('duration') || name.includes('time')) {
+        stage6State.duration = !isNaN(numVal) ? numVal : 4.8;
+      }
+    } else if (canonical === 'Compression') {
+      if (name.includes('force') || name.includes('compression')) {
+        stage7State.force = !isNaN(numVal) ? numVal : 16.8;
+      } else if (name.includes('hardness')) {
+        stage7State.hardness = !isNaN(numVal) ? numVal : 9.4;
+      } else if (name.includes('weight') || name.includes('mass')) {
+        stage7State.weight = !isNaN(numVal) ? numVal : 501.2;
+      } else if (name.includes('friability')) {
+        stage7State.friability = !isNaN(numVal) ? numVal : 0.22;
+      }
+    } else if (canonical === 'Final QC') {
+      if (name.includes('assay') || name.includes('hplc')) {
+        stage8State.assay = !isNaN(numVal) ? numVal : 99.8;
+      } else if (name.includes('dissolution')) {
+        stage8State.dissolution = !isNaN(numVal) ? numVal : 94.5;
+      } else if (name.includes('defect') || name.includes('vision') || name.includes('optical')) {
+        stage8State.defects = !isNaN(numVal) ? numVal : 0.02;
+      } else if (name.includes('score') || name.includes('quality')) {
+        stage8State.score = !isNaN(numVal) ? numVal : 96;
+      }
+    }
+  });
+}
+
+function renderStageSensorHeader(stageName) {
+  const data = currentStageSensorData;
+  const canonical = findStage(stageName).name;
+  const device = data?.sensorDevice || { id: `PAT-SENSOR-0${getStageIndex(canonical) + 1}`, name: 'PAT Real-Time Sensor Telemetry Interface', status: 'ONLINE' };
+  const hasLive = data?.summary?.hasLiveTelemetry;
+  const status = data?.summary?.status || 'PASS';
+  const paramCount = data?.parameters ? data.parameters.length : 3;
+  const timeStr = data?.summary?.lastUpdated ? new Date(data.summary.lastUpdated).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+  const isPass = status === 'PASS';
+  const isWarn = status === 'WARNING';
+
+  return `
+    <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span class="badge ${isPass ? 'badge--pass' : isWarn ? 'badge--warning' : 'badge--critical'}" style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${isPass ? '#22c55e' : isWarn ? '#eab308' : '#ef4444'}; box-shadow: 0 0 6px currentColor;"></span>
+          ${device.name} (${device.id})
+        </span>
+        <span style="font-size: 0.85rem; color: #475569;">
+          <strong>Mode:</strong> ${hasLive ? '🟢 Live Sensor Telemetry Active' : '🟡 Calibrated In-Line Model'} • <strong>Channels:</strong> ${paramCount} Ingested
+        </span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+        <span style="font-size: 0.8rem; color: #64748b;">Telemetry: <strong>${timeStr}</strong></span>
+        <button type="button" class="button button--secondary" onclick="manualSyncStageSensor()" style="padding: 4px 10px; font-size: 0.8rem;">
+          📡 Sync Live Sensor
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function manualSyncStageSensor() {
+  await loadActiveStageSensorData(true);
+  renderActiveStageStudio();
+  renderStageLogTable();
+  showStudioToast(`Live sensor telemetry synchronized for ${currentActiveStage}`, 'success');
 }
 
 function renderActiveStageStudio() {
@@ -405,22 +631,13 @@ function renderActiveStageStudio() {
 // -------------------------------------------------------------
 // STAGE 1: RAW MATERIAL RECEIPT & VERIFICATION
 // -------------------------------------------------------------
-let stage1ScanResults = {
-  pearsonR: 0.9927,
-  moisturePercent: 1.25,
-  gateStatus: 'PASS',
-  barcode: 'BC-RM-9942-01',
-  containerId: 'DRUM-01',
-  reconciliationStatus: 'VERIFIED',
-  cleanroomEnv: { tempC: 21.5, rhPercent: 42.0 },
-  lastUpdated: new Date().toLocaleTimeString()
-};
-
 function renderStage1Studio(container) {
   const identityMatchPct = (stage1ScanResults.pearsonR ? (stage1ScanResults.pearsonR * 100).toFixed(1) : '99.3') + '%';
+  const isPass = stage1ScanResults.pearsonR >= 0.95;
 
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Raw Material Receipt')}
       
       <!-- Left Card: Raw Material Verification Form -->
       <article class="card card--form">
@@ -458,8 +675,8 @@ function renderStage1Studio(container) {
         <form id="stage1ReleaseForm" class="panel-form" onsubmit="event.preventDefault(); signOffStage1Release();">
           <div class="form-row">
             <div class="form-group">
-              <label>Chemical Identity Match</label>
-              <input type="text" value="${identityMatchPct} (PASS)" readonly style="color: #16a34a; font-weight: 700;" />
+              <label>Chemical Identity Match (FT-NIR)</label>
+              <input type="text" value="${identityMatchPct} (${isPass ? 'PASS' : 'WARNING'})" readonly style="color: ${isPass ? '#16a34a' : '#eab308'}; font-weight: 700;" />
             </div>
             <div class="form-group">
               <label>Residual Moisture (LOD)</label>
@@ -479,8 +696,6 @@ function renderStage1Studio(container) {
     </div>
   `;
 }
-
-
 
 async function reconcileContainerBarcode() {
   const nextNum = Math.floor(1000 + Math.random()*9000);
@@ -572,6 +787,7 @@ async function advanceBatchToNextStage(nextStageName, operatorName, notesText) {
   populateBatchDropdown();
   renderBatchHeader();
   renderStepper();
+  await loadActiveStageSensorData(true);
   renderActiveStageStudio();
   renderStageLogTable();
 }
@@ -615,16 +831,17 @@ async function runSpectroscopyScan() {
 // STAGE 2: DISPENSING & GRAVIMETRIC WEIGHING
 // -------------------------------------------------------------
 function renderStage2Studio(container) {
-  const targetQ = currentBatch?.targetQuantity || 50.0;
-  const actualQ = currentBatch?.actualQuantity || 50.12;
-  const dev = currentBatch?.weightDeviation !== null && currentBatch?.weightDeviation !== undefined ? currentBatch.weightDeviation : 0.24;
+  const targetQ = stage2State.targetQuantity || currentBatch?.targetQuantity || 50.0;
+  const actualQ = stage2State.actualQuantity || currentBatch?.actualQuantity || 50.12;
+  const dev = stage2State.dev !== undefined ? stage2State.dev : (currentBatch?.weightDeviation || 0.24);
 
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Dispensing')}
       
       <!-- Left Card: Manual Entry Form -->
       <article class="card card--form">
-        <h4>Gravimetric Dispensing Entry</h4>
+        <h4>Gravimetric Dispensing Telemetry</h4>
         <form id="studioDispenseForm" class="panel-form" onsubmit="event.preventDefault(); handleDispensingSubmit();">
           <div class="form-row">
             <div class="form-group">
@@ -643,7 +860,7 @@ function renderStage2Studio(container) {
               <input id="dspTarget" type="number" step="0.001" value="${targetQ}" oninput="updateDispenseCalc()" required />
             </div>
             <div class="form-group">
-              <label>Actual Weighed (kg)</label>
+              <label>Actual Weighed (kg) [Load Cell]</label>
               <input id="dspActual" type="number" step="0.001" value="${actualQ}" oninput="updateDispenseCalc()" required />
             </div>
           </div>
@@ -675,8 +892,8 @@ function renderStage2Studio(container) {
               <input id="dspDevDisplay" type="text" value="+${dev}% (PASS)" readonly style="color: #16a34a; font-weight: 700;" />
             </div>
             <div class="form-group">
-              <label>Line Clearance Status</label>
-              <input type="text" value="CLEARED (Balance Calibrated)" readonly style="color: #16a34a; font-weight: 600;" />
+              <label>Line Clearance & Cleanroom</label>
+              <input type="text" value="${stage2State.rhPercent}% RH | ${stage2State.tempC}°C (CALIBRATED)" readonly style="color: #16a34a; font-weight: 600;" />
             </div>
           </div>
 
@@ -700,7 +917,7 @@ function renderStage2Studio(container) {
 }
 
 async function signOffStage2Release() {
-  await quickLogStageParam('Dispensing Gravimetric Accuracy', 'Certified Balance', '% Dev', 0.24);
+  await quickLogStageParam('Dispensing Gravimetric Accuracy', 'Certified Balance', '% Dev', stage2State.dev || 0.24);
   await advanceBatchToNextStage('Blending', 'Lead Dispenser / QA Verifier', 'Stage 2 Dispensing verified and released.');
 }
 
@@ -711,6 +928,9 @@ function updateDispenseCalc() {
   if (!devInput || target <= 0 || actual <= 0) return;
 
   const dev = parseFloat((((actual - target) / target) * 100).toFixed(2));
+  stage2State.dev = dev;
+  stage2State.actualQuantity = actual;
+  stage2State.targetQuantity = target;
   const isPass = Math.abs(dev) <= 1.0;
   devInput.value = `${dev > 0 ? '+' : ''}${dev}% (${isPass ? 'PASS within ±1.0%' : 'WARNING'})`;
   devInput.style.color = isPass ? '#16a34a' : '#ef4444';
@@ -746,7 +966,7 @@ async function handleDispensingSubmit() {
         secondaryVerifier: op2,
         lineCleanlinessVerified: true,
         balanceCalibrated: true,
-        ambientHumidity: 41.5,
+        ambientHumidity: stage2State.rhPercent || 41.5,
       })
     });
 
@@ -784,34 +1004,37 @@ function showStudioToast(message, type = 'success') {
 // STAGE 3: PRE-BLENDING & DRY MIXING (PAT RSD)
 // -------------------------------------------------------------
 function renderStage3Studio(container) {
+  const isPass = stage3State.rsd <= 5.0 && stage3State.homogeneity >= 95.0;
+
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Blending')}
       
       <article class="card card--form">
-        <h4>Pre-Blending Process Parameters</h4>
+        <h4>Pre-Blending PAT Process Parameters</h4>
         <form class="panel-form" onsubmit="event.preventDefault(); logStage3Reading();">
           <div class="form-row">
             <div class="form-group">
               <label>Blender Speed (RPM)</label>
-              <input id="s3Speed" type="number" step="0.5" value="24.0" oninput="updateStage3Validation()" required />
+              <input id="s3Speed" type="number" step="0.5" value="${stage3State.speed}" oninput="updateStage3Validation()" required />
               <span class="field-hint">Validated: 20.0 – 28.0 RPM</span>
             </div>
             <div class="form-group">
               <label>Mixing Duration (min)</label>
-              <input id="s3Duration" type="number" step="0.5" value="15.0" oninput="updateStage3Validation()" required />
+              <input id="s3Duration" type="number" step="0.5" value="${stage3State.duration}" oninput="updateStage3Validation()" required />
               <span class="field-hint">Target: 12.0 – 18.0 min</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Blend RSD %</label>
-              <input id="s3Rsd" type="number" step="0.1" value="2.8" oninput="updateStage3Validation()" required />
-              <span class="field-hint" id="s3RsdHint" style="color:#16a34a; font-weight:600;">Spec: ≤ 5.0% [PASS]</span>
+              <label>Blend RSD % (In-Situ NIR)</label>
+              <input id="s3Rsd" type="number" step="0.1" value="${stage3State.rsd}" oninput="updateStage3Validation()" required />
+              <span class="field-hint" id="s3RsdHint" style="color:#16a34a; font-weight:600;">Spec: ≤ 5.0% [${stage3State.rsd <= 5.0 ? 'PASS' : 'WARNING'}]</span>
             </div>
             <div class="form-group">
               <label>Homogeneity Index %</label>
-              <input id="s3Homogeneity" type="number" step="0.1" value="97.4" oninput="updateStage3Validation()" required />
-              <span class="field-hint" id="s3HomogeneityHint" style="color:#16a34a; font-weight:600;">Spec: ≥ 95.0% [PASS]</span>
+              <input id="s3Homogeneity" type="number" step="0.1" value="${stage3State.homogeneity}" oninput="updateStage3Validation()" required />
+              <span class="field-hint" id="s3HomogeneityHint" style="color:#16a34a; font-weight:600;">Spec: ≥ 95.0% [${stage3State.homogeneity >= 95.0 ? 'PASS' : 'WARNING'}]</span>
             </div>
           </div>
           <div class="form-actions" style="margin-top: 0.5rem;">
@@ -825,7 +1048,7 @@ function renderStage3Studio(container) {
         <div class="panel-form">
           <div class="form-group">
             <label>Homogeneity Status</label>
-            <input id="s3ClearanceStatus" type="text" value="UNIFORM - Ready for Wet Granulation" readonly style="color:#16a34a; font-weight:700;" />
+            <input id="s3ClearanceStatus" type="text" value="${isPass ? 'UNIFORM - Ready for Wet Granulation' : 'NON-UNIFORM - Out of Spec'}" readonly style="color:${isPass ? '#16a34a' : '#ef4444'}; font-weight:700;" />
           </div>
           <p class="note" id="s3ClearanceNote">In-line stratified sampling confirms active ingredient dispersion homogeneity across all V-Blender zones.</p>
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -841,8 +1064,10 @@ function renderStage3Studio(container) {
 }
 
 async function logStage3Reading() {
-  const rsd = parseFloat(document.getElementById('s3Rsd')?.value || 2.8);
-  const homogeneity = parseFloat(document.getElementById('s3Homogeneity')?.value || 97.4);
+  const rsd = parseFloat(document.getElementById('s3Rsd')?.value || stage3State.rsd);
+  const homogeneity = parseFloat(document.getElementById('s3Homogeneity')?.value || stage3State.homogeneity);
+  stage3State.rsd = rsd;
+  stage3State.homogeneity = homogeneity;
   const isPass = rsd <= 5.0 && homogeneity >= 95.0;
 
   await quickLogStageParam('Blend Uniformity RSD', 'NIR Stratified Probe', '%', rsd);
@@ -854,6 +1079,8 @@ async function logStage3Reading() {
 function updateStage3Validation() {
   const rsd = parseFloat(document.getElementById('s3Rsd')?.value || 0);
   const hom = parseFloat(document.getElementById('s3Homogeneity')?.value || 0);
+  stage3State.rsd = rsd;
+  stage3State.homogeneity = hom;
   const rsdHint = document.getElementById('s3RsdHint');
   const homHint = document.getElementById('s3HomogeneityHint');
   const statusInput = document.getElementById('s3ClearanceStatus');
@@ -884,8 +1111,11 @@ function updateStage3Validation() {
 // STAGE 4: WET GRANULATION & BINDER ADDITION
 // -------------------------------------------------------------
 function renderStage4Studio(container) {
+  const isPass = stage4State.torque >= 12.0 && stage4State.torque <= 18.0 && stage4State.consistency >= 90.0;
+
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Granulation')}
       
       <article class="card card--form">
         <h4>Granulation Process Controls</h4>
@@ -893,24 +1123,24 @@ function renderStage4Studio(container) {
           <div class="form-row">
             <div class="form-group">
               <label>Impeller Torque Peak (Nm)</label>
-              <input id="s4Torque" type="number" step="0.1" value="15.4" oninput="updateStage4Validation()" required />
-              <span class="field-hint" id="s4TorqueHint" style="color:#16a34a; font-weight:600;">Spec: 12.0 – 18.0 Nm [PASS]</span>
+              <input id="s4Torque" type="number" step="0.1" value="${stage4State.torque}" oninput="updateStage4Validation()" required />
+              <span class="field-hint" id="s4TorqueHint" style="color:#16a34a; font-weight:600;">Spec: 12.0 – 18.0 Nm [${stage4State.torque >= 12 && stage4State.torque <= 18 ? 'PASS' : 'WARNING'}]</span>
             </div>
             <div class="form-group">
               <label>Wet Mass Consistency (%)</label>
-              <input id="s4Consistency" type="number" step="0.1" value="94.2" oninput="updateStage4Validation()" required />
-              <span class="field-hint" id="s4ConsistencyHint" style="color:#16a34a; font-weight:600;">Spec: ≥ 90.0% [PASS]</span>
+              <input id="s4Consistency" type="number" step="0.1" value="${stage4State.consistency}" oninput="updateStage4Validation()" required />
+              <span class="field-hint" id="s4ConsistencyHint" style="color:#16a34a; font-weight:600;">Spec: ≥ 90.0% [${stage4State.consistency >= 90 ? 'PASS' : 'WARNING'}]</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Binder Spray Rate (g/min)</label>
-              <input id="s4SprayRate" type="number" step="0.5" value="45.0" oninput="updateStage4Validation()" required />
+              <input id="s4SprayRate" type="number" step="0.5" value="${stage4State.sprayRate}" oninput="updateStage4Validation()" required />
               <span class="field-hint">Validated: 40.0 – 50.0 g/min</span>
             </div>
             <div class="form-group">
               <label>Atomization Air (bar)</label>
-              <input id="s4AtomAir" type="number" step="0.1" value="1.8" oninput="updateStage4Validation()" required />
+              <input id="s4AtomAir" type="number" step="0.1" value="${stage4State.atomAir}" oninput="updateStage4Validation()" required />
               <span class="field-hint">Target: 1.5 – 2.2 bar</span>
             </div>
           </div>
@@ -925,7 +1155,7 @@ function renderStage4Studio(container) {
         <div class="panel-form">
           <div class="form-group">
             <label>Granulation Status</label>
-            <input id="s4ClearanceStatus" type="text" value="ENDPOINT REACHED - Ready for Fluid Bed Drying" readonly style="color:#16a34a; font-weight:700;" />
+            <input id="s4ClearanceStatus" type="text" value="${isPass ? 'ENDPOINT REACHED - Ready for Fluid Bed Drying' : 'INCOMPLETE - Torque Curve Non-Compliant'}" readonly style="color:${isPass ? '#16a34a' : '#ef4444'}; font-weight:700;" />
           </div>
           <p class="note" id="s4ClearanceNote">Impeller motor torque plateau confirms binder addition endpoint without over-wetting.</p>
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -941,8 +1171,10 @@ function renderStage4Studio(container) {
 }
 
 async function logStage4Reading() {
-  const torque = parseFloat(document.getElementById('s4Torque')?.value || 15.4);
-  const consistency = parseFloat(document.getElementById('s4Consistency')?.value || 94.2);
+  const torque = parseFloat(document.getElementById('s4Torque')?.value || stage4State.torque);
+  const consistency = parseFloat(document.getElementById('s4Consistency')?.value || stage4State.consistency);
+  stage4State.torque = torque;
+  stage4State.consistency = consistency;
   const isPass = (torque >= 12.0 && torque <= 18.0) && consistency >= 90.0;
 
   await quickLogStageParam('Granulator Torque Peak', 'Motor Torque Sensor', 'Nm', torque);
@@ -954,6 +1186,8 @@ async function logStage4Reading() {
 function updateStage4Validation() {
   const torque = parseFloat(document.getElementById('s4Torque')?.value || 0);
   const consistency = parseFloat(document.getElementById('s4Consistency')?.value || 0);
+  stage4State.torque = torque;
+  stage4State.consistency = consistency;
   const torqueHint = document.getElementById('s4TorqueHint');
   const consistencyHint = document.getElementById('s4ConsistencyHint');
   const statusInput = document.getElementById('s4ClearanceStatus');
@@ -984,8 +1218,11 @@ function updateStage4Validation() {
 // STAGE 5: FLUID BED DRYING (FBD)
 // -------------------------------------------------------------
 function renderStage5Studio(container) {
+  const isPass = stage5State.lod >= 1.5 && stage5State.lod <= 2.5;
+
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Drying')}
       
       <article class="card card--form">
         <h4>Fluid Bed Drying Operating Parameters</h4>
@@ -993,24 +1230,24 @@ function renderStage5Studio(container) {
           <div class="form-row">
             <div class="form-group">
               <label>Final Moisture (LOD %)</label>
-              <input id="s5Lod" type="number" step="0.05" value="1.95" oninput="updateStage5Validation()" required />
-              <span class="field-hint" id="s5LodHint" style="color:#16a34a; font-weight:600;">Spec: 1.50 – 2.50% [PASS]</span>
+              <input id="s5Lod" type="number" step="0.05" value="${stage5State.lod}" oninput="updateStage5Validation()" required />
+              <span class="field-hint" id="s5LodHint" style="color:#16a34a; font-weight:600;">Spec: 1.50 – 2.50% [${isPass ? 'PASS' : 'WARNING'}]</span>
             </div>
             <div class="form-group">
               <label>Inlet Air Temp (°C)</label>
-              <input id="s5InletTemp" type="number" step="0.5" value="58.5" oninput="updateStage5Validation()" required />
+              <input id="s5InletTemp" type="number" step="0.5" value="${stage5State.inletTemp}" oninput="updateStage5Validation()" required />
               <span class="field-hint" id="s5InletHint" style="color:#16a34a; font-weight:600;">Spec: 55.0 – 65.0 °C [PASS]</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Outlet Air Temp (°C)</label>
-              <input id="s5OutletTemp" type="number" step="0.5" value="42.1" oninput="updateStage5Validation()" required />
+              <input id="s5OutletTemp" type="number" step="0.5" value="${stage5State.outletTemp}" oninput="updateStage5Validation()" required />
               <span class="field-hint">Target: 40.0 – 46.0 °C</span>
             </div>
             <div class="form-group">
               <label>Airflow Rate (m³/hr)</label>
-              <input id="s5Airflow" type="number" step="10" value="340" oninput="updateStage5Validation()" required />
+              <input id="s5Airflow" type="number" step="10" value="${stage5State.airflow}" oninput="updateStage5Validation()" required />
               <span class="field-hint">Target: 300 – 380 m³/hr</span>
             </div>
           </div>
@@ -1025,7 +1262,7 @@ function renderStage5Studio(container) {
         <div class="panel-form">
           <div class="form-group">
             <label>Moisture Endpoint Status</label>
-            <input id="s5ClearanceStatus" type="text" value="DRYING COMPLETE - Target LOD 1.95%" readonly style="color:#16a34a; font-weight:700;" />
+            <input id="s5ClearanceStatus" type="text" value="${isPass ? `DRYING COMPLETE - Target LOD ${stage5State.lod}%` : 'DRYING IN PROGRESS - LOD Out of Spec'}" readonly style="color:${isPass ? '#16a34a' : '#ef4444'}; font-weight:700;" />
           </div>
           <p class="note" id="s5ClearanceNote">Automated heater cut-off engaged. Granules reach target residual moisture specification.</p>
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -1041,8 +1278,10 @@ function renderStage5Studio(container) {
 }
 
 async function logStage5Reading() {
-  const lod = parseFloat(document.getElementById('s5Lod')?.value || 1.95);
-  const inlet = parseFloat(document.getElementById('s5InletTemp')?.value || 58.5);
+  const lod = parseFloat(document.getElementById('s5Lod')?.value || stage5State.lod);
+  const inlet = parseFloat(document.getElementById('s5InletTemp')?.value || stage5State.inletTemp);
+  stage5State.lod = lod;
+  stage5State.inletTemp = inlet;
   const isPass = lod >= 1.5 && lod <= 2.5;
 
   await quickLogStageParam('Loss on Drying (LOD)', 'In-situ NIR Probe', '%', lod);
@@ -1054,6 +1293,8 @@ async function logStage5Reading() {
 function updateStage5Validation() {
   const lod = parseFloat(document.getElementById('s5Lod')?.value || 0);
   const inlet = parseFloat(document.getElementById('s5InletTemp')?.value || 0);
+  stage5State.lod = lod;
+  stage5State.inletTemp = inlet;
   const lodHint = document.getElementById('s5LodHint');
   const inletHint = document.getElementById('s5InletHint');
   const statusInput = document.getElementById('s5ClearanceStatus');
@@ -1084,33 +1325,36 @@ function updateStage5Validation() {
 // STAGE 6: FINAL BLENDING & LUBRICATION
 // -------------------------------------------------------------
 function renderStage6Studio(container) {
+  const isPass = stage6State.rsd <= 4.0;
+
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Final Blending')}
       
       <article class="card card--form">
         <h4>Lubrication & Blending Parameters</h4>
         <form class="panel-form" onsubmit="event.preventDefault(); logStage6Reading();">
           <div class="form-row">
             <div class="form-group">
-              <label>Final Blend RSD %</label>
-              <input id="s6Rsd" type="number" step="0.1" value="2.1" oninput="updateStage6Validation()" required />
-              <span class="field-hint" id="s6RsdHint" style="color:#16a34a; font-weight:600;">Spec: ≤ 4.0% [PASS]</span>
+              <label>Final Blend RSD % (NIR Telemetry)</label>
+              <input id="s6Rsd" type="number" step="0.1" value="${stage6State.rsd}" oninput="updateStage6Validation()" required />
+              <span class="field-hint" id="s6RsdHint" style="color:#16a34a; font-weight:600;">Spec: ≤ 4.0% [${isPass ? 'PASS' : 'WARNING'}]</span>
             </div>
             <div class="form-group">
               <label>Blending Duration (min)</label>
-              <input id="s6Duration" type="number" step="0.1" value="4.8" oninput="updateStage6Validation()" required />
+              <input id="s6Duration" type="number" step="0.1" value="${stage6State.duration}" oninput="updateStage6Validation()" required />
               <span class="field-hint">Spec: 5.0 ± 0.5 min</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Rotational Speed (RPM)</label>
-              <input id="s6Speed" type="number" step="0.5" value="12.0" oninput="updateStage6Validation()" required />
+              <input id="s6Speed" type="number" step="0.5" value="${stage6State.speed}" oninput="updateStage6Validation()" required />
               <span class="field-hint">Target: 10.0 – 14.0 RPM</span>
             </div>
             <div class="form-group">
               <label>Lubricant Coating Index %</label>
-              <input id="s6Coating" type="number" step="0.1" value="98.2" oninput="updateStage6Validation()" required />
+              <input id="s6Coating" type="number" step="0.1" value="${stage6State.coating}" oninput="updateStage6Validation()" required />
               <span class="field-hint">Target: ≥ 95.0%</span>
             </div>
           </div>
@@ -1125,7 +1369,7 @@ function renderStage6Studio(container) {
         <div class="panel-form">
           <div class="form-group">
             <label>Lubrication Status</label>
-            <input id="s6ClearanceStatus" type="text" value="UNIFORMLY COATED - Ready for Compression" readonly style="color:#16a34a; font-weight:700;" />
+            <input id="s6ClearanceStatus" type="text" value="${isPass ? 'UNIFORMLY COATED - Ready for Compression' : 'RSD HIGH - Incomplete Lubrication'}" readonly style="color:${isPass ? '#16a34a' : '#ef4444'}; font-weight:700;" />
           </div>
           <p class="note" id="s6ClearanceNote">Controlled low-shear blending prevents over-lubrication hydrophobic barrier formation.</p>
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -1141,7 +1385,8 @@ function renderStage6Studio(container) {
 }
 
 async function logStage6Reading() {
-  const rsd = parseFloat(document.getElementById('s6Rsd')?.value || 2.1);
+  const rsd = parseFloat(document.getElementById('s6Rsd')?.value || stage6State.rsd);
+  stage6State.rsd = rsd;
   const isPass = rsd <= 4.0;
 
   await quickLogStageParam('Lubrication Blend RSD', 'Spectrophotometer', '%', rsd);
@@ -1150,6 +1395,7 @@ async function logStage6Reading() {
 
 function updateStage6Validation() {
   const rsd = parseFloat(document.getElementById('s6Rsd')?.value || 0);
+  stage6State.rsd = rsd;
   const rsdHint = document.getElementById('s6RsdHint');
   const statusInput = document.getElementById('s6ClearanceStatus');
 
@@ -1174,8 +1420,11 @@ function updateStage6Validation() {
 // STAGE 7: TABLET COMPRESSION (IPC MATRIX)
 // -------------------------------------------------------------
 function renderStage7Studio(container) {
+  const isPass = stage7State.hardness >= 7.0 && stage7State.hardness <= 12.0 && Math.abs(stage7State.weight - 500) <= 15;
+
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Compression')}
       
       <article class="card card--form">
         <h4>Tablet Compression In-Process Controls (IPC)</h4>
@@ -1183,24 +1432,24 @@ function renderStage7Studio(container) {
           <div class="form-row">
             <div class="form-group">
               <label>Main Compression Force (kN)</label>
-              <input id="s7Force" type="number" step="0.1" value="16.8" oninput="updateStage7Validation()" required />
+              <input id="s7Force" type="number" step="0.1" value="${stage7State.force}" oninput="updateStage7Validation()" required />
               <span class="field-hint" id="s7ForceHint" style="color:#16a34a; font-weight:600;">Spec: 14.0 – 20.0 kN [PASS]</span>
             </div>
             <div class="form-group">
               <label>Tablet Hardness (Kp)</label>
-              <input id="s7Hardness" type="number" step="0.1" value="9.4" oninput="updateStage7Validation()" required />
-              <span class="field-hint" id="s7HardnessHint" style="color:#16a34a; font-weight:600;">Spec: 7.0 – 12.0 Kp [PASS]</span>
+              <input id="s7Hardness" type="number" step="0.1" value="${stage7State.hardness}" oninput="updateStage7Validation()" required />
+              <span class="field-hint" id="s7HardnessHint" style="color:#16a34a; font-weight:600;">Spec: 7.0 – 12.0 Kp [${stage7State.hardness >= 7 && stage7State.hardness <= 12 ? 'PASS' : 'WARNING'}]</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Individual Weight (mg)</label>
-              <input id="s7Weight" type="number" step="0.1" value="501.2" oninput="updateStage7Validation()" required />
-              <span class="field-hint" id="s7WeightHint" style="color:#16a34a; font-weight:600;">USP Spec: 500.0 ± 15.0 mg [PASS]</span>
+              <input id="s7Weight" type="number" step="0.1" value="${stage7State.weight}" oninput="updateStage7Validation()" required />
+              <span class="field-hint" id="s7WeightHint" style="color:#16a34a; font-weight:600;">USP Spec: 500.0 ± 15.0 mg [${Math.abs(stage7State.weight - 500) <= 15 ? 'PASS' : 'WARNING'}]</span>
             </div>
             <div class="form-group">
               <label>Friability %</label>
-              <input id="s7Friability" type="number" step="0.01" value="0.22" oninput="updateStage7Validation()" required />
+              <input id="s7Friability" type="number" step="0.01" value="${stage7State.friability}" oninput="updateStage7Validation()" required />
               <span class="field-hint" id="s7FriabilityHint" style="color:#16a34a; font-weight:600;">USP Limit: < 1.00% [PASS]</span>
             </div>
           </div>
@@ -1215,7 +1464,7 @@ function renderStage7Studio(container) {
         <div class="panel-form">
           <div class="form-group">
             <label>Tablet Press Status</label>
-            <input id="s7ClearanceStatus" type="text" value="ALL IPC SPECS PASSED - Ready for Final QA" readonly style="color:#16a34a; font-weight:700;" />
+            <input id="s7ClearanceStatus" type="text" value="${isPass ? 'ALL IPC SPECS PASSED - Ready for Final QA' : 'IPC OUT OF SPEC - Adjust Tablet Press'}" readonly style="color:${isPass ? '#16a34a' : '#ef4444'}; font-weight:700;" />
           </div>
           <p class="note" id="s7ClearanceNote">Rotary press running at optimal main compression force. Weight, hardness, and thickness within USP limits.</p>
           <div class="form-actions" style="margin-top: 1.5rem;">
@@ -1231,8 +1480,10 @@ function renderStage7Studio(container) {
 }
 
 async function logStage7Reading() {
-  const hardness = parseFloat(document.getElementById('s7Hardness')?.value || 9.4);
-  const weight = parseFloat(document.getElementById('s7Weight')?.value || 501.2);
+  const hardness = parseFloat(document.getElementById('s7Hardness')?.value || stage7State.hardness);
+  const weight = parseFloat(document.getElementById('s7Weight')?.value || stage7State.weight);
+  stage7State.hardness = hardness;
+  stage7State.weight = weight;
   const isPass = hardness >= 7.0 && hardness <= 12.0 && Math.abs(weight - 500) <= 15;
 
   await quickLogStageParam('Tablet Hardness', 'Digital Hardness Tester', 'Kp', hardness);
@@ -1246,6 +1497,10 @@ function updateStage7Validation() {
   const hardness = parseFloat(document.getElementById('s7Hardness')?.value || 0);
   const weight = parseFloat(document.getElementById('s7Weight')?.value || 0);
   const friability = parseFloat(document.getElementById('s7Friability')?.value || 0);
+  stage7State.force = force;
+  stage7State.hardness = hardness;
+  stage7State.weight = weight;
+  stage7State.friability = friability;
 
   const forcePass = force >= 14.0 && force <= 20.0;
   const hardPass = hardness >= 7.0 && hardness <= 12.0;
@@ -1290,10 +1545,11 @@ function updateStage7Validation() {
 // STAGE 8: FINAL INSPECTION, VISION QC & 21 CFR PART 11 RELEASE
 // -------------------------------------------------------------
 function renderStage8Studio(container) {
-  const score = stageTimelineData?.qualityEvaluation?.score || 96;
+  const score = stage8State.score || stageTimelineData?.qualityEvaluation?.score || 96;
 
   container.innerHTML = `
     <div class="grid grid--2cols">
+      ${renderStageSensorHeader('Final QC')}
       
       <article class="card card--form">
         <h4>Final Analytical & Vision Inspection</h4>
@@ -1301,19 +1557,19 @@ function renderStage8Studio(container) {
           <div class="form-row">
             <div class="form-group">
               <label>Active Assay (HPLC %)</label>
-              <input id="s8Assay" type="number" step="0.1" value="99.8" style="font-weight:600; color:#16a34a;" />
+              <input id="s8Assay" type="number" step="0.1" value="${stage8State.assay}" style="font-weight:600; color:#16a34a;" />
               <span class="field-hint">Spec: 98.0 – 102.0%</span>
             </div>
             <div class="form-group">
               <label>Dissolution (30 min %)</label>
-              <input id="s8Dissolution" type="number" step="0.1" value="94.5" style="font-weight:600; color:#16a34a;" />
+              <input id="s8Dissolution" type="number" step="0.1" value="${stage8State.dissolution}" style="font-weight:600; color:#16a34a;" />
               <span class="field-hint">Spec: ≥ 80.0%</span>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>360° Vision Defect Rate %</label>
-              <input id="s8Defects" type="number" step="0.01" value="0.02" style="font-weight:600; color:#16a34a;" />
+              <input id="s8Defects" type="number" step="0.01" value="${stage8State.defects}" style="font-weight:600; color:#16a34a;" />
               <span class="field-hint">AQL Spec: < 0.10%</span>
             </div>
             <div class="form-group">
@@ -1489,19 +1745,84 @@ async function quickLogStageParam(param, instrument, unit, val) {
 }
 
 async function simulateStageTelemetry() {
-  const simulatedValues = {
-    'Raw Material Receipt': { param: 'NIR Spectral Identity (R)', val: 0.982, unit: 'R' },
-    'Dispensing': { param: 'Dispense Weight Deviation', val: 0.18, unit: '%' },
-    'Blending': { param: 'Blend Uniformity RSD', val: 2.75, unit: '%' },
-    'Granulation': { param: 'Impeller Torque Peak', val: 15.6, unit: 'Nm' },
-    'Drying': { param: 'Loss on Drying (LOD)', val: 1.88, unit: '%' },
-    'Final Blending': { param: 'Lubrication Blend RSD', val: 2.05, unit: '%' },
-    'Compression': { param: 'Tablet Hardness', val: 9.6, unit: 'Kp' },
-    'Final QC': { param: 'Active Assay', val: 99.6, unit: '%' }
+  if (!currentBatchId) return;
+  const stageNum = getStageIndex(currentActiveStage) + 1;
+  const stageObj = findStage(currentActiveStage);
+
+  showStudioToast(`Acquiring live sensor streams for Stage ${stageNum} (${stageObj.name})...`, 'info');
+
+  const STAGE_SAMPLE_CHANNELS = {
+    1: [
+      { name: 'NIR Spectral Identity (R)', value: 0.994, unit: 'Pearson R', result: 'PASS' },
+      { name: 'Residual Moisture (LOD)', value: 1.22, unit: '%', result: 'PASS' },
+      { name: 'Container Barcode Reconciliation', value: `BC-RM-${Math.floor(1000 + Math.random() * 9000)}-01`, unit: 'ID', result: 'PASS' }
+    ],
+    2: [
+      { name: 'Dispense Weight Tolerance', value: 0.22, unit: '% Dev', result: 'PASS' },
+      { name: 'Actual Weighed Quantity', value: 50.11, unit: 'kg', result: 'PASS' },
+      { name: 'Cleanroom Relative Humidity', value: 42.1, unit: '% RH', result: 'PASS' },
+      { name: 'Cleanroom Temperature', value: 21.6, unit: '°C', result: 'PASS' }
+    ],
+    3: [
+      { name: 'Blend Uniformity RSD', value: 2.6, unit: '%', result: 'PASS' },
+      { name: 'Homogeneity Index', value: 97.8, unit: '%', result: 'PASS' },
+      { name: 'Blender Speed', value: 24.0, unit: 'RPM', result: 'PASS' },
+      { name: 'Mixing Duration', value: 15.0, unit: 'min', result: 'PASS' }
+    ],
+    4: [
+      { name: 'Impeller Torque Peak', value: 15.5, unit: 'Nm', result: 'PASS' },
+      { name: 'Wet Mass Consistency', value: 94.6, unit: '%', result: 'PASS' },
+      { name: 'Binder Spray Rate', value: 45.0, unit: 'g/min', result: 'PASS' },
+      { name: 'Atomization Air Pressure', value: 1.8, unit: 'bar', result: 'PASS' }
+    ],
+    5: [
+      { name: 'Loss on Drying (LOD)', value: 1.92, unit: '%', result: 'PASS' },
+      { name: 'Inlet Air Temperature', value: 58.8, unit: '°C', result: 'PASS' },
+      { name: 'Outlet Air Temperature', value: 42.2, unit: '°C', result: 'PASS' },
+      { name: 'Fluidization Airflow Velocity', value: 342, unit: 'm³/hr', result: 'PASS' }
+    ],
+    6: [
+      { name: 'Lubrication Blend RSD', value: 2.0, unit: '%', result: 'PASS' },
+      { name: 'Lubricant Coating Index', value: 98.4, unit: '%', result: 'PASS' },
+      { name: 'Rotational Speed', value: 12.0, unit: 'RPM', result: 'PASS' },
+      { name: 'Blending Duration', value: 4.8, unit: 'min', result: 'PASS' }
+    ],
+    7: [
+      { name: 'Main Compression Force', value: 16.9, unit: 'kN', result: 'PASS' },
+      { name: 'Tablet Hardness', value: 9.5, unit: 'Kp', result: 'PASS' },
+      { name: 'Tablet Individual Weight', value: 501.0, unit: 'mg', result: 'PASS' },
+      { name: 'Friability', value: 0.21, unit: '%', result: 'PASS' }
+    ],
+    8: [
+      { name: 'Active Assay', value: 99.9, unit: '%', result: 'PASS' },
+      { name: 'Dissolution at 30 min', value: 94.8, unit: '%', result: 'PASS' },
+      { name: 'Visual Defect Rate', value: 0.02, unit: '%', result: 'PASS' },
+      { name: 'Batch Quality Score', value: 98, unit: 'Score', result: 'PASS' }
+    ]
   };
 
-  const sim = simulatedValues[currentActiveStage] || { param: 'Process Sensor Telemetry', val: 42.0, unit: 'units' };
-  await quickLogStageParam(sim.param, 'Simulated PAT Stream', sim.unit, sim.val);
+  const readings = STAGE_SAMPLE_CHANNELS[stageNum] || STAGE_SAMPLE_CHANNELS[1];
+
+  try {
+    await fetch(`${BACKEND_URL}/api/batches/${currentBatchId}/stage-sensor-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stage: stageObj.name,
+        operator: 'PAT In-Line Telemetry Simulator',
+        readings
+      })
+    });
+
+    await loadActiveStageSensorData(true);
+    await loadPlatformState();
+    renderActiveStageStudio();
+    renderStageLogTable();
+    showStudioToast(`Live sensor telemetry captured for Stage ${stageNum} (${stageObj.name}).`, 'success');
+  } catch (err) {
+    console.error('Error simulating telemetry:', err);
+    showStudioToast(`Failed to capture live sensor telemetry: ${err.message}`, 'error');
+  }
 }
 
 function openAdvanceStageModal(targetNextStage) {

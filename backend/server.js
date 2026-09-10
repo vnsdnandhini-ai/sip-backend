@@ -253,6 +253,27 @@ app.delete('/api/batches/:id', async (req, res) => {
 });
 
 // Backward-compatible /api/projects aliases
+app.get('/api/projects', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
+    res.json(result.rows.map((p) => ({
+      id: p.id, name: p.name, product: p.product, batchNumber: p.batch_number,
+      department: p.department, line: p.line, status: p.status,
+      materialId: p.material_id || '', materialName: p.material_name || '', supplier: p.supplier || '',
+      targetQuantity: p.target_quantity !== null ? parseFloat(p.target_quantity) : null,
+      actualQuantity: p.actual_quantity !== null ? parseFloat(p.actual_quantity) : null,
+      weightDeviation: p.weight_deviation !== null ? parseFloat(p.weight_deviation) : null,
+      currentStage: p.current_stage || 'Raw Material Receipt',
+      qcStatus: p.qc_status || 'In Progress',
+      notes: p.notes || '',
+      createdAt: p.created_at,
+    })));
+  } catch (err) {
+    console.error('Failed to list projects:', err);
+    res.status(500).json({ error: 'Database error.' });
+  }
+});
+
 app.post('/api/projects', async (req, res) => {
   const id = generateId();
   try {
@@ -415,6 +436,307 @@ app.get('/api/batches/:id/timeline', async (req, res) => {
   } catch (err) {
     console.error('Failed to get batch timeline:', err);
     res.status(500).json({ error: 'Database error.' });
+  }
+});
+
+// =============================================================
+// STAGE-SPECIFIC SENSOR PROFILES & LIVE TELEMETRY CORE (8 STAGES)
+// =============================================================
+const STAGE_SENSOR_PROFILES = {
+  'Raw Material Receipt': {
+    stageIndex: 1,
+    device: { id: 'PAT-NIR-01', name: 'InGaAs NIR Fiber Spectrometer', type: 'spectrometer', status: 'ONLINE' },
+    parameters: [
+      { name: 'NIR Spectral Identity (R)', instrument: 'FT-NIR Spectrometer (PAT-01)', unit: 'Pearson R', defaultVal: 0.993, spec: '>=0.950' },
+      { name: 'Residual Moisture (LOD)', instrument: 'Halogen Moisture Analyzer (LOD-01)', unit: '%', defaultVal: 1.25, spec: '<=2.0%' },
+      { name: 'Container Barcode Reconciliation', instrument: '2D Optical Matrix Scanner (BC-01)', unit: 'ID', defaultVal: 'BC-RM-9942-01', spec: '100% Match' }
+    ]
+  },
+  'Dispensing': {
+    stageIndex: 2,
+    device: { id: 'SCALE-LOAD-02', name: 'Certified Dual Load Cell Balance', type: 'gravimetric', status: 'ONLINE' },
+    parameters: [
+      { name: 'Dispense Weight Tolerance', instrument: 'Certified Analytical Balance (WT-02)', unit: '% Dev', defaultVal: 0.24, spec: '<=1.0%' },
+      { name: 'Actual Weighed Quantity', instrument: 'Digital Load Cell Platform', unit: 'kg', defaultVal: 50.12, spec: 'Recipe Target ±1%' },
+      { name: 'Cleanroom Relative Humidity', instrument: 'Vaisala Humidity Transmitter (ENV-02)', unit: '% RH', defaultVal: 42.0, spec: '35.0 - 55.0%' },
+      { name: 'Cleanroom Temperature', instrument: 'Cleanroom RTD Thermal Probe (ENV-02)', unit: '°C', defaultVal: 21.5, spec: '19.0 - 23.0 °C' }
+    ]
+  },
+  'Blending': {
+    stageIndex: 3,
+    device: { id: 'PAT-PROBE-03', name: 'NIR Stratified Blend Probe & Tachometer', type: 'pat_blender', status: 'ONLINE' },
+    parameters: [
+      { name: 'Blend Uniformity RSD', instrument: 'In-Situ NIR Multi-Point Probe (PAT-03)', unit: '%', defaultVal: 2.8, spec: '<=5.0%' },
+      { name: 'Homogeneity Index', instrument: 'Chemometric Homogeneity Analyzer (PAT-03)', unit: '%', defaultVal: 97.4, spec: '>=95.0%' },
+      { name: 'Blender Speed', instrument: 'V-Blender Optical Tachometer (TACH-03)', unit: 'RPM', defaultVal: 24.0, spec: '20.0 - 28.0 RPM' },
+      { name: 'Mixing Duration', instrument: 'Automated Process Timer (TMR-03)', unit: 'min', defaultVal: 15.0, spec: '12.0 - 18.0 min' }
+    ]
+  },
+  'Granulation': {
+    stageIndex: 4,
+    device: { id: 'GRAN-SENS-04', name: 'High-Shear Motor Torque & Flow Sensor', type: 'torque_flow', status: 'ONLINE' },
+    parameters: [
+      { name: 'Impeller Torque Peak', instrument: 'High-Shear Impeller Torque Sensor (TRQ-04)', unit: 'Nm', defaultVal: 15.4, spec: '12.0 - 18.0 Nm' },
+      { name: 'Wet Mass Consistency', instrument: 'Torque-Curve Rheology Analyzer (VSC-04)', unit: '%', defaultVal: 94.2, spec: '>=90.0%' },
+      { name: 'Binder Spray Rate', instrument: 'Mass Flow Peristaltic Sensor (FLW-04)', unit: 'g/min', defaultVal: 45.0, spec: '40.0 - 50.0 g/min' },
+      { name: 'Atomization Air Pressure', instrument: 'Digital Pressure Transducer (PRS-04)', unit: 'bar', defaultVal: 1.8, spec: '1.5 - 2.2 bar' }
+    ]
+  },
+  'Drying': {
+    stageIndex: 5,
+    device: { id: 'FBD-NIR-05', name: 'Fluid Bed In-Situ NIR & Thermal RTD', type: 'fbd_sensors', status: 'ONLINE' },
+    parameters: [
+      { name: 'Loss on Drying (LOD)', instrument: 'In-Situ Microwave/NIR Probe (FBD-05)', unit: '%', defaultVal: 1.95, spec: '1.50 - 2.50%' },
+      { name: 'Inlet Air Temperature', instrument: 'Inlet Thermal RTD Sensor (RTD-IN-05)', unit: '°C', defaultVal: 58.5, spec: '55.0 - 65.0 °C' },
+      { name: 'Outlet Air Temperature', instrument: 'Exhaust Air RTD Sensor (RTD-OUT-05)', unit: '°C', defaultVal: 42.1, spec: '40.0 - 46.0 °C' },
+      { name: 'Fluidization Airflow Velocity', instrument: 'Differential Pressure Transmitter (AF-05)', unit: 'm³/hr', defaultVal: 340, spec: '300 - 380 m³/hr' }
+    ]
+  },
+  'Final Blending': {
+    stageIndex: 6,
+    device: { id: 'LUB-PAT-06', name: 'Lubricant Coating & Homogeneity Spectrophotometer', type: 'pat_spectro', status: 'ONLINE' },
+    parameters: [
+      { name: 'Lubrication Blend RSD', instrument: 'In-Line NIR Lubrication Probe (LUB-06)', unit: '%', defaultVal: 2.1, spec: '<=4.0%' },
+      { name: 'Lubricant Coating Index', instrument: 'Surface Coating Efficiency Analyzer (SCA-06)', unit: '%', defaultVal: 98.2, spec: '>=95.0%' },
+      { name: 'Rotational Speed', instrument: 'Low-Shear Blender Tachometer (TACH-06)', unit: 'RPM', defaultVal: 12.0, spec: '10.0 - 14.0 RPM' },
+      { name: 'Blending Duration', instrument: 'Digital Cycle Timer (TMR-06)', unit: 'min', defaultVal: 4.8, spec: '5.0 ± 0.5 min' }
+    ]
+  },
+  'Compression': {
+    stageIndex: 7,
+    device: { id: 'IPC-PRESS-07', name: 'Rotary Press Strain Gauge & Tablet Multi-Tester', type: 'press_ipc', status: 'ONLINE' },
+    parameters: [
+      { name: 'Main Compression Force', instrument: 'Rotary Press Piezoelectric Sensor (PRS-FC-07)', unit: 'kN', defaultVal: 16.8, spec: '14.0 - 20.0 kN' },
+      { name: 'Tablet Hardness', instrument: 'Automated Tablet Hardness Tester (HRD-07)', unit: 'Kp', defaultVal: 9.4, spec: '7.0 - 12.0 Kp' },
+      { name: 'Tablet Individual Weight', instrument: 'In-Line IPC Analytical Balance (WT-07)', unit: 'mg', defaultVal: 501.2, spec: '500.0 ± 15.0 mg' },
+      { name: 'Friability', instrument: 'Digital Friabilator Sensor (FRB-07)', unit: '%', defaultVal: 0.22, spec: '<1.00%' }
+    ]
+  },
+  'Final QC': {
+    stageIndex: 8,
+    device: { id: 'AI-CAM-QC-08', name: '360° AI High-Speed Optical Inspection & HPLC', type: 'vision_assay', status: 'ONLINE' },
+    parameters: [
+      { name: 'Active Assay', instrument: 'Automated In-Line HPLC Chromatography (HPLC-08)', unit: '%', defaultVal: 99.8, spec: '98.0 - 102.0%' },
+      { name: 'Dissolution at 30 min', instrument: 'Automated Fiber-Optic Dissolution Telemetry (DIS-08)', unit: '%', defaultVal: 94.5, spec: '>=80.0%' },
+      { name: 'Visual Defect Rate', instrument: '360° High-Speed Optical Inspection Camera (CAM-AI-08)', unit: '%', defaultVal: 0.02, spec: '<0.10%' },
+      { name: 'Batch Quality Score', instrument: '21 CFR Part 11 Automated Compliance Engine', unit: 'Score', defaultVal: 96, spec: '>=85 (Grade A)' }
+    ]
+  }
+};
+
+function getCanonicalStageName(inputStage) {
+  if (!inputStage) return 'Raw Material Receipt';
+  const q = String(inputStage).toLowerCase().trim();
+  if (q.includes('final blend') || q.includes('lubricat') || q === '6' || q === 'stage 6') return 'Final Blending';
+  if (q.includes('blend') || q.includes('dry mix') || q.includes('mixing') || q === '3' || q === 'stage 3') return 'Blending';
+  if (q.includes('dispens') || q.includes('weigh') || q === '2' || q === 'stage 2') return 'Dispensing';
+  if (q.includes('granulat') || q === '4' || q === 'stage 4') return 'Granulation';
+  if (q.includes('dry') || q.includes('fluid bed') || q === '5' || q === 'stage 5') return 'Drying';
+  if (q.includes('compress') || q.includes('press') || q.includes('tablet') || q === '7' || q === 'stage 7') return 'Compression';
+  if (q.includes('final qc') || q.includes('inspect') || q.includes('release') || q === '8' || q === 'stage 8') return 'Final QC';
+  if (q.includes('raw') || q.includes('receipt') || q.includes('spectro') || q === '1' || q === 'stage 1') return 'Raw Material Receipt';
+  return 'Raw Material Receipt';
+}
+
+// GET Live Sensor Telemetry for a specific stage & batch
+app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
+  const batchId = req.params.id;
+  const canonicalStage = getCanonicalStageName(req.query.stage);
+  const profile = STAGE_SENSOR_PROFILES[canonicalStage] || STAGE_SENSOR_PROFILES['Raw Material Receipt'];
+
+  try {
+    const [batchRes, readingsRes, dispensingRes] = await Promise.all([
+      pool.query('SELECT * FROM projects WHERE id = $1', [batchId]),
+      pool.query(
+        `SELECT * FROM analytical_data
+         WHERE project_id = $1 AND (process_stage ILIKE $2 OR process_stage ILIKE $3)
+         ORDER BY received_at DESC LIMIT 50`,
+        [batchId, canonicalStage, `%${canonicalStage}%`]
+      ),
+      canonicalStage === 'Dispensing'
+        ? pool.query('SELECT * FROM dispensing_logs WHERE batch_id = $1 ORDER BY timestamp DESC LIMIT 5', [batchId])
+        : Promise.resolve({ rows: [] })
+    ]);
+
+    const batch = batchRes.rows[0] || null;
+    const existingReadings = readingsRes.rows || [];
+    const dispensingLogs = dispensingRes.rows || [];
+
+    // Map each parameter in the stage sensor profile to its latest live sensor reading
+    const mappedParameters = profile.parameters.map((paramDef) => {
+      // Look for a recent matching reading in analytical_data
+      const found = existingReadings.find((r) =>
+        r.parameter && (
+          r.parameter.toLowerCase() === paramDef.name.toLowerCase() ||
+          r.parameter.toLowerCase().includes(paramDef.name.toLowerCase()) ||
+          paramDef.name.toLowerCase().includes(r.parameter.toLowerCase())
+        )
+      );
+
+      if (found) {
+        return {
+          name: paramDef.name,
+          instrument: found.instrument || paramDef.instrument,
+          value: found.value !== null && !isNaN(Number(found.value)) ? Number(found.value) : (found.value || paramDef.defaultVal),
+          unit: found.unit || paramDef.unit,
+          spec: paramDef.spec,
+          result: found.result || 'PASS',
+          timestamp: found.received_at || found.device_timestamp || new Date().toISOString(),
+          isLiveSensor: true,
+          deviceId: found.device_id || profile.device.id,
+          id: found.id
+        };
+      }
+
+      // If dispensing stage and actual quantity
+      if (canonicalStage === 'Dispensing' && dispensingLogs.length > 0) {
+        const dLog = dispensingLogs[0];
+        if (paramDef.name.includes('Tolerance') || paramDef.name.includes('Deviation')) {
+          return {
+            name: paramDef.name,
+            instrument: paramDef.instrument,
+            value: Number(dLog.deviation_percent || paramDef.defaultVal),
+            unit: paramDef.unit,
+            spec: paramDef.spec,
+            result: dLog.status || 'PASS',
+            timestamp: dLog.timestamp,
+            isLiveSensor: true,
+            deviceId: profile.device.id
+          };
+        }
+        if (paramDef.name.includes('Actual')) {
+          return {
+            name: paramDef.name,
+            instrument: paramDef.instrument,
+            value: Number(dLog.actual_quantity || paramDef.defaultVal),
+            unit: paramDef.unit,
+            spec: paramDef.spec,
+            result: 'PASS',
+            timestamp: dLog.timestamp,
+            isLiveSensor: true,
+            deviceId: profile.device.id
+          };
+        }
+      }
+
+      // Fallback: Default calibrated baseline parameter
+      return {
+        name: paramDef.name,
+        instrument: paramDef.instrument,
+        value: paramDef.defaultVal,
+        unit: paramDef.unit,
+        spec: paramDef.spec,
+        result: 'PASS',
+        timestamp: new Date().toISOString(),
+        isLiveSensor: false,
+        deviceId: profile.device.id
+      };
+    });
+
+    const allPass = mappedParameters.every((p) => p.result === 'PASS');
+    const hasCritical = mappedParameters.some((p) => p.result === 'CRITICAL');
+
+    res.json({
+      success: true,
+      batchId,
+      stage: canonicalStage,
+      stageIndex: profile.stageIndex,
+      sensorDevice: profile.device,
+      batch: batch ? {
+        batchNumber: batch.batch_number,
+        product: batch.product,
+        currentStage: batch.current_stage,
+        status: batch.status,
+        qcStatus: batch.qc_status,
+        targetQuantity: batch.target_quantity,
+        actualQuantity: batch.actual_quantity
+      } : null,
+      parameters: mappedParameters,
+      summary: {
+        status: hasCritical ? 'CRITICAL' : allPass ? 'PASS' : 'WARNING',
+        lastUpdated: new Date().toISOString(),
+        hasLiveTelemetry: existingReadings.length > 0 || dispensingLogs.length > 0
+      }
+    });
+  } catch (err) {
+    console.error('Failed to get stage sensor data:', err);
+    res.status(500).json({ error: 'Database error retrieving stage sensor data.' });
+  }
+});
+
+// POST Stage-Specific Sensor Readings from IoT Devices or Hardware Simulator
+app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
+  const batchId = req.params.id;
+  const canonicalStage = getCanonicalStageName(req.body.stage);
+  const { readings, operator, deviceId } = req.body;
+
+  if (!Array.isArray(readings) || readings.length === 0) {
+    return res.status(400).json({ error: 'readings array is required.' });
+  }
+
+  const profile = STAGE_SENSOR_PROFILES[canonicalStage] || STAGE_SENSOR_PROFILES['Raw Material Receipt'];
+  const activeDeviceId = deviceId || profile.device.id;
+  const timestamp = new Date().toISOString();
+  const savedRecords = [];
+
+  try {
+    for (const item of readings) {
+      const readingId = generateId();
+      const paramName = item.parameter || item.name;
+      const paramValue = item.value !== undefined ? item.value : item.defaultVal;
+      const paramUnit = item.unit || '';
+      const instrument = item.instrument || profile.parameters.find(p => p.name === paramName)?.instrument || profile.device.name;
+
+      // Determine result status
+      let resultStatus = item.result || 'PASS';
+
+      await pool.query(
+        `INSERT INTO analytical_data (
+          id, project_id, device_id, parameter, instrument, value, unit,
+          process_stage, stage_step, reading_type, result, received_at, device_timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+        [
+          readingId, batchId, activeDeviceId, paramName, instrument,
+          String(paramValue), paramUnit, canonicalStage, String(profile.stageIndex),
+          'sensor_iot', resultStatus, timestamp, timestamp
+        ]
+      );
+
+      savedRecords.push({
+        id: readingId,
+        parameter: paramName,
+        value: paramValue,
+        unit: paramUnit,
+        instrument,
+        result: resultStatus
+      });
+    }
+
+    // Record audit trail
+    const auditId = generateId();
+    await pool.query(
+      `INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)`,
+      [
+        auditId,
+        `Stage ${profile.stageIndex} (${canonicalStage}) IoT Sensor Telemetry Ingested: ${savedRecords.length} channels from [${activeDeviceId}]`,
+        'Sensor IoT Core',
+        operator || 'IoT Gateway'
+      ]
+    );
+
+    res.json({
+      success: true,
+      batchId,
+      stage: canonicalStage,
+      stageIndex: profile.stageIndex,
+      deviceId: activeDeviceId,
+      timestamp,
+      savedCount: savedRecords.length,
+      readings: savedRecords
+    });
+  } catch (err) {
+    console.error('Failed to save stage sensor telemetry:', err);
+    res.status(500).json({ error: 'Database error saving stage sensor data.' });
   }
 });
 
