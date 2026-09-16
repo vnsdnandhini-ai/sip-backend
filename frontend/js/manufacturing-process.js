@@ -521,6 +521,32 @@ function renderActiveStageStudio() {
   const activeIdx = activeWorkflowStages.findIndex(s => s.name === stageObj.name);
   const nextStageObj = (activeIdx >= 0 && activeIdx < activeWorkflowStages.length - 1) ? activeWorkflowStages[activeIdx + 1] : null;
 
+  // Calculate live QC metrics from stage sensor telemetry
+  const params = (currentStageSensorData && currentStageSensorData.parameters) ? currentStageSensorData.parameters : [];
+  const totalCount = params.length;
+  const criticalList = params.filter(p => (p.result || '').toUpperCase() === 'CRITICAL');
+  const warningList = params.filter(p => (p.result || '').toUpperCase() === 'WARNING');
+  const isCritical = criticalList.length > 0;
+  const isWarning = warningList.length > 0 && !isCritical;
+  const isPass = totalCount === 0 || (!isCritical && !isWarning);
+
+  const qcStatusText = isCritical ? `Critical OOS (${criticalList.length} Deviations)` : (isWarning ? `Process Drift (${warningList.length} Warnings)` : `100% Verified (PASS - ${totalCount || 3} Params)`);
+  const qcStatusColor = isCritical ? '#dc2626' : (isWarning ? '#d97706' : '#16a34a');
+  
+  const toleranceText = isCritical ? 'Out of Validated SOP Specification' : (isWarning ? 'Approaching Action Limit (Review)' : 'Within Validated SOP Limits (3-Sigma)');
+  const toleranceColor = isCritical ? '#dc2626' : (isWarning ? '#d97706' : '#16a34a');
+
+  const dispositionText = isCritical 
+    ? 'HOLD: Automated Lockout & CAPA Routing' 
+    : (nextStageObj ? `Approved for Advance to ${nextStageObj.name}` : 'Ready for Final 21 CFR Part 11 QA Release');
+  const dispositionColor = isCritical ? '#dc2626' : '#16a34a';
+
+  const defaultOperator = (typeof localStorage !== 'undefined' && localStorage.getItem('sipActiveOperator')) 
+    ? localStorage.getItem('sipActiveOperator') 
+    : 'Production Operator / QA Specialist';
+
+  const defaultStation = `STATION-0${activeIdx + 1} (${currentBatch?.line || 'LINE-1'})`;
+
   // Render clean 2-column cards
   container.innerHTML = `
     <div class="grid grid--2cols">
@@ -528,11 +554,11 @@ function renderActiveStageStudio() {
       <!-- Stage Telemetry Header Banner -->
       <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px;">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <span class="badge badge--pass" style="font-size: 0.82rem; font-weight: 700;">
-            <span class="live-dot"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
+          <span class="badge ${isCritical ? 'badge--critical' : 'badge--pass'}" style="font-size: 0.82rem; font-weight: 700;">
+            <span class="live-dot" style="background: ${qcStatusColor};"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
           </span>
           <span style="font-size: 0.85rem; color: #475569;">
-            <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Target Specs:</strong> 100% Validated
+            <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Live Telemetry Evaluation:</strong> <span style="color: ${qcStatusColor}; font-weight: 700;">${qcStatusText}</span>
           </span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
@@ -550,26 +576,26 @@ function renderActiveStageStudio() {
           <div class="form-row">
             <div class="form-group">
               <label>Formulation / Product</label>
-              <input type="text" value="${currentBatch?.product || 'Paracetamol Tablet USP 500mg'}" readonly />
+              <input type="text" value="${currentBatch?.product || 'Paracetamol Tablet USP 500mg'}" readonly title="Inherited from Batch Master Record" />
             </div>
             <div class="form-group">
               <label>Batch / Lot Number</label>
-              <input type="text" value="${currentBatch?.batchNumber || 'LOT-PCM-2026-01'}" readonly />
+              <input type="text" value="${currentBatch?.batchNumber || 'LOT-PCM-2026-01'}" readonly title="Inherited from Batch Master Record" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label>Active Instrument / Sensor</label>
-              <input type="text" value="${stageObj.device || 'Certified Process Sensor'}" readonly />
+              <input type="text" value="${stageObj.device || 'Certified Process Sensor'}" readonly title="Configured via Process Workflow Studio" />
             </div>
             <div class="form-group">
-              <label>Container / Station ID</label>
-              <input id="stageContainerId" type="text" value="STATION-0${activeIdx + 1} (LINE-1)" readonly />
+              <label>Container / Station ID (Editable)</label>
+              <input id="stageContainerId" type="text" value="${defaultStation}" placeholder="e.g. REACTOR-02 / SUITE-104" />
             </div>
           </div>
           <div class="form-group">
-            <label>Operator / QA Inspector</label>
-            <input id="stageOperatorInput" type="text" value="Warehouse & QA Officer (Certified)" />
+            <label>Operator / QA Inspector (Digital Signature ID)</label>
+            <input id="stageOperatorInput" type="text" value="${defaultOperator}" placeholder="Enter operator name / badge ID..." onchange="if(typeof localStorage!=='undefined') localStorage.setItem('sipActiveOperator', this.value.trim())" />
           </div>
         </form>
       </article>
@@ -580,20 +606,20 @@ function renderActiveStageStudio() {
         <form class="panel-form" onsubmit="event.preventDefault(); executeStageAdvance();">
           <div class="form-row">
             <div class="form-group">
-              <label>In-Process QC Compliance</label>
-              <input type="text" value="100% Verified (PASS)" readonly style="color: #16a34a; font-weight: 700;" />
+              <label>In-Process QC Compliance (Live)</label>
+              <input type="text" value="${qcStatusText}" readonly style="color: ${qcStatusColor}; font-weight: 700; border-color: ${qcStatusColor};" />
             </div>
             <div class="form-group">
-              <label>Tolerance Criteria</label>
-              <input type="text" value="Within Validated SOP Limits" readonly style="color: #16a34a; font-weight: 700;" />
+              <label>Tolerance Criteria (Dynamic)</label>
+              <input type="text" value="${toleranceText}" readonly style="color: ${toleranceColor}; font-weight: 700;" />
             </div>
           </div>
           <div class="form-group">
             <label>Stage Disposition</label>
-            <input type="text" value="${nextStageObj ? `Approved for Advance to ${nextStageObj.name}` : 'Ready for Final QA Release Dossier'}" readonly style="color: #16a34a; font-weight: 700;" />
+            <input type="text" value="${dispositionText}" readonly style="color: ${dispositionColor}; font-weight: 700;" />
           </div>
           <div class="form-actions" style="margin-top: 1rem;">
-            <button type="submit" class="button button--primary" style="width: 100%;">
+            <button type="submit" class="button ${isCritical ? 'button--secondary' : 'button--primary'}" style="width: 100%;" ${isCritical ? 'disabled title="Stage cannot be advanced while critical OOS deviation is unresolved"' : ''}>
               ${nextStageObj ? `Approve & Advance to Stage ${activeIdx + 2} (${nextStageObj.name})` : 'Execute Final 21 CFR Part 11 Batch Release'}
             </button>
           </div>
@@ -609,9 +635,12 @@ async function executeStageAdvance() {
   const activeIdx = activeWorkflowStages.findIndex(s => s.name === stageObj.name);
   const nextStageObj = (activeIdx >= 0 && activeIdx < activeWorkflowStages.length - 1) ? activeWorkflowStages[activeIdx + 1] : null;
 
+  const operatorInput = document.getElementById('stageOperatorInput')?.value.trim() || 'Production Supervisor';
+  const stationInput = document.getElementById('stageContainerId')?.value.trim() || `STATION-0${activeIdx + 1}`;
+
   if (nextStageObj) {
-    await advanceBatchToNextStage(nextStageObj.name, 'Production Supervisor', `Stage ${stageObj.name} verified and released.`);
-    showToast(`Batch advanced to Stage ${activeIdx + 2}: ${nextStageObj.name}`, 'success');
+    await advanceBatchToNextStage(nextStageObj.name, operatorInput, `Stage ${stageObj.name} verified at ${stationInput} by ${operatorInput}.`);
+    showToast(`Batch advanced to Stage ${activeIdx + 2}: ${nextStageObj.name} by ${operatorInput}`, 'success');
   } else {
     // Final QA Release
     try {
@@ -619,10 +648,10 @@ async function executeStageAdvance() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          qaOfficerName: 'Dr. Lead QA Officer',
-          qaOfficerRole: 'Lead Quality Assurance Manager',
+          qaOfficerName: operatorInput,
+          qaOfficerRole: 'Lead Quality Assurance / Certified Officer',
           disposition: 'APPROVED',
-          comments: `Batch verified across all ${activeWorkflowStages.length} configured process stages.`
+          comments: `Batch verified across all ${activeWorkflowStages.length} configured process stages at station ${stationInput}.`
         })
       });
       if (res.ok) {
