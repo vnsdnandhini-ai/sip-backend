@@ -874,6 +874,52 @@ body.dark-mode .combobox-option-row:hover {
   color: #e0e7ff;
 }
 
+/* ============================================================
+   STAGE RE-ORDERING & WORKFLOW TYPE CONTROLS
+   ============================================================ */
+.order-btn-group {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.order-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  color: #475569;
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.order-btn:hover:not(:disabled) {
+  background: #e0e7ff;
+  color: #3730a3;
+  border-color: #818cf8;
+}
+
+.order-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+body.dark-mode .order-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+body.dark-mode .order-btn:hover:not(:disabled) {
+  background: #312e81;
+  color: #e0e7ff;
+  border-color: #4338ca;
+}
+
 .modal h3 {
   margin-top: 0;
 }

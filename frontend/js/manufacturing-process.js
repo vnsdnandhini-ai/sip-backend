@@ -15,6 +15,95 @@ const DEFAULT_TABLET_STAGES = [
   { id: 8, name: 'Final QC', label: '8. Final Inspection', sub: 'Vision & QA Release', icon: '🏆', device: '360° AI High-Speed Optical Camera & HPLC (QC-08)', parameters: ['Active Assay', 'Dissolution at 30 min', 'Visual Defect Rate', 'Batch Quality Score'] }
 ];
 
+// Built-in Pre-Configured Industry Workflow Formulation Templates
+const BUILTIN_WORKFLOW_TEMPLATES = [
+  {
+    id: 'wf-tablet-8step',
+    name: 'Standard 8-Step Tablet Manufacturing (USP)',
+    category: 'Solid Dosage Tablets',
+    icon: '💊',
+    stages: DEFAULT_TABLET_STAGES
+  },
+  {
+    id: 'wf-liquid-4step',
+    name: '4-Step Liquid Oral Suspension (Syrup)',
+    category: 'Liquid Dosage',
+    icon: '💧',
+    stages: [
+      { id: 1, name: 'Raw Material Verification', label: '1. Material Assay', sub: 'NIR & Refractometer', icon: '🔬', device: 'Portable NIR & Digital Refractometer (LIQ-01)', parameters: ['Active API Assay %', 'Vehicle Specific Gravity', 'Raw Material Barcode Match'] },
+      { id: 2, name: 'Sugar Dissolution', label: '2. Vehicle Prep', sub: 'Brix & Heated Agitation', icon: '🍯', device: 'Jacketed Vessel RTD & Digital Brix Meter (LIQ-02)', parameters: ['Brix Sugar Content (°Bx)', 'Vessel Temperature (°C)', 'Agitator Speed (RPM)', 'pH Level'] },
+      { id: 3, name: 'Homogenization', label: '3. Homogenization', sub: 'Viscosity & Particle Size', icon: '🌀', device: 'In-Line Rotational Viscometer (LIQ-03)', parameters: ['Dynamic Viscosity (cP)', 'Homogenizer Pressure (bar)', 'Suspension Uniformity %', 'Batch Temperature (°C)'] },
+      { id: 4, name: 'Filling & Release', label: '4. Sterile Filling & QC', sub: 'Volume & Optical Check', icon: '🧪', device: 'High-Speed Optical Level & Seal Inspector (LIQ-04)', parameters: ['Fill Volume Accuracy (mL)', 'Particulate Defect Rate %', 'Torque Capper Force (Nm)', 'Microbial Quality Gate'] }
+    ]
+  },
+  {
+    id: 'wf-capsule-5step',
+    name: '5-Step Hard Gelatin Capsule Production',
+    category: 'Solid Dosage Capsules',
+    icon: '💊',
+    stages: [
+      { id: 1, name: 'Raw Material Testing', label: '1. Raw Material ID', sub: 'Spectroscopy', icon: '🔬', device: 'FT-NIR InGaAs Spectrometer (CAP-01)', parameters: ['API Spectral Identity (R)', 'Moisture LOD %', 'Container Barcode Status'] },
+      { id: 2, name: 'Precision Dispensing', label: '2. Dispensing', sub: 'Micro-Weighing', icon: '⚖️', device: 'Analytical Micro-Balance (CAP-02)', parameters: ['Dispense Target Deviation %', 'Active Powder Weight (kg)', 'Cleanroom Temp (°C)', 'Cleanroom RH %'] },
+      { id: 3, name: 'Powder Blending', label: '3. Blending', sub: 'Uniformity Index', icon: '🔄', device: 'V-Blender Optical Tachometer & PAT (CAP-03)', parameters: ['Blend Homogeneity %', 'Blend RSD %', 'Blender Speed (RPM)', 'Cycle Time (min)'] },
+      { id: 4, name: 'Encapsulation & Tamping', label: '4. Capsule Tamping', sub: 'Dosing Pin Force', icon: '💊', device: 'Encapsulator Tamping Pin Load Cell (CAP-04)', parameters: ['Tamping Force (N)', 'Filling Speed (caps/hr)', 'Powder Bed Depth (mm)', 'Lock Length (mm)'] },
+      { id: 5, name: 'Weight & Polish QC', label: '5. Final Inspection', sub: 'Checkweigher & Vision', icon: '🏆', device: 'Automatic Checkweigher & Vision System (CAP-05)', parameters: ['Individual Weight Deviation %', 'Defective Capsule Rate %', 'Disintegration Time (min)', 'QA Release Disposition'] }
+    ]
+  },
+  {
+    id: 'wf-ointment-3step',
+    name: '3-Step Semisolid Topical Ointment',
+    category: 'Semisolid Dosage',
+    icon: '🧴',
+    stages: [
+      { id: 1, name: 'Phase Material ID', label: '1. Phase Testing', sub: 'Spectroscopy & Melting Point', icon: '🔬', device: 'NIR & Digital Melting Point Apparatus (ONT-01)', parameters: ['Oil Phase Purity %', 'Water Phase Conductivity (µS)', 'Active Drug Assay %'] },
+      { id: 2, name: 'Emulsification', label: '2. Vacuum Emulsification', sub: 'Shear & Temperature', icon: '🧴', device: 'Vacuum Emulsifier Homogenizer Probe (ONT-02)', parameters: ['Emulsion Viscosity (cP)', 'Batch Core Temp (°C)', 'Vacuum Level (bar)', 'Homogenizer RPM'] },
+      { id: 3, name: 'Tube Filling & QC', label: '3. Packaging & Release', sub: 'Weight & Crimp Integrity', icon: '🏆', device: 'Automated Tube Filler & Ultrasonic Sealer (ONT-03)', parameters: ['Net Fill Weight (g)', 'Tube Crimp Integrity %', 'Extrudability Force (N)', 'QA Release Score'] }
+    ]
+  },
+  {
+    id: 'wf-injectable-4step',
+    name: '4-Step Sterile Injectable & Lyophilization',
+    category: 'Sterile Parenterals',
+    icon: '💉',
+    stages: [
+      { id: 1, name: 'Sterile Compounding', label: '1. Compounding & TOC', sub: 'Bioburden & TOC Monitor', icon: '🔬', device: 'In-Line TOC & Bioburden Telemetry (INJ-01)', parameters: ['Total Organic Carbon (TOC ppb)', 'Water for Injection Temp (°C)', 'Bioburden Log Reduction'] },
+      { id: 2, name: 'Aseptic Sterile Filtration', label: '2. 0.22µm Filtration', sub: 'Integrity Pressure', icon: '🧪', device: 'Differential Pressure & Membrane Integrity Tester (INJ-02)', parameters: ['Filter Bubble Point (psi)', 'Upstream Pressure (bar)', 'Differential Flow Rate (L/min)'] },
+      { id: 3, name: 'Aseptic Filling & Stoppering', label: '3. Vial Filling', sub: 'Laser Headspace Check', icon: '🧴', device: 'In-Line Laser Vial Headspace Analyzer (INJ-03)', parameters: ['Fill Volume Accuracy (mL)', 'Headspace Oxygen %', 'Rubber Stopper Insertion Force (N)'] },
+      { id: 4, name: 'Lyophilization & Final Capping', label: '4. Freeze Drying QC', sub: 'Vacuum & Moisture', icon: '🏆', device: 'Freeze-Dryer Capacitance Manometer & RTD (INJ-04)', parameters: ['Sublimation Shelf Temp (°C)', 'Chamber Vacuum (mbar)', 'Residual Moisture %', 'Cap Crimping Defect Rate %'] }
+    ]
+  },
+  {
+    id: 'wf-api-4step',
+    name: '4-Step API Chemical Synthesis & Crystallization',
+    category: 'API Synthesis',
+    icon: '🧪',
+    stages: [
+      { id: 1, name: 'Reagent Dosing & Reactor Loading', label: '1. Reactor Loading', sub: 'Mass Flow & Weight', icon: '⚖️', device: 'Precision Mass Flow Meter & Load Cell (API-01)', parameters: ['Stoichiometric Mass Ratio', 'Reagent Purity %', 'Reactor Nitrogen Blanket (psi)'] },
+      { id: 2, name: 'Controlled Chemical Reaction', label: '2. Reaction & Reflux', sub: 'In-Situ FTIR Spectrometry', icon: '🔬', device: 'In-Situ FTIR & Jacketed Thermal Probe (API-02)', parameters: ['Reaction Conversion %', 'Jacket Temperature (°C)', 'Agitator Impeller Speed (RPM)', 'pH Monitoring'] },
+      { id: 3, name: 'Crystallization & Filtration', label: '3. Crystallization', sub: 'FBRM Particle Probe', icon: '🌀', device: 'Focused Beam Reflectance Measurement FBRM (API-03)', parameters: ['Chord Length Distribution', 'Supersaturation Index', 'Filter Cake Delta Pressure (bar)'] },
+      { id: 4, name: 'Conical Drying & Milling', label: '4. Vacuum Drying & QC', sub: 'Laser Particle Sizer', icon: '🏆', device: 'Laser Diffraction Particle Size Analyzer (API-04)', parameters: ['Loss on Drying LOD %', 'Particle D50 (µm)', 'Residual Solvents (ppm)', 'Final HPLC Assay %'] }
+    ]
+  }
+];
+
+function getAllAvailableWorkflows() {
+  const merged = [...BUILTIN_WORKFLOW_TEMPLATES];
+  if (Array.isArray(allWorkflows)) {
+    allWorkflows.forEach(w => {
+      if (!merged.some(m => m.id === w.id)) {
+        merged.push({
+          id: w.id,
+          name: w.name,
+          category: w.category || 'Custom Formulation',
+          icon: '⚙️',
+          stages: typeof w.stages === 'string' ? JSON.parse(w.stages) : (w.stages || [])
+        });
+      }
+    });
+  }
+  return merged;
+}
+
 let allBatches = [];
 let allWorkflows = [];
 let currentBatchId = null;
@@ -207,7 +296,8 @@ function resolveActiveWorkflowForBatch(batch) {
   }
 
   const targetWfId = batch.workflowId || 'wf-tablet-8step';
-  const foundWf = allWorkflows.find(w => w.id === targetWfId);
+  const allAvailable = getAllAvailableWorkflows();
+  const foundWf = allAvailable.find(w => w.id === targetWfId);
 
   if (foundWf && Array.isArray(foundWf.stages) && foundWf.stages.length > 0) {
     activeWorkflowStages = foundWf.stages.map((s, idx) => ({
@@ -271,18 +361,12 @@ function populateWorkflowDropdown(selectedWfId) {
   const select = document.getElementById('workflowTemplateSelect');
   if (!select) return;
 
-  let html = `
-    <option value="wf-tablet-8step" ${selectedWfId === 'wf-tablet-8step' ? 'selected' : ''}>💊 8-Step Tablet Manufacturing (USP)</option>
-    <option value="wf-liquid-4step" ${selectedWfId === 'wf-liquid-4step' ? 'selected' : ''}>💧 4-Step Liquid Oral Suspension</option>
-    <option value="wf-capsule-5step" ${selectedWfId === 'wf-capsule-5step' ? 'selected' : ''}>💊 5-Step Capsule Production</option>
-    <option value="wf-ointment-3step" ${selectedWfId === 'wf-ointment-3step' ? 'selected' : ''}>🧴 3-Step Topical Ointment</option>
-  `;
-
-  allWorkflows.forEach(w => {
-    if (!['wf-tablet-8step', 'wf-liquid-4step', 'wf-capsule-5step', 'wf-ointment-3step'].includes(w.id)) {
-      html += `<option value="${w.id}" ${selectedWfId === w.id ? 'selected' : ''}>⚙️ ${w.name}</option>`;
-    }
-  });
+  const allAvailable = getAllAvailableWorkflows();
+  let html = allAvailable.map(w => `
+    <option value="${w.id}" ${selectedWfId === w.id ? 'selected' : ''}>
+      ${w.icon || '⚙️'} ${w.name}
+    </option>
+  `).join('');
 
   html += `<option value="custom" ${selectedWfId === 'custom' ? 'selected' : ''}>🛠️ Custom Configured Flow</option>`;
   select.innerHTML = html;
@@ -984,38 +1068,113 @@ function syncConfigInputs() {
   });
 }
 
-function openWorkflowConfigModal() {
+function moveConfigStageUp(idx) {
+  if (idx <= 0) return;
+  syncConfigInputs();
+  const temp = activeWorkflowStages[idx];
+  activeWorkflowStages[idx] = activeWorkflowStages[idx - 1];
+  activeWorkflowStages[idx - 1] = temp;
+  activeWorkflowStages.forEach((s, i) => {
+    s.id = i + 1;
+    s.label = `${i + 1}. ${s.name}`;
+  });
+  openWorkflowConfigModal();
+}
+
+function moveConfigStageDown(idx) {
+  if (idx >= activeWorkflowStages.length - 1) return;
+  syncConfigInputs();
+  const temp = activeWorkflowStages[idx];
+  activeWorkflowStages[idx] = activeWorkflowStages[idx + 1];
+  activeWorkflowStages[idx + 1] = temp;
+  activeWorkflowStages.forEach((s, i) => {
+    s.id = i + 1;
+    s.label = `${i + 1}. ${s.name}`;
+  });
+  openWorkflowConfigModal();
+}
+
+function switchConfigWorkflowTemplate(targetWfId) {
+  syncConfigInputs();
+  if (!targetWfId || targetWfId === 'custom') return;
+  
+  const allAvailable = getAllAvailableWorkflows();
+  const found = allAvailable.find(w => w.id === targetWfId);
+  if (found && Array.isArray(found.stages)) {
+    activeWorkflowStages = found.stages.map((s, idx) => ({
+      id: idx + 1,
+      name: s.name,
+      label: s.label || `${idx + 1}. ${s.name}`,
+      sub: s.sub || 'In-Line PAT Telemetry',
+      icon: s.icon || '🔬',
+      device: s.device || 'In-Line Process Instrument',
+      parameters: s.parameters || ['Process Assay', 'Process Temperature']
+    }));
+    openWorkflowConfigModal(targetWfId);
+  }
+}
+
+function openWorkflowConfigModal(selectedTemplateId) {
+  const currentWfId = selectedTemplateId || (currentBatch ? currentBatch.workflowId : 'wf-tablet-8step');
+  const allAvailable = getAllAvailableWorkflows();
+
   const modalHtml = `
     <div style="padding: 0.25rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px;">
         <div>
           <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
             ⚙️ Process Workflow & Stage Configurator
           </h3>
-          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Click ▼ to select standard industry options or type custom names freely.</p>
+          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Reorder stages with ▲/▼, select standard options with ▼, or create new formulation types.</p>
         </div>
         <span class="badge badge--live" style="font-size: 0.82rem; font-weight: 700;">
           ${activeWorkflowStages.length} Stages Configured
         </span>
       </div>
 
-      <div style="max-height: 54vh; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; padding: 2px;">
+      <!-- Quick Formulation Type Switcher & New Type Creator -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <label for="configWorkflowTypeSelect" style="font-size: 0.82rem; font-weight: 700; color: #334155; white-space: nowrap;">Formulation Type Template:</label>
+          <select id="configWorkflowTypeSelect" class="batch-select-input" style="padding: 6px 12px; font-size: 0.84rem; min-width: 270px; border-radius: 8px;" onchange="switchConfigWorkflowTemplate(this.value)">
+            ${allAvailable.map(w => `
+              <option value="${w.id}" ${w.id === currentWfId ? 'selected' : ''}>
+                ${w.icon || '⚙️'} ${w.name}
+              </option>
+            `).join('')}
+            <option value="custom" ${currentWfId === 'custom' ? 'selected' : ''}>🛠️ Custom Configured Pipeline</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 5px;" onclick="openCreateWorkflowTypeModal()">
+            ➕ New Workflow Type
+          </button>
+        </div>
+      </div>
+
+      <div style="max-height: 50vh; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; padding: 2px;">
         <table class="config-stage-table">
           <thead>
             <tr>
-              <th style="width: 44px; text-align: center;">#</th>
-              <th style="width: 40%;">PROCESS STAGE (SELECT / TYPE)</th>
-              <th style="width: 46%;">ATTACHED SENSOR / INSTRUMENT (SELECT / TYPE)</th>
-              <th style="width: 14%; text-align: center;">ACTION</th>
+              <th style="width: 76px; text-align: center;">ORDER</th>
+              <th style="width: 39%;">PROCESS STAGE (SELECT / TYPE)</th>
+              <th style="width: 45%;">ATTACHED SENSOR / INSTRUMENT (SELECT / TYPE)</th>
+              <th style="width: 12%; text-align: center;">ACTION</th>
             </tr>
           </thead>
           <tbody id="configModalTableBody">
             ${activeWorkflowStages.map((s, idx) => `
               <tr>
-                <td style="text-align: center;">
-                  <span style="display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #f1f5f9; color: #334155; font-weight: 700; font-size: 0.82rem;">
-                    ${idx + 1}
-                  </span>
+                <td style="text-align: center; white-space: nowrap;">
+                  <div style="display: inline-flex; align-items: center; gap: 5px;">
+                    <div class="order-btn-group">
+                      <button type="button" class="order-btn" title="Move Stage Up" onclick="moveConfigStageUp(${idx})" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                      <button type="button" class="order-btn" title="Move Stage Down" onclick="moveConfigStageDown(${idx})" ${idx === activeWorkflowStages.length - 1 ? 'disabled' : ''}>▼</button>
+                    </div>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #e0e7ff; color: #3730a3; font-weight: 700; font-size: 0.8rem;">
+                      ${idx + 1}
+                    </span>
+                  </div>
                 </td>
                 <td>
                   ${renderCombobox(`stage_name_${idx}`, `menu_stage_name_${idx}`, s.name, 'stage', 'Select stage or type custom...')}
@@ -1024,7 +1183,7 @@ function openWorkflowConfigModal() {
                   ${renderCombobox(`stage_dev_${idx}`, `menu_stage_dev_${idx}`, s.device || 'Certified In-Line Sensor', 'sensor', 'Select sensor or type custom...')}
                 </td>
                 <td style="text-align: center;">
-                  <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.78rem; color: #dc2626; border-color: #fecaca; background: #fff5f5;" onclick="removeConfigStage(${idx})">
+                  <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.78rem; color: #dc2626; border-color: #fecaca; background: #fff5f5;" onclick="removeConfigStage(${idx})" title="Remove Stage">
                     🗑️ Remove
                   </button>
                 </td>
@@ -1034,10 +1193,15 @@ function openWorkflowConfigModal() {
         </table>
       </div>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 14px;">
-        <button type="button" class="button button--secondary" onclick="addStageInConfigModal()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
-          ➕ Add New Stage
-        </button>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 14px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="button button--secondary" onclick="addStageInConfigModal()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
+            ➕ Add New Stage
+          </button>
+          <button type="button" class="button button--secondary" onclick="openCreateWorkflowTypeModal()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
+            💾 Save As New Type
+          </button>
+        </div>
         <div style="display: flex; gap: 10px;">
           <button type="button" class="button button--secondary" onclick="closeModal()">Cancel</button>
           <button type="button" class="button button--primary" onclick="saveCustomWorkflowChanges()">Save & Apply Workflow</button>
@@ -1047,6 +1211,106 @@ function openWorkflowConfigModal() {
   `;
 
   openCustomModal('Process Workflow Configurator', modalHtml);
+}
+
+function openCreateWorkflowTypeModal() {
+  syncConfigInputs();
+  const subModalHtml = `
+    <div style="padding: 0.5rem;">
+      <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+        ➕ Create New Workflow Formulation Type
+      </h3>
+      <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 14px;">
+        Save the current <strong>${activeWorkflowStages.length} configured stages</strong> as a reusable industrial formulation template.
+      </p>
+      
+      <form id="newWorkflowForm" class="panel-form" onsubmit="event.preventDefault(); submitCreateWorkflowType();">
+        <div class="form-group">
+          <label>Workflow Type Name *</label>
+          <input type="text" id="newWfName" placeholder="e.g. Effervescent Tablet Formulation / Lyophilized Biologics" required />
+        </div>
+        
+        <div class="form-group">
+          <label>Dosage / Process Category *</label>
+          <select id="newWfCategory">
+            <option value="Solid Dosage Tablets">Solid Dosage (Tablets / Pellets / Granules)</option>
+            <option value="Liquid Oral Formulations">Liquid Oral (Syrups / Suspensions / Solutions)</option>
+            <option value="Solid Dosage Capsules">Capsules (Hard Gelatin / Softgels)</option>
+            <option value="Semisolid Dosage">Semisolid (Creams / Ointments / Gels)</option>
+            <option value="Sterile Parenterals">Sterile Injectables & Lyophilized Vials</option>
+            <option value="Inhalation Formulations">Inhalation (Dry Powder Inhaler / MDIs)</option>
+            <option value="API Synthesis">API Chemical Synthesis & Crystallization</option>
+            <option value="Custom Formulation">Custom Formulation Pipeline</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Description / Regulatory Reference</label>
+          <textarea id="newWfDesc" rows="2" placeholder="Brief manufacturing process description, standard operating procedure (SOP), or pharmacopeial standard..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+          <button type="button" class="button button--secondary" onclick="openWorkflowConfigModal()">Back to Configurator</button>
+          <button type="submit" class="button button--primary">💾 Save & Register Workflow Type</button>
+        </div>
+      </form>
+    </div>
+  `;
+  openCustomModal('Create New Workflow Type', subModalHtml);
+}
+
+async function submitCreateWorkflowType() {
+  const name = document.getElementById('newWfName')?.value.trim();
+  const category = document.getElementById('newWfCategory')?.value || 'Custom Formulation';
+  const description = document.getElementById('newWfDesc')?.value.trim() || '';
+
+  if (!name) {
+    alert('Workflow Type Name is required.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/workflows`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        category,
+        description,
+        stages: activeWorkflowStages
+      })
+    });
+    if (res.ok) {
+      const created = await res.json();
+      allWorkflows.push({
+        id: created.id,
+        name: created.name,
+        category: created.category,
+        icon: '⚙️',
+        stages: created.stages
+      });
+      populateWorkflowDropdown(created.id);
+      showToast(`New workflow formulation type "${name}" saved and registered!`, 'success');
+      openWorkflowConfigModal(created.id);
+    } else {
+      showToast('Server error saving workflow type', 'error');
+    }
+  } catch (e) {
+    console.error('Failed to create workflow type:', e);
+    // Offline / fallback fallback
+    const offlineId = `wf-custom-${Date.now()}`;
+    const newOfflineWf = {
+      id: offlineId,
+      name,
+      category,
+      icon: '⚙️',
+      stages: [...activeWorkflowStages]
+    };
+    allWorkflows.push(newOfflineWf);
+    populateWorkflowDropdown(offlineId);
+    showToast(`Workflow type "${name}" registered locally!`, 'success');
+    openWorkflowConfigModal(offlineId);
+  }
 }
 
 function addStageInConfigModal() {
