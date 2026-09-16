@@ -180,7 +180,7 @@ async function wizardNext() {
     wizardIndex++;
     showWizardPanel();
   } else {
-    window.location.href = 'projects.html';
+    window.location.href = 'dashboard.html';
   }
 }
 

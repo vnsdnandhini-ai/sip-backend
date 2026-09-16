@@ -1,4 +1,4 @@
-﻿let parametersCache = [];
+let parametersCache = [];
 let monitoringPointsForDropdown = [];
 
 async function loadParameters() {
@@ -119,36 +119,6 @@ function renderParametersRows(parameters) {
     row.innerHTML = `<td>${parameter.name}</td><td>${mpBadge}</td><td>${parameter.instrument}</td><td>${parameter.unit}</td><td>${parameter.frequency}</td><td>${parameter.description || '-'}</td><td>${createRowActions(parameter.id, 'parameter')}</td>`;
     tbody.appendChild(row);
   });
-
-  const countEl = document.getElementById('parametersResultCount');
-  if (countEl) countEl.textContent = `${parameters.length} parameter${parameters.length !== 1 ? 's' : ''}`;
-}
-
-function applyParametersFilterAndSort() {
-  const filterInput = document.getElementById('parametersFilterInput');
-  const sortSelect = document.getElementById('parametersSortSelect');
-
-  let filtered = [...parametersCache];
-
-  if (filterInput && filterInput.value.trim()) {
-    const query = filterInput.value.trim().toLowerCase();
-    filtered = filtered.filter((p) =>
-      p.name.toLowerCase().includes(query) || p.instrument.toLowerCase().includes(query)
-    );
-  }
-
-  if (sortSelect) {
-    const [field, direction] = sortSelect.value.split('-');
-    filtered.sort((a, b) => {
-      const valA = String(a[field] || '').toLowerCase();
-      const valB = String(b[field] || '').toLowerCase();
-      if (valA < valB) return direction === 'asc' ? -1 : 1;
-      if (valA > valB) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  renderParametersRows(filtered);
 }
 
 async function refreshParametersTable() {
@@ -156,16 +126,6 @@ async function refreshParametersTable() {
   if (!tbody) return;
 
   await loadParameters();
-  applyParametersFilterAndSort();
-
-  const filterInput = document.getElementById('parametersFilterInput');
-  const sortSelect = document.getElementById('parametersSortSelect');
-  if (filterInput && !filterInput.dataset.bound) {
-    filterInput.addEventListener('input', applyParametersFilterAndSort);
-    filterInput.dataset.bound = 'true';
-  }
-  if (sortSelect && !sortSelect.dataset.bound) {
-    sortSelect.addEventListener('change', applyParametersFilterAndSort);
-    sortSelect.dataset.bound = 'true';
-  }
+  renderParametersRows(parametersCache);
 }
+

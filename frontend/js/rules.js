@@ -1,4 +1,4 @@
-﻿let regulatoryRulesCache = [];
+let regulatoryRulesCache = [];
 
 async function loadRegulatoryRules() {
   try {
@@ -96,29 +96,6 @@ function renderRulesRows(rules) {
     row.innerHTML = `<td>${rule.name}</td><td>${rule.description || '-'}</td><td>${ruleStatusBadge(rule.status)}</td><td>${createRowActions(rule.id, 'rule')}</td>`;
     tbody.appendChild(row);
   });
-
-  const countEl = document.getElementById('rulesResultCount');
-  if (countEl) countEl.textContent = `${rules.length} rule${rules.length !== 1 ? 's' : ''}`;
-}
-
-function applyRulesFilterAndSort() {
-  const filterInput = document.getElementById('rulesFilterInput');
-  const statusFilter = document.getElementById('rulesStatusFilter');
-
-  let filtered = [...regulatoryRulesCache];
-
-  if (filterInput && filterInput.value.trim()) {
-    const query = filterInput.value.trim().toLowerCase();
-    filtered = filtered.filter((r) =>
-      r.name.toLowerCase().includes(query) || (r.description || '').toLowerCase().includes(query)
-    );
-  }
-
-  if (statusFilter && statusFilter.value) {
-    filtered = filtered.filter((r) => r.status === statusFilter.value);
-  }
-
-  renderRulesRows(filtered);
 }
 
 async function refreshRulesTable() {
@@ -126,16 +103,6 @@ async function refreshRulesTable() {
   if (!tbody) return;
 
   await loadRegulatoryRules();
-  applyRulesFilterAndSort();
-
-  const filterInput = document.getElementById('rulesFilterInput');
-  const statusFilter = document.getElementById('rulesStatusFilter');
-  if (filterInput && !filterInput.dataset.bound) {
-    filterInput.addEventListener('input', applyRulesFilterAndSort);
-    filterInput.dataset.bound = 'true';
-  }
-  if (statusFilter && !statusFilter.dataset.bound) {
-    statusFilter.addEventListener('change', applyRulesFilterAndSort);
-    statusFilter.dataset.bound = 'true';
-  }
+  renderRulesRows(regulatoryRulesCache);
 }
+

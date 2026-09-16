@@ -1,4 +1,4 @@
-﻿let checkoutConditionsCache = [];
+let checkoutConditionsCache = [];
 let monitoringPointsForDropdown = [];
 let regulatoryRulesForDropdown = [];
 
@@ -260,40 +260,6 @@ function renderCheckoutRows(conditions) {
       </td>`;
     tbody.appendChild(row);
   });
-
-  const countEl = document.getElementById('checkoutResultCount');
-  if (countEl) countEl.textContent = `${conditions.length} condition${conditions.length !== 1 ? 's' : ''}`;
-}
-
-function applyCheckoutFilterAndSort() {
-  const filterInput = document.getElementById('checkoutFilterInput');
-  const sortSelect = document.getElementById('checkoutSortSelect');
-
-  let filtered = [...checkoutConditionsCache];
-
-  if (filterInput && filterInput.value.trim()) {
-    const query = filterInput.value.trim().toLowerCase();
-    filtered = filtered.filter((c) =>
-      c.parameter.toLowerCase().includes(query) ||
-      c.acceptance.toLowerCase().includes(query) ||
-      c.warning.toLowerCase().includes(query) ||
-      c.critical.toLowerCase().includes(query) ||
-      (c.action || '').toLowerCase().includes(query)
-    );
-  }
-
-  if (sortSelect) {
-    const [field, direction] = sortSelect.value.split('-');
-    filtered.sort((a, b) => {
-      const valA = String(a[field] || '').toLowerCase();
-      const valB = String(b[field] || '').toLowerCase();
-      if (valA < valB) return direction === 'asc' ? -1 : 1;
-      if (valA > valB) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  renderCheckoutRows(filtered);
 }
 
 async function refreshCheckoutTable() {
@@ -301,26 +267,10 @@ async function refreshCheckoutTable() {
   if (!tbody) return;
 
   await loadCheckoutConditions();
-  applyCheckoutFilterAndSort();
+  renderCheckoutRows(checkoutConditionsCache);
   populateTestValueDropdown();
 
-  const filterInput = document.getElementById('checkoutFilterInput');
-  const sortSelect = document.getElementById('checkoutSortSelect');
-  const exportBtn = document.getElementById('exportConditionsCsv');
   const testBtn = document.getElementById('runTestValue');
-
-  if (filterInput && !filterInput.dataset.bound) {
-    filterInput.addEventListener('input', applyCheckoutFilterAndSort);
-    filterInput.dataset.bound = 'true';
-  }
-  if (sortSelect && !sortSelect.dataset.bound) {
-    sortSelect.addEventListener('change', applyCheckoutFilterAndSort);
-    sortSelect.dataset.bound = 'true';
-  }
-  if (exportBtn && !exportBtn.dataset.bound) {
-    exportBtn.addEventListener('click', exportConditionsToCsv);
-    exportBtn.dataset.bound = 'true';
-  }
   if (testBtn && !testBtn.dataset.bound) {
     testBtn.addEventListener('click', runTestValue);
     testBtn.dataset.bound = 'true';

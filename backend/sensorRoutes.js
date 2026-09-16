@@ -124,7 +124,7 @@ router.post('/reference-color', async (req, res) => {
     }
   });
   router.post('/upload-image', async (req, res) => {
-    const { monitoringPointId, parameter, imageBase64, projectId, batchId, processStage, stageStep, defectTags, sampleMetadata } = req.body;
+    const { monitoringPointId, parameter, imageBase64, projectId, batchId, processStage, stageStep, defectTags, sampleMetadata, category } = req.body;
 
     if (!imageBase64) {
       return res.status(400).json({ error: 'imageBase64 is required.' });
@@ -137,7 +137,7 @@ router.post('/reference-color', async (req, res) => {
 
     let imageAnalysisResult = null;
     try {
-      imageAnalysisResult = await analyzeImage(imageBuffer);
+      imageAnalysisResult = await analyzeImage(imageBuffer, { category, parameter, processStage });
     } catch (err) {
       console.error('Image analysis failed (continuing without it):', err);
     }
@@ -172,6 +172,23 @@ router.post('/reference-color', async (req, res) => {
 
     const imagePath = `/uploads/${fileName}`;
 
+    if (imageAnalysisResult) {
+      if (imageAnalysisResult.highlightedImageBuffer) {
+        const hName = `${id}_highlighted.jpg`;
+        fs.writeFileSync(path.join(uploadDir, hName), imageAnalysisResult.highlightedImageBuffer);
+        if (!imageAnalysisResult.ai) imageAnalysisResult.ai = {};
+        imageAnalysisResult.ai.pixel_anomaly_map = `/uploads/${hName}`;
+        delete imageAnalysisResult.highlightedImageBuffer;
+      }
+      if (imageAnalysisResult.segmentedImageBuffer) {
+        const sName = `${id}_segmented.jpg`;
+        fs.writeFileSync(path.join(uploadDir, sName), imageAnalysisResult.segmentedImageBuffer);
+        if (!imageAnalysisResult.ai) imageAnalysisResult.ai = {};
+        imageAnalysisResult.ai.segmented_image = `/uploads/${sName}`;
+        delete imageAnalysisResult.segmentedImageBuffer;
+      }
+    }
+
     try {
       await pool.query(
         `INSERT INTO analytical_data (id, device_id, monitoring_point_id, project_id, process_stage, stage_step, defect_tags, sample_metadata, reading_type, parameter, value, device_timestamp, data_type, image_path, image_analysis)
@@ -188,6 +205,52 @@ router.post('/reference-color', async (req, res) => {
     } catch (err) {
       console.error('Failed to save manual image upload:', err);
       res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  // Reanalyze all existing images in database with background removal
+  router.post('/reanalyze-all-images', async (req, res) => {
+    try {
+      const result = await pool.query("SELECT id, image_path, parameter, process_stage FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL");
+      const uploadDir = path.join(__dirname, 'uploads');
+      let updatedCount = 0;
+
+      for (const row of result.rows) {
+        if (!row.image_path) continue;
+        const localFileName = path.basename(row.image_path);
+        const localFilePath = path.join(uploadDir, localFileName);
+
+        if (fs.existsSync(localFilePath)) {
+          const buffer = fs.readFileSync(localFilePath);
+          const analysis = await analyzeImage(buffer, { parameter: row.parameter, processStage: row.process_stage });
+
+          if (analysis.highlightedImageBuffer) {
+            const hName = `${row.id}_highlighted.jpg`;
+            fs.writeFileSync(path.join(uploadDir, hName), analysis.highlightedImageBuffer);
+            if (!analysis.ai) analysis.ai = {};
+            analysis.ai.pixel_anomaly_map = `/uploads/${hName}`;
+            delete analysis.highlightedImageBuffer;
+          }
+          if (analysis.segmentedImageBuffer) {
+            const sName = `${row.id}_segmented.jpg`;
+            fs.writeFileSync(path.join(uploadDir, sName), analysis.segmentedImageBuffer);
+            if (!analysis.ai) analysis.ai = {};
+            analysis.ai.segmented_image = `/uploads/${sName}`;
+            delete analysis.segmentedImageBuffer;
+          }
+
+          await pool.query(
+            "UPDATE analytical_data SET image_analysis = $1, defect_tags = $2 WHERE id = $3",
+            [JSON.stringify(analysis), analysis.detectedDefect, row.id]
+          );
+          updatedCount++;
+        }
+      }
+
+      res.json({ success: true, updatedCount, totalFound: result.rows.length });
+    } catch (err) {
+      console.error('Failed to reanalyze images:', err);
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -309,6 +372,23 @@ router.post('/reference-color', async (req, res) => {
       fs.writeFileSync(filePath, imageBuffer);
 
       imagePath = `/uploads/${fileName}`;
+
+      if (imageAnalysisResult) {
+        if (imageAnalysisResult.highlightedImageBuffer) {
+          const hName = `${id}_highlighted.jpg`;
+          fs.writeFileSync(path.join(uploadDir, hName), imageAnalysisResult.highlightedImageBuffer);
+          if (!imageAnalysisResult.ai) imageAnalysisResult.ai = {};
+          imageAnalysisResult.ai.pixel_anomaly_map = `/uploads/${hName}`;
+          delete imageAnalysisResult.highlightedImageBuffer;
+        }
+        if (imageAnalysisResult.segmentedImageBuffer) {
+          const sName = `${id}_segmented.jpg`;
+          fs.writeFileSync(path.join(uploadDir, sName), imageAnalysisResult.segmentedImageBuffer);
+          if (!imageAnalysisResult.ai) imageAnalysisResult.ai = {};
+          imageAnalysisResult.ai.segmented_image = `/uploads/${sName}`;
+          delete imageAnalysisResult.segmentedImageBuffer;
+        }
+      }
     }
     if (resolvedDataType === 'image') {
       derivedParameter = 'Image';

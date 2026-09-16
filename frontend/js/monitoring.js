@@ -1,4 +1,4 @@
-﻿let monitoringPointsCache = [];
+let monitoringPointsCache = [];
 let projectsForDropdown = [];
 
 async function loadMonitoringPoints() {
@@ -122,40 +122,6 @@ function renderMonitoringRows(points) {
     row.innerHTML = `<td>${point.name}</td><td>${projectBadge}</td><td>${point.location}</td><td>${point.frequency}</td><td>${monitoringStatusBadge(point.status)}</td><td>${createRowActions(point.id, 'monitoring')}</td>`;
     tbody.appendChild(row);
   });
-  const countEl = document.getElementById('monitoringResultCount');
-  if (countEl) countEl.textContent = `${points.length} point${points.length !== 1 ? 's' : ''}`;
-}
-
-function applyMonitoringFilterAndSort() {
-  const filterInput = document.getElementById('monitoringFilterInput');
-  const statusFilter = document.getElementById('monitoringStatusFilter');
-  const sortSelect = document.getElementById('monitoringSortSelect');
-
-  let filtered = [...monitoringPointsCache];
-
-  if (filterInput && filterInput.value.trim()) {
-    const query = filterInput.value.trim().toLowerCase();
-    filtered = filtered.filter((p) =>
-      p.name.toLowerCase().includes(query) || p.location.toLowerCase().includes(query)
-    );
-  }
-
-  if (statusFilter && statusFilter.value) {
-    filtered = filtered.filter((p) => p.status === statusFilter.value);
-  }
-
-  if (sortSelect) {
-    const [field, direction] = sortSelect.value.split('-');
-    filtered.sort((a, b) => {
-      const valA = String(a[field] || '').toLowerCase();
-      const valB = String(b[field] || '').toLowerCase();
-      if (valA < valB) return direction === 'asc' ? -1 : 1;
-      if (valA > valB) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-
-  renderMonitoringRows(filtered);
 }
 
 async function refreshMonitoringTable() {
@@ -163,21 +129,6 @@ async function refreshMonitoringTable() {
   if (!tbody) return;
 
   await loadMonitoringPoints();
-  applyMonitoringFilterAndSort();
-
-  const filterInput = document.getElementById('monitoringFilterInput');
-  const statusFilter = document.getElementById('monitoringStatusFilter');
-  const sortSelect = document.getElementById('monitoringSortSelect');
-  if (filterInput && !filterInput.dataset.bound) {
-    filterInput.addEventListener('input', applyMonitoringFilterAndSort);
-    filterInput.dataset.bound = 'true';
-  }
-  if (statusFilter && !statusFilter.dataset.bound) {
-    statusFilter.addEventListener('change', applyMonitoringFilterAndSort);
-    statusFilter.dataset.bound = 'true';
-  }
-  if (sortSelect && !sortSelect.dataset.bound) {
-    sortSelect.addEventListener('change', applyMonitoringFilterAndSort);
-    sortSelect.dataset.bound = 'true';
-  }
+  renderMonitoringRows(monitoringPointsCache);
 }
+

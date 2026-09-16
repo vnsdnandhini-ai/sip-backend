@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Gallery - Spectroscopic Intelligence Platform</title>
+  <title>Image Gallery & Visual Inspection - Spectroscopic Intelligence Platform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
@@ -33,14 +33,13 @@
         <button class="nav-link" data-page="reports">Reports & Audit</button>
         <button class="nav-link" data-page="settings">Settings</button>
       </nav>
-
     </aside>
 
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-left">
           <h2 id="pageTitle">Image Gallery</h2>
-          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
+          <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS · AI Computer Vision</div>
         </div>
         <div class="topbar-right">
           <div class="search-wrapper">
@@ -51,70 +50,224 @@
       </header>
 
       <section class="content-section">
-        <div class="section-header">
-          <div>
-            <h3>Captured Images</h3>
-            <p>All images captured by ESP32-CAM devices and manual uploads, with automated contamination and AI quality inspection.</p>
+        <!-- Top Category Segregation Switcher with Clean Minimal SVG Icons -->
+        <div class="category-nav-wrapper">
+          <button class="category-nav-btn active" id="tabRawMaterial" data-category="raw_material" onclick="switchCategoryTab('raw_material')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+            </svg>
+            <span>Raw Materials Inspection</span>
+            <span id="countCatRaw" class="cat-count-badge">0</span>
+          </button>
+          <button class="category-nav-btn" id="tabFinalProduct" data-category="final_product" onclick="switchCategoryTab('final_product')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/>
+              <path d="m8.5 8.5 7 7"/>
+            </svg>
+            <span>Final Product QC</span>
+            <span id="countCatFinal" class="cat-count-badge">0</span>
+          </button>
+          <button class="category-nav-btn" id="tabAllCaptures" data-category="all" onclick="switchCategoryTab('all')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="14" y="14" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span>All Captures</span>
+            <span id="countCatAll" class="cat-count-badge">0</span>
+          </button>
+        </div>
+
+        <!-- Category Banner & KPIs -->
+        <div class="category-hero-banner" id="categoryHeroBanner">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 id="heroTitle" style="margin:0 0 4px 0; font-size:1.15rem; color:#0f172a; font-weight:700;">
+                Raw Material Identification & Botanical Inspection
+              </h3>
+              <p id="heroSubtitle" style="margin:0; font-size:0.85rem; color:#64748b;">
+                Real-time AI foliar screening, chlorophyll health indexing, botanical defect localization, and raw API qualification.
+              </p>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="button button--secondary" id="reanalyzeBtn" title="Run background segmentation and precision defect QA across all samples">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                Precision Re-Scan
+              </button>
+              <button class="button button--secondary" id="toggleUploadBtn" onclick="toggleUploadPanel()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Upload Sample
+              </button>
+              <button class="button button--secondary" id="toggleCalibBtn" onclick="toggleCalibPanel()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+                Calibrate Color
+              </button>
+              <button class="button button--secondary" id="refreshGallery">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;">
+                  <polyline points="23 4 23 10 17 10"/>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Refresh
+              </button>
+            </div>
           </div>
-          <div style="display:flex; gap:8px;">
-            <button class="button button--secondary" id="refreshGallery">&#x21bb; Refresh</button>
+
+          <!-- Dynamic 4 Metric Cards (Clean Enterprise Style) -->
+          <div class="gallery-kpi-grid" id="galleryKpiGrid">
+            <!-- Injected by JS -->
           </div>
         </div>
 
-        <!-- Manual Image Upload Panel -->
-        <div class="calibration-panel">
-          <h4 style="margin-top:0;">Upload Image Manually</h4>
-          <p class="note" style="margin-top:0;">Upload an inspection photo directly from your device to run automated contamination, edge density, and AI QA analysis.</p>
-          <div class="calibration-row">
-            <div class="form-group" style="min-width:200px;">
-              <label for="uploadParameter">Parameter (optional)</label>
-              <input id="uploadParameter" type="text" placeholder="e.g. Tablet Color, Raw Material QA" />
-            </div>
+        <!-- Manual Image Upload Panel (Collapsible) -->
+        <div class="calibration-panel" id="manualUploadPanel" style="display:none; animation:fadeIn 0.25s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="margin:0; font-size:1rem; font-weight:700; color:#0f172a;">
+              Upload Inspection Image & Run Automated AI QA
+            </h4>
+            <button type="button" class="button button--secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="toggleUploadPanel()">
+              ✕ Close
+            </button>
+          </div>
+          <p class="note" style="margin-top:0;">Upload a sample photo directly to perform automated edge anomaly, color deviation, foliar necrosis, and tablet surface QA analysis.</p>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:14px;">
+            <!-- Category Target -->
             <div class="form-group">
-              <label for="uploadFileInput">Choose Image</label>
+              <label for="uploadCategorySelect" style="font-weight:600; color:#0f172a;">Inspection Target</label>
+              <select id="uploadCategorySelect" onchange="onUploadCategoryChange()">
+                <option value="raw_material">Raw Material (Botanical / Herb / API - Stage 1)</option>
+                <option value="final_product">Final Product QC (Tablets / Capsules / Blister - Stage 8)</option>
+                <option value="compression">Tablet Compression Press (Stage 7)</option>
+                <option value="general">General In-Process Stage</option>
+              </select>
+            </div>
+
+            <!-- Associated Batch -->
+            <div class="form-group">
+              <label for="uploadBatchSelect" style="font-weight:600; color:#0f172a;">Associated Batch</label>
+              <select id="uploadBatchSelect">
+                <option value="">-- No Specific Batch / Standalone Lot --</option>
+              </select>
+            </div>
+
+            <!-- Parameter Name -->
+            <div class="form-group" style="grid-column:1/-1;">
+              <label for="uploadParameter" style="font-weight:600; color:#0f172a;">Parameter / Material Label</label>
+              <input id="uploadParameter" type="text" placeholder="e.g. Neem Botanical Extract, Paracetamol 500mg Tablet QA" />
+              <!-- Quick Suggestions -->
+              <div class="quick-tags-container" id="uploadQuickTags">
+                <!-- Injected based on category -->
+              </div>
+            </div>
+          </div>
+
+          <!-- File Upload Row -->
+          <div class="calibration-row" style="align-items:flex-end;">
+            <div class="form-group" style="flex:1;">
+              <label for="uploadFileInput" style="font-weight:600; color:#0f172a;">Choose Photo</label>
               <input id="uploadFileInput" type="file" accept="image/jpeg,image/png,image/webp,image/jpg" />
             </div>
             <div id="uploadPreviewContainer" style="display:none; align-items:center; gap:8px;">
-              <img id="uploadPreviewImg" style="width:42px; height:42px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" />
+              <img id="uploadPreviewImg" style="width:44px; height:44px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" />
               <button type="button" class="button button--secondary" id="clearUploadPreview" style="padding:4px 8px; font-size:0.75rem;">Clear</button>
             </div>
-            <button class="button button--primary" id="uploadImageBtn">Upload & Analyze</button>
+            <button class="button button--primary" id="uploadImageBtn" style="padding:10px 20px; font-weight:600;">
+              Upload & Run AI Inspection
+            </button>
           </div>
-          <div id="uploadStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
+          <div id="uploadStatus" style="margin-top:0.8rem; font-size:0.88rem;"></div>
         </div>
 
-        <!-- Calibrate Reference Color Panel -->
-        <div class="calibration-panel">
-          <h4 style="margin-top:0;">Calibrate Reference Color</h4>
-          <p class="note" style="margin-top:0;">Set the expected/approved standard color for a parameter. Future images will be evaluated for color deviation against this reference.</p>
+        <!-- Calibrate Reference Color Panel (Collapsible) -->
+        <div class="calibration-panel" id="calibrationPanel" style="display:none; animation:fadeIn 0.25s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="margin:0; font-size:1rem; font-weight:700; color:#0f172a;">
+              Calibrate Reference Standard Color
+            </h4>
+            <button type="button" class="button button--secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="toggleCalibPanel()">
+              ✕ Close
+            </button>
+          </div>
+          <p class="note" style="margin-top:0;">Establish the master approved reference color for a parameter. Future image captures will evaluate color deviation against this reference benchmark.</p>
           <div class="calibration-row">
-            <div class="form-group" style="min-width:200px;">
-              <label for="calibParameter">Parameter</label>
-              <input id="calibParameter" type="text" placeholder="e.g. Compression Stage" />
+            <div class="form-group" style="min-width:220px;">
+              <label for="calibCategorySelect">Category</label>
+              <select id="calibCategorySelect">
+                <option value="raw_material">Raw Material Standard</option>
+                <option value="final_product">Final Product / Tablet Standard</option>
+              </select>
+            </div>
+            <div class="form-group" style="min-width:220px;">
+              <label for="calibParameter">Parameter Name</label>
+              <input id="calibParameter" type="text" placeholder="e.g. Raw Tulsi Harvest Standard, White Film Coat" />
             </div>
             <div class="form-group">
-              <label for="calibColorPicker">Pick Reference Color</label>
-              <input id="calibColorPicker" type="color" value="#ffffff" style="width:60px;height:42px;padding:2px;cursor:pointer;" />
+              <label for="calibColorPicker">Standard Color</label>
+              <input id="calibColorPicker" type="color" value="#ffffff" style="width:50px;height:38px;padding:2px;cursor:pointer;" />
             </div>
             <div class="color-swatch" id="calibSwatchPreview" style="background:#ffffff;" title="Current selected color"></div>
-            <button class="button button--primary" id="saveCalibration">Save Reference</button>
+            <button class="button button--primary" id="saveCalibration">Save Benchmark</button>
           </div>
           <div id="calibrationStatus" style="margin-top:0.6rem;font-size:0.85rem;"></div>
         </div>
 
-        <!-- Filters -->
-        <div class="gallery-filters" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="filter-button active" data-filter="all" onclick="setGalleryFilter('all')">All Raw Materials <span id="countAll" class="filter-count"></span></button>
-            <button class="filter-button" data-filter="clean" onclick="setGalleryFilter('clean')">🟢 Healthy (Approved) <span id="countClean" class="filter-count"></span></button>
-            <button class="filter-button" data-filter="contaminated" onclick="setGalleryFilter('contaminated')">🔴 Defective (Infected/Disease) <span id="countContaminated" class="filter-count"></span></button>
-            <button class="filter-button" data-filter="issue" onclick="setGalleryFilter('issue')">⚠️ Review / Flagged <span id="countIssue" class="filter-count"></span></button>
+        <!-- Clean Filter and Search Control Strip -->
+        <div class="gallery-control-strip">
+          <!-- Status Filters with subtle clean status dots -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button class="filter-button active" data-filter="all" onclick="setGalleryFilter('all')">
+              All Samples <span id="countFilterAll" class="filter-count"></span>
+            </button>
+            <button class="filter-button" data-filter="clean" onclick="setGalleryFilter('clean')">
+              <span class="status-dot status-dot--pass"></span>Passed / Healthy <span id="countFilterClean" class="filter-count"></span>
+            </button>
+            <button class="filter-button" data-filter="contaminated" onclick="setGalleryFilter('contaminated')">
+              <span class="status-dot status-dot--defect"></span>Defective / Failed <span id="countFilterDefect" class="filter-count"></span>
+            </button>
+            <button class="filter-button" data-filter="issue" onclick="setGalleryFilter('issue')">
+              <span class="status-dot status-dot--review"></span>Review / Flagged <span id="countFilterIssue" class="filter-count"></span>
+            </button>
           </div>
-          <div id="galleryStatsSummary" style="font-size:0.85rem; color:#64748b; font-weight:500;"></div>
+
+          <!-- Right side controls: Search, Batch filter & Sort -->
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <div style="position:relative; min-width:200px;">
+              <input 
+                id="gallerySearchInput" 
+                type="search" 
+                placeholder="Search specimen, defect, batch..." 
+                oninput="onSearchChange()" 
+                style="padding:6px 12px; font-size:0.85rem; border-radius:6px; width:100%;"
+              />
+            </div>
+
+            <select id="galleryBatchFilter" onchange="onBatchFilterChange()" style="padding:6px 10px; font-size:0.85rem; border-radius:6px;">
+              <option value="all">All Batches</option>
+            </select>
+
+            <select id="gallerySortSelect" onchange="onSortChange()" style="padding:6px 10px; font-size:0.85rem; border-radius:6px;">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="defect_high">Highest Defect Rate</option>
+              <option value="conf_high">Highest Confidence</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Grid -->
-        <div class="gallery-grid" id="galleryGrid"></div>
+        <!-- Image Gallery Grid -->
+        <div class="gallery-grid" id="galleryGrid">
+          <!-- Dynamically populated -->
+        </div>
 
         <!-- Workflow Step Navigator Footer -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
