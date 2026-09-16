@@ -772,6 +772,205 @@ async function openIndustrialNormsModal() {
 }
 
 // -----------------------------------------------------------------
+// STANDARD PRESETS & COMBOBOX ENGINE (TYPE + SELECTABLE OPTIONS)
+// -----------------------------------------------------------------
+const STANDARD_SENSOR_PRESETS = [
+  {
+    category: '🔬 Spectroscopy & In-Line PAT',
+    options: [
+      'InGaAs NIR Fiber Spectrometer (PAT-01)',
+      'Raman Chemical Imaging Spectrometer (PAT-RAMAN)',
+      'Lubricant Coating Spectrophotometer (LUB-06)',
+      'Fiber-Optic In-Line Dissolution Telemetry (DIS-08)',
+      'UV-Vis Photodiode Array Spectrometer (UV-02)'
+    ]
+  },
+  {
+    category: '⚖️ Weighing, Dosing & Gravimetric',
+    options: [
+      'Certified Dual Load Cell Balance (WT-02)',
+      'Encapsulator Dosing Pin Load Cell (CAP-04)',
+      'Automatic High-Speed Checkweigher (CAP-05)'
+    ]
+  },
+  {
+    category: '🌪️ Mixing, Granulation & Rheology',
+    options: [
+      'In-Situ NIR Multi-Point Blend Probe (PAT-03)',
+      'High-Shear Torque & Rheology Sensor (GRAN-04)',
+      'Vacuum Emulsifier Homogenizer Sensor (ONT-02)'
+    ]
+  },
+  {
+    category: '🌡️ Thermal, Fluid & Drying RTD',
+    options: [
+      'Fluid Bed In-Situ NIR & Thermal RTD (FBD-05)',
+      'Digital Brix Refractometer & Jacketed RTD (LIQ-02)',
+      'In-Line Rotational Viscometer (LIQ-03)',
+      'Vaisala Cleanroom Humidity & Thermal Sensor (ENV-01)'
+    ]
+  },
+  {
+    category: '⚙️ Compression, Press & Sealing',
+    options: [
+      'Rotary Press Piezoelectric Sensor (PRS-07)',
+      'Automated Tablet Hardness Tester (HRD-07)',
+      'Automated Tube Filler & Ultrasonic Sealer (ONT-03)',
+      'Digital Process Pressure Transducer (PRS-01)'
+    ]
+  },
+  {
+    category: '📷 Vision, QA & Chromatography',
+    options: [
+      '360° AI High-Speed Optical Camera (CAM-AI-08)',
+      'Automated HPLC Chromatography (HPLC-08)',
+      'Certified In-Line Telemetry Sensor'
+    ]
+  }
+];
+
+const STANDARD_STAGE_PRESETS = [
+  {
+    category: '💊 Solid Dosage (Tablets)',
+    options: [
+      'Raw Material Receipt & Identification',
+      'Dispensing & Gravimetric Weighing',
+      'Pre-Blending & Dry Mixing',
+      'High-Shear Wet Granulation',
+      'Fluid Bed Drying (LOD)',
+      'Final Blending & Lubrication',
+      'Tablet Compression Press',
+      'Film Coating & Curing',
+      'Final Inspection & QA Release'
+    ]
+  },
+  {
+    category: '🍯 Liquid Dosage (Syrups / Suspensions)',
+    options: [
+      'Sugar Dissolution & Vehicle Prep',
+      'Liquid Homogenization & Suspension',
+      'Sterile In-Line Filling & Capping'
+    ]
+  },
+  {
+    category: '💊 Capsule Dosage',
+    options: [
+      'Precision Micro-Dispensing',
+      'Powder Tumbler Blending',
+      'Capsule Tamping & Encapsulation',
+      'Checkweigher & Polishing QC'
+    ]
+  },
+  {
+    category: '🧴 Semisolid / Ointment',
+    options: [
+      'Heated Vacuum Emulsification',
+      'De-Aeration & Tube Packaging'
+    ]
+  },
+  {
+    category: '❄️ Biotech / Sterile',
+    options: [
+      'Lyophilization / Freeze Drying',
+      'Aseptic Filtration & Autoclave'
+    ]
+  }
+];
+
+function renderCombobox(inputId, menuId, currentValue, type, placeholder) {
+  const presets = type === 'stage' ? STANDARD_STAGE_PRESETS : STANDARD_SENSOR_PRESETS;
+  
+  const menuRows = presets.map(grp => `
+    <div class="combobox-header">${grp.category}</div>
+    ${grp.options.map(opt => `
+      <div class="combobox-option-row" onclick="selectComboboxOption('${inputId}', '${menuId}', '${opt.replace(/'/g, "\\'")}')">
+        <span>${type === 'stage' ? '🏷️' : '📡'}</span>
+        <span>${opt}</span>
+      </div>
+    `).join('')}
+  `).join('');
+
+  return `
+    <div class="combobox-wrap" id="wrap_${inputId}">
+      <div class="combobox-input-row">
+        <input 
+          type="text" 
+          id="${inputId}" 
+          value="${currentValue ? currentValue.replace(/"/g, '&quot;') : ''}" 
+          placeholder="${placeholder}" 
+          autocomplete="off"
+          onfocus="openComboboxMenu('${menuId}')"
+          oninput="filterComboboxMenu('${inputId}', '${menuId}')"
+        />
+        <button type="button" class="combobox-arrow-btn" title="Click to view & pick standard options" onclick="toggleComboboxMenu('${menuId}', event)">
+          ▼
+        </button>
+      </div>
+      <div class="combobox-menu" id="${menuId}">
+        ${menuRows}
+      </div>
+    </div>
+  `;
+}
+
+function openComboboxMenu(menuId) {
+  document.querySelectorAll('.combobox-menu').forEach(m => {
+    if (m.id !== menuId) m.classList.remove('show');
+  });
+  const menu = document.getElementById(menuId);
+  if (menu) menu.classList.add('show');
+}
+
+function toggleComboboxMenu(menuId, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  const menu = document.getElementById(menuId);
+  if (menu) {
+    const isShown = menu.classList.contains('show');
+    document.querySelectorAll('.combobox-menu').forEach(m => m.classList.remove('show'));
+    if (!isShown) menu.classList.add('show');
+  }
+}
+
+function selectComboboxOption(inputId, menuId, value) {
+  const input = document.getElementById(inputId);
+  if (input) {
+    input.value = value;
+  }
+  const menu = document.getElementById(menuId);
+  if (menu) {
+    menu.classList.remove('show');
+  }
+  syncConfigInputs();
+}
+
+function filterComboboxMenu(inputId, menuId) {
+  const input = document.getElementById(inputId);
+  const menu = document.getElementById(menuId);
+  if (!input || !menu) return;
+  menu.classList.add('show');
+  const term = input.value.toLowerCase().trim();
+  const rows = menu.querySelectorAll('.combobox-option-row');
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    if (!term || text.includes(term)) {
+      r.style.display = 'flex';
+    } else {
+      r.style.display = 'none';
+    }
+  });
+}
+
+// Global click outside listener for combobox menus
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.combobox-wrap')) {
+    document.querySelectorAll('.combobox-menu').forEach(m => m.classList.remove('show'));
+  }
+});
+
+// -----------------------------------------------------------------
 // MODAL: WORKFLOW CONFIGURATOR & STAGE BUILDER
 // -----------------------------------------------------------------
 function syncConfigInputs() {
@@ -793,20 +992,20 @@ function openWorkflowConfigModal() {
           <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
             ⚙️ Process Workflow & Stage Configurator
           </h3>
-          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Add, rename, re-order, and attach sensors to manufacturing process stages for this batch.</p>
+          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Click ▼ to select standard industry options or type custom names freely.</p>
         </div>
         <span class="badge badge--live" style="font-size: 0.82rem; font-weight: 700;">
           ${activeWorkflowStages.length} Stages Configured
         </span>
       </div>
 
-      <div style="max-height: 52vh; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff;">
+      <div style="max-height: 54vh; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; padding: 2px;">
         <table class="config-stage-table">
           <thead>
             <tr>
               <th style="width: 44px; text-align: center;">#</th>
-              <th style="width: 40%;">PROCESS STAGE NAME</th>
-              <th style="width: 46%;">ATTACHED INSTRUMENT / SENSOR</th>
+              <th style="width: 40%;">PROCESS STAGE (SELECT / TYPE)</th>
+              <th style="width: 46%;">ATTACHED SENSOR / INSTRUMENT (SELECT / TYPE)</th>
               <th style="width: 14%; text-align: center;">ACTION</th>
             </tr>
           </thead>
@@ -819,10 +1018,10 @@ function openWorkflowConfigModal() {
                   </span>
                 </td>
                 <td>
-                  <input type="text" id="stage_name_${idx}" value="${s.name}" placeholder="e.g. Raw Material Verification" />
+                  ${renderCombobox(`stage_name_${idx}`, `menu_stage_name_${idx}`, s.name, 'stage', 'Select stage or type custom...')}
                 </td>
                 <td>
-                  <input type="text" id="stage_dev_${idx}" value="${s.device || 'Certified In-Line Sensor'}" placeholder="e.g. InGaAs NIR Spectrometer" />
+                  ${renderCombobox(`stage_dev_${idx}`, `menu_stage_dev_${idx}`, s.device || 'Certified In-Line Sensor', 'sensor', 'Select sensor or type custom...')}
                 </td>
                 <td style="text-align: center;">
                   <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.78rem; color: #dc2626; border-color: #fecaca; background: #fff5f5;" onclick="removeConfigStage(${idx})">
@@ -935,8 +1134,8 @@ function openManualTelemetryEntryModal() {
           </div>
         </div>
         <div class="form-group">
-          <label>Instrument / Method</label>
-          <input type="text" id="manualParamInst" value="${stageObj.device || 'Validated Analytical Balance'}" required />
+          <label>Instrument / Method (Select or Type)</label>
+          ${renderCombobox('manualParamInst', 'menu_manualParamInst', stageObj.device || 'Validated Analytical Balance', 'sensor', 'Select instrument or type...')}
         </div>
         <div class="form-actions" style="margin-top: 14px;">
           <button type="button" class="button button--secondary" onclick="closeModal()">Cancel</button>
