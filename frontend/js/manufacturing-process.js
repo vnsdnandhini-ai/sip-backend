@@ -526,7 +526,7 @@ function renderActiveStageStudio() {
     <div class="grid grid--2cols">
       
       <!-- Stage Telemetry Header Banner -->
-      <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px;">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
           <span class="badge badge--pass" style="font-size: 0.82rem; font-weight: 700;">
             <span class="live-dot"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
@@ -822,7 +822,7 @@ async function openIndustrialNormsModal() {
 
       <div style="display: flex; flex-direction: column; gap: 12px; max-height: 55vh; overflow-y: auto; padding-right: 6px;">
         ${matrix.map(m => `
-          <div style="padding: 12px 16px; border: 1px solid #e2e8f0; background: #ffffff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div style="padding: 12px 16px; border: 1.5px solid #cbd5e1; background: #ffffff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <strong style="color: #1e293b; font-size: 0.95rem;">${m.id}: ${m.pillar}</strong>
               <span class="badge badge--pass" style="font-size: 0.75rem; font-weight: 700;">${m.status} (${m.score}%)</span>
@@ -1132,7 +1132,7 @@ function openWorkflowConfigModal(selectedTemplateId) {
       </div>
 
       <!-- Quick Formulation Type Switcher & New Type Creator -->
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;">
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <label for="configWorkflowTypeSelect" style="font-size: 0.82rem; font-weight: 700; color: #334155; white-space: nowrap;">Formulation Profile:</label>
           <select id="configWorkflowTypeSelect" class="batch-select-input" style="padding: 6px 12px; font-size: 0.84rem; min-width: 270px; border-radius: 8px;" onchange="switchConfigWorkflowTemplate(this.value)">
@@ -1151,7 +1151,7 @@ function openWorkflowConfigModal(selectedTemplateId) {
         </div>
       </div>
 
-      <div style="max-height: 50vh; overflow-y: auto; margin-bottom: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff; padding: 2px;">
+      <div style="max-height: 50vh; overflow-y: auto; margin-bottom: 16px; border: 1.5px solid #cbd5e1; border-radius: 12px; background: #ffffff; padding: 2px;">
         <table class="config-stage-table">
           <thead>
             <tr>
