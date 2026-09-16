@@ -24,7 +24,7 @@
     const titles = {
       'dashboard': 'Dashboard',
       'batches': 'Batch Management',
-      'workflow': '8-Step Manufacturing Process',
+      'workflow': 'Process Workflow & Monitoring',
       'monitoring': 'Monitoring Points',
       'parameters': 'Process Parameters',
       'checkout': 'Checkout Conditions',

@@ -15,7 +15,7 @@ async function getFullState() {
     const [
       users, projects, devices, monitoringPoints, parameters,
       checkoutConditions, regulatoryRules, analyticalData,
-      complianceResults, auditTrail, reports, dispensingLogs,
+      complianceResults, auditTrail, reports, dispensingLogs, workflows,
     ] = await Promise.all([
       pool.query('SELECT id, username, role FROM users'),
       pool.query('SELECT * FROM projects ORDER BY created_at DESC'),
@@ -34,6 +34,7 @@ async function getFullState() {
       pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC LIMIT 100'),
       pool.query('SELECT * FROM reports ORDER BY created_at DESC'),
       pool.query('SELECT * FROM dispensing_logs ORDER BY timestamp DESC LIMIT 100').catch(() => ({ rows: [] })),
+      pool.query('SELECT * FROM process_workflows ORDER BY created_at ASC').catch(() => ({ rows: [] })),
     ]);
 
   const mappedBatches = projects.rows.map((p) => ({
@@ -53,6 +54,8 @@ async function getFullState() {
     currentStage: p.current_stage || 'Raw Material Receipt',
     qcStatus: p.qc_status || 'In Progress',
     notes: p.notes || '',
+    workflowId: p.workflow_id || 'wf-tablet-8step',
+    customStages: typeof p.custom_stages === 'string' ? JSON.parse(p.custom_stages) : (p.custom_stages || null),
     createdAt: p.created_at,
   }));
 
@@ -133,6 +136,15 @@ async function getFullState() {
       operatorName: d.operator_name,
       status: d.status,
       timestamp: d.timestamp,
+    })),
+    workflows: (workflows.rows || []).map((w) => ({
+      id: w.id,
+      name: w.name,
+      category: w.category,
+      description: w.description,
+      isDefault: w.is_default,
+      stages: typeof w.stages === 'string' ? JSON.parse(w.stages) : (w.stages || []),
+      createdAt: w.created_at,
     })),
   };
   } catch (err) {
