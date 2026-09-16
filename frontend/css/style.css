@@ -662,15 +662,59 @@ textarea:focus {
   position: fixed;
   inset: 50% auto auto 50%;
   transform: translate(-50%, -50%);
-  width: min(760px, calc(100% - 3rem));
+  width: min(880px, calc(100% - 2rem));
   max-height: 90vh;
   padding: 1.8rem;
   background: #ffffff;
-  border-radius: 26px;
+  border-radius: 20px;
   border: 1px solid rgba(71, 85, 105, 0.12);
   box-shadow: var(--shadow);
   overflow-y: auto;
   z-index: 1000;
+}
+
+.modal--large {
+  width: min(940px, calc(100% - 2rem));
+  max-height: 88vh;
+  padding: 1.5rem 1.8rem;
+}
+
+.config-stage-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: unset !important;
+}
+
+.config-stage-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 2px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.config-stage-table td {
+  padding: 8px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.config-stage-table input {
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.config-stage-table input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .modal h3 {
