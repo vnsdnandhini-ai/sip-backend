@@ -51,9 +51,9 @@ async function refreshDashboard() {
     const alertsEl = document.getElementById('criticalAlerts');
     if (alertsEl) {
       if (criticalCount > 0) {
-        alertsEl.innerHTML = `<span style="color:#ef4444; font-weight:600;">⚠ ${criticalCount} in-process parameter warning(s) logged</span> — Review active line IPQC telemetry.`;
+        alertsEl.innerHTML = `<span style="color:#ef4444; font-weight:600;">[WARNING] ${criticalCount} in-process parameter warning(s) logged</span> — Review active line IPQC telemetry.`;
       } else {
-        alertsEl.innerHTML = `<span style="color:#16a34a; font-weight:600;">✓ All active manufacturing lines operating within validated cGMP tolerances (0 Critical Deviations).</span>`;
+        alertsEl.innerHTML = `<span style="color:#16a34a; font-weight:600;">[OPTIMAL] All active manufacturing lines operating within validated cGMP tolerances (0 Critical Deviations).</span>`;
       }
     }
 

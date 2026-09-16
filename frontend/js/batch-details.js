@@ -207,7 +207,7 @@ function renderRawMaterialStage(container) {
         </div>
 
         <div style="background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.82rem; color: #4338ca;">
-          ℹ️ <strong>Pharmaceutical Protocol:</strong> AI classification and Grad-CAM defect maps provide high-throughput screening support. Release requires authorized QC spectroscopic verification and visual sign-off.
+          <strong>Pharmaceutical Protocol:</strong> AI classification and Grad-CAM defect maps provide high-throughput screening support. Release requires authorized QC spectroscopic verification and visual sign-off.
         </div>
 
         ${latestImage ? `

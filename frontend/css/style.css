@@ -889,12 +889,17 @@ body.dark-mode .combobox-option-row:hover {
   border: 1px solid #cbd5e1;
   border-radius: 4px;
   color: #475569;
-  font-size: 0.62rem;
-  padding: 1px 5px;
-  line-height: 1.1;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.12s ease;
   user-select: none;
+}
+
+.order-btn svg {
+  display: block;
 }
 
 .order-btn:hover:not(:disabled) {
@@ -906,6 +911,15 @@ body.dark-mode .combobox-option-row:hover {
 .order-btn:disabled {
   opacity: 0.25;
   cursor: not-allowed;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  margin-right: 4px;
 }
 
 body.dark-mode .order-btn {

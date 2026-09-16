@@ -43,8 +43,8 @@
           <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS & Generic Workflow Engine</div>
         </div>
         <div class="topbar-right" style="flex-wrap: wrap; gap: 8px;">
-          <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="openIndustrialNormsModal()">📜 Industrial Norms Matrix</button>
-          <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="openWorkflowConfigModal()">⚙️ Configure Workflow</button>
+          <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="openIndustrialNormsModal()">Industrial Norms Matrix</button>
+          <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="openWorkflowConfigModal()">Configure Workflow</button>
           <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="window.location.href='batches.html'">Manage Batches</button>
           <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" id="signOutButton">Sign Out</button>
         </div>
@@ -77,11 +77,11 @@
               <div class="batch-selector-box">
                 <label for="workflowTemplateSelect" class="selector-label">Workflow Template</label>
                 <select id="workflowTemplateSelect" class="batch-select-input" onchange="onWorkflowTemplateChange(this.value)">
-                  <option value="wf-tablet-8step">💊 8-Step Tablet Manufacturing (USP)</option>
-                  <option value="wf-liquid-4step">💧 4-Step Liquid Oral Suspension</option>
-                  <option value="wf-capsule-5step">💊 5-Step Capsule Production</option>
-                  <option value="wf-ointment-3step">🧴 3-Step Topical Ointment</option>
-                  <option value="custom">⚙️ Custom Configured Flow</option>
+                  <option value="wf-tablet-8step">8-Step Tablet Manufacturing (USP)</option>
+                  <option value="wf-liquid-4step">4-Step Liquid Oral Suspension</option>
+                  <option value="wf-capsule-5step">5-Step Capsule Production</option>
+                  <option value="wf-ointment-3step">3-Step Topical Ointment</option>
+                  <option value="custom">Custom Configured Flow</option>
                 </select>
               </div>
             </div>
@@ -111,8 +111,8 @@
               In-Process Quality Controls (IPQC) Telemetry Log
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="simulateStageTelemetry()">📡 Ingest Live Sensor Stream</button>
-              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="renderStageLogTable()">↻ Refresh</button>
+              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="simulateStageTelemetry()">Ingest Live Sensor Stream</button>
+              <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="renderStageLogTable()">Refresh</button>
               <button class="button button--primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="openManualTelemetryEntryModal()">+ Add Reading</button>
             </div>
           </div>
@@ -136,14 +136,14 @@
         <!-- Workflow Step Navigator Footer -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
           <button class="button button--secondary" onclick="window.location.href='batches.html'">
-            ← Back to Batch Management
+            Back to Batch Management
           </button>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="button button--secondary" onclick="openIndustrialNormsModal()">
-              📜 View Regulatory Compliance Matrix
+              View Regulatory Compliance Matrix
             </button>
             <button class="button button--primary" onclick="window.location.href='monitoring.html'">
-              Proceed to Monitoring Points →
+              Proceed to Monitoring Points
             </button>
           </div>
         </div>

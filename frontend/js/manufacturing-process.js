@@ -5,14 +5,14 @@ if (typeof window !== 'undefined') {
 
 // Default Standard 8-Step Formulation Template
 const DEFAULT_TABLET_STAGES = [
-  { id: 1, name: 'Raw Material Receipt', label: '1. Raw Material ID', sub: 'Spectroscopy & AI', icon: '🔬', device: 'InGaAs NIR Fiber Spectrometer (PAT-01)', parameters: ['NIR Spectral Identity (R)', 'Residual Moisture (LOD)', 'Container Barcode Reconciliation'] },
-  { id: 2, name: 'Dispensing', label: '2. Dispensing', sub: 'Gravimetric Weighing', icon: '⚖️', device: 'Certified Dual Load Cell Balance (WT-02)', parameters: ['Dispense Weight Tolerance', 'Actual Weighed Quantity', 'Cleanroom Relative Humidity', 'Cleanroom Temperature'] },
-  { id: 3, name: 'Blending', label: '3. Pre-Blending', sub: 'Dry Mixing & PAT', icon: '🔄', device: 'NIR Stratified Blend Probe (PAT-03)', parameters: ['Blend Uniformity RSD', 'Homogeneity Index', 'Blender Speed', 'Mixing Duration'] },
-  { id: 4, name: 'Granulation', label: '4. Wet Granulation', sub: 'Torque & Binder', icon: '🧪', device: 'High-Shear Torque & Rheology Sensor (GRAN-04)', parameters: ['Impeller Torque Peak', 'Wet Mass Consistency', 'Binder Spray Rate', 'Atomization Air Pressure'] },
-  { id: 5, name: 'Drying', label: '5. Fluid Bed Drying', sub: 'Moisture LOD & Temp', icon: '💨', device: 'Fluid Bed In-Situ NIR & Thermal RTD (FBD-05)', parameters: ['Loss on Drying (LOD)', 'Inlet Air Temperature', 'Outlet Air Temperature', 'Fluidization Airflow Velocity'] },
-  { id: 6, name: 'Final Blending', label: '6. Final Blending', sub: 'Lubrication & RSD', icon: '🌀', device: 'Lubricant Coating Spectrophotometer (LUB-06)', parameters: ['Lubrication Blend RSD', 'Lubricant Coating Index', 'Rotational Speed', 'Blending Duration'] },
-  { id: 7, name: 'Compression', label: '7. Tablet Press', sub: 'Force & Hardness', icon: '💊', device: 'Rotary Press Piezoelectric Sensor (PRS-07)', parameters: ['Main Compression Force', 'Tablet Hardness', 'Tablet Individual Weight', 'Friability'] },
-  { id: 8, name: 'Final QC', label: '8. Final Inspection', sub: 'Vision & QA Release', icon: '🏆', device: '360° AI High-Speed Optical Camera & HPLC (QC-08)', parameters: ['Active Assay', 'Dissolution at 30 min', 'Visual Defect Rate', 'Batch Quality Score'] }
+  { id: 1, name: 'Raw Material Receipt', label: '1. Raw Material ID', sub: 'Spectroscopy & ID Check', icon: '', device: 'InGaAs NIR Fiber Spectrometer (PAT-01)', parameters: ['NIR Spectral Identity (R)', 'Residual Moisture (LOD)', 'Container Barcode Reconciliation'] },
+  { id: 2, name: 'Dispensing', label: '2. Dispensing', sub: 'Gravimetric Weighing', icon: '', device: 'Certified Dual Load Cell Balance (WT-02)', parameters: ['Dispense Weight Tolerance', 'Actual Weighed Quantity', 'Cleanroom Relative Humidity', 'Cleanroom Temperature'] },
+  { id: 3, name: 'Blending', label: '3. Pre-Blending', sub: 'Dry Mixing & PAT', icon: '', device: 'NIR Stratified Blend Probe (PAT-03)', parameters: ['Blend Uniformity RSD', 'Homogeneity Index', 'Blender Speed', 'Mixing Duration'] },
+  { id: 4, name: 'Granulation', label: '4. Wet Granulation', sub: 'Torque & Binder Spray', icon: '', device: 'High-Shear Torque & Rheology Sensor (GRAN-04)', parameters: ['Impeller Torque Peak', 'Wet Mass Consistency', 'Binder Spray Rate', 'Atomization Air Pressure'] },
+  { id: 5, name: 'Drying', label: '5. Fluid Bed Drying', sub: 'Moisture LOD & Temp', icon: '', device: 'Fluid Bed In-Situ NIR & Thermal RTD (FBD-05)', parameters: ['Loss on Drying (LOD)', 'Inlet Air Temperature', 'Outlet Air Temperature', 'Fluidization Airflow Velocity'] },
+  { id: 6, name: 'Final Blending', label: '6. Final Blending', sub: 'Lubrication & RSD', icon: '', device: 'Lubricant Coating Spectrophotometer (LUB-06)', parameters: ['Lubrication Blend RSD', 'Lubricant Coating Index', 'Rotational Speed', 'Blending Duration'] },
+  { id: 7, name: 'Compression', label: '7. Tablet Press', sub: 'Force & Hardness', icon: '', device: 'Rotary Press Piezoelectric Sensor (PRS-07)', parameters: ['Main Compression Force', 'Tablet Hardness', 'Tablet Individual Weight', 'Friability'] },
+  { id: 8, name: 'Final QC', label: '8. Final Inspection', sub: 'Vision & QA Release', icon: '', device: '360° AI High-Speed Optical Camera & HPLC (QC-08)', parameters: ['Active Assay', 'Dissolution at 30 min', 'Visual Defect Rate', 'Batch Quality Score'] }
 ];
 
 // Built-in Pre-Configured Industry Workflow Formulation Templates
@@ -21,67 +21,67 @@ const BUILTIN_WORKFLOW_TEMPLATES = [
     id: 'wf-tablet-8step',
     name: 'Standard 8-Step Tablet Manufacturing (USP)',
     category: 'Solid Dosage Tablets',
-    icon: '💊',
+    icon: '',
     stages: DEFAULT_TABLET_STAGES
   },
   {
     id: 'wf-liquid-4step',
     name: '4-Step Liquid Oral Suspension (Syrup)',
     category: 'Liquid Dosage',
-    icon: '💧',
+    icon: '',
     stages: [
-      { id: 1, name: 'Raw Material Verification', label: '1. Material Assay', sub: 'NIR & Refractometer', icon: '🔬', device: 'Portable NIR & Digital Refractometer (LIQ-01)', parameters: ['Active API Assay %', 'Vehicle Specific Gravity', 'Raw Material Barcode Match'] },
-      { id: 2, name: 'Sugar Dissolution', label: '2. Vehicle Prep', sub: 'Brix & Heated Agitation', icon: '🍯', device: 'Jacketed Vessel RTD & Digital Brix Meter (LIQ-02)', parameters: ['Brix Sugar Content (°Bx)', 'Vessel Temperature (°C)', 'Agitator Speed (RPM)', 'pH Level'] },
-      { id: 3, name: 'Homogenization', label: '3. Homogenization', sub: 'Viscosity & Particle Size', icon: '🌀', device: 'In-Line Rotational Viscometer (LIQ-03)', parameters: ['Dynamic Viscosity (cP)', 'Homogenizer Pressure (bar)', 'Suspension Uniformity %', 'Batch Temperature (°C)'] },
-      { id: 4, name: 'Filling & Release', label: '4. Sterile Filling & QC', sub: 'Volume & Optical Check', icon: '🧪', device: 'High-Speed Optical Level & Seal Inspector (LIQ-04)', parameters: ['Fill Volume Accuracy (mL)', 'Particulate Defect Rate %', 'Torque Capper Force (Nm)', 'Microbial Quality Gate'] }
+      { id: 1, name: 'Raw Material Verification', label: '1. Material Assay', sub: 'NIR & Refractometer', icon: '', device: 'Portable NIR & Digital Refractometer (LIQ-01)', parameters: ['Active API Assay %', 'Vehicle Specific Gravity', 'Raw Material Barcode Match'] },
+      { id: 2, name: 'Sugar Dissolution', label: '2. Vehicle Prep', sub: 'Brix & Heated Agitation', icon: '', device: 'Jacketed Vessel RTD & Digital Brix Meter (LIQ-02)', parameters: ['Brix Sugar Content (°Bx)', 'Vessel Temperature (°C)', 'Agitator Speed (RPM)', 'pH Level'] },
+      { id: 3, name: 'Homogenization', label: '3. Homogenization', sub: 'Viscosity & Particle Size', icon: '', device: 'In-Line Rotational Viscometer (LIQ-03)', parameters: ['Dynamic Viscosity (cP)', 'Homogenizer Pressure (bar)', 'Suspension Uniformity %', 'Batch Temperature (°C)'] },
+      { id: 4, name: 'Filling & Release', label: '4. Sterile Filling & QC', sub: 'Volume & Optical Check', icon: '', device: 'High-Speed Optical Level & Seal Inspector (LIQ-04)', parameters: ['Fill Volume Accuracy (mL)', 'Particulate Defect Rate %', 'Torque Capper Force (Nm)', 'Microbial Quality Gate'] }
     ]
   },
   {
     id: 'wf-capsule-5step',
     name: '5-Step Hard Gelatin Capsule Production',
     category: 'Solid Dosage Capsules',
-    icon: '💊',
+    icon: '',
     stages: [
-      { id: 1, name: 'Raw Material Testing', label: '1. Raw Material ID', sub: 'Spectroscopy', icon: '🔬', device: 'FT-NIR InGaAs Spectrometer (CAP-01)', parameters: ['API Spectral Identity (R)', 'Moisture LOD %', 'Container Barcode Status'] },
-      { id: 2, name: 'Precision Dispensing', label: '2. Dispensing', sub: 'Micro-Weighing', icon: '⚖️', device: 'Analytical Micro-Balance (CAP-02)', parameters: ['Dispense Target Deviation %', 'Active Powder Weight (kg)', 'Cleanroom Temp (°C)', 'Cleanroom RH %'] },
-      { id: 3, name: 'Powder Blending', label: '3. Blending', sub: 'Uniformity Index', icon: '🔄', device: 'V-Blender Optical Tachometer & PAT (CAP-03)', parameters: ['Blend Homogeneity %', 'Blend RSD %', 'Blender Speed (RPM)', 'Cycle Time (min)'] },
-      { id: 4, name: 'Encapsulation & Tamping', label: '4. Capsule Tamping', sub: 'Dosing Pin Force', icon: '💊', device: 'Encapsulator Tamping Pin Load Cell (CAP-04)', parameters: ['Tamping Force (N)', 'Filling Speed (caps/hr)', 'Powder Bed Depth (mm)', 'Lock Length (mm)'] },
-      { id: 5, name: 'Weight & Polish QC', label: '5. Final Inspection', sub: 'Checkweigher & Vision', icon: '🏆', device: 'Automatic Checkweigher & Vision System (CAP-05)', parameters: ['Individual Weight Deviation %', 'Defective Capsule Rate %', 'Disintegration Time (min)', 'QA Release Disposition'] }
+      { id: 1, name: 'Raw Material Testing', label: '1. Raw Material ID', sub: 'Spectroscopy', icon: '', device: 'FT-NIR InGaAs Spectrometer (CAP-01)', parameters: ['API Spectral Identity (R)', 'Moisture LOD %', 'Container Barcode Status'] },
+      { id: 2, name: 'Precision Dispensing', label: '2. Dispensing', sub: 'Micro-Weighing', icon: '', device: 'Analytical Micro-Balance (CAP-02)', parameters: ['Dispense Target Deviation %', 'Active Powder Weight (kg)', 'Cleanroom Temp (°C)', 'Cleanroom RH %'] },
+      { id: 3, name: 'Powder Blending', label: '3. Blending', sub: 'Uniformity Index', icon: '', device: 'V-Blender Optical Tachometer & PAT (CAP-03)', parameters: ['Blend Homogeneity %', 'Blend RSD %', 'Blender Speed (RPM)', 'Cycle Time (min)'] },
+      { id: 4, name: 'Encapsulation & Tamping', label: '4. Capsule Tamping', sub: 'Dosing Pin Force', icon: '', device: 'Encapsulator Tamping Pin Load Cell (CAP-04)', parameters: ['Tamping Force (N)', 'Filling Speed (caps/hr)', 'Powder Bed Depth (mm)', 'Lock Length (mm)'] },
+      { id: 5, name: 'Weight & Polish QC', label: '5. Final Inspection', sub: 'Checkweigher & Vision', icon: '', device: 'Automatic Checkweigher & Vision System (CAP-05)', parameters: ['Individual Weight Deviation %', 'Defective Capsule Rate %', 'Disintegration Time (min)', 'QA Release Disposition'] }
     ]
   },
   {
     id: 'wf-ointment-3step',
     name: '3-Step Semisolid Topical Ointment',
     category: 'Semisolid Dosage',
-    icon: '🧴',
+    icon: '',
     stages: [
-      { id: 1, name: 'Phase Material ID', label: '1. Phase Testing', sub: 'Spectroscopy & Melting Point', icon: '🔬', device: 'NIR & Digital Melting Point Apparatus (ONT-01)', parameters: ['Oil Phase Purity %', 'Water Phase Conductivity (µS)', 'Active Drug Assay %'] },
-      { id: 2, name: 'Emulsification', label: '2. Vacuum Emulsification', sub: 'Shear & Temperature', icon: '🧴', device: 'Vacuum Emulsifier Homogenizer Probe (ONT-02)', parameters: ['Emulsion Viscosity (cP)', 'Batch Core Temp (°C)', 'Vacuum Level (bar)', 'Homogenizer RPM'] },
-      { id: 3, name: 'Tube Filling & QC', label: '3. Packaging & Release', sub: 'Weight & Crimp Integrity', icon: '🏆', device: 'Automated Tube Filler & Ultrasonic Sealer (ONT-03)', parameters: ['Net Fill Weight (g)', 'Tube Crimp Integrity %', 'Extrudability Force (N)', 'QA Release Score'] }
+      { id: 1, name: 'Phase Material ID', label: '1. Phase Testing', sub: 'Spectroscopy & Melting Point', icon: '', device: 'NIR & Digital Melting Point Apparatus (ONT-01)', parameters: ['Oil Phase Purity %', 'Water Phase Conductivity (µS)', 'Active Drug Assay %'] },
+      { id: 2, name: 'Emulsification', label: '2. Vacuum Emulsification', sub: 'Shear & Temperature', icon: '', device: 'Vacuum Emulsifier Homogenizer Probe (ONT-02)', parameters: ['Emulsion Viscosity (cP)', 'Batch Core Temp (°C)', 'Vacuum Level (bar)', 'Homogenizer RPM'] },
+      { id: 3, name: 'Tube Filling & QC', label: '3. Packaging & Release', sub: 'Weight & Crimp Integrity', icon: '', device: 'Automated Tube Filler & Ultrasonic Sealer (ONT-03)', parameters: ['Net Fill Weight (g)', 'Tube Crimp Integrity %', 'Extrudability Force (N)', 'QA Release Score'] }
     ]
   },
   {
     id: 'wf-injectable-4step',
     name: '4-Step Sterile Injectable & Lyophilization',
     category: 'Sterile Parenterals',
-    icon: '💉',
+    icon: '',
     stages: [
-      { id: 1, name: 'Sterile Compounding', label: '1. Compounding & TOC', sub: 'Bioburden & TOC Monitor', icon: '🔬', device: 'In-Line TOC & Bioburden Telemetry (INJ-01)', parameters: ['Total Organic Carbon (TOC ppb)', 'Water for Injection Temp (°C)', 'Bioburden Log Reduction'] },
-      { id: 2, name: 'Aseptic Sterile Filtration', label: '2. 0.22µm Filtration', sub: 'Integrity Pressure', icon: '🧪', device: 'Differential Pressure & Membrane Integrity Tester (INJ-02)', parameters: ['Filter Bubble Point (psi)', 'Upstream Pressure (bar)', 'Differential Flow Rate (L/min)'] },
-      { id: 3, name: 'Aseptic Filling & Stoppering', label: '3. Vial Filling', sub: 'Laser Headspace Check', icon: '🧴', device: 'In-Line Laser Vial Headspace Analyzer (INJ-03)', parameters: ['Fill Volume Accuracy (mL)', 'Headspace Oxygen %', 'Rubber Stopper Insertion Force (N)'] },
-      { id: 4, name: 'Lyophilization & Final Capping', label: '4. Freeze Drying QC', sub: 'Vacuum & Moisture', icon: '🏆', device: 'Freeze-Dryer Capacitance Manometer & RTD (INJ-04)', parameters: ['Sublimation Shelf Temp (°C)', 'Chamber Vacuum (mbar)', 'Residual Moisture %', 'Cap Crimping Defect Rate %'] }
+      { id: 1, name: 'Sterile Compounding', label: '1. Compounding & TOC', sub: 'Bioburden & TOC Monitor', icon: '', device: 'In-Line TOC & Bioburden Telemetry (INJ-01)', parameters: ['Total Organic Carbon (TOC ppb)', 'Water for Injection Temp (°C)', 'Bioburden Log Reduction'] },
+      { id: 2, name: 'Aseptic Sterile Filtration', label: '2. 0.22µm Filtration', sub: 'Integrity Pressure', icon: '', device: 'Differential Pressure & Membrane Integrity Tester (INJ-02)', parameters: ['Filter Bubble Point (psi)', 'Upstream Pressure (bar)', 'Differential Flow Rate (L/min)'] },
+      { id: 3, name: 'Aseptic Filling & Stoppering', label: '3. Vial Filling', sub: 'Laser Headspace Check', icon: '', device: 'In-Line Laser Vial Headspace Analyzer (INJ-03)', parameters: ['Fill Volume Accuracy (mL)', 'Headspace Oxygen %', 'Rubber Stopper Insertion Force (N)'] },
+      { id: 4, name: 'Lyophilization & Final Capping', label: '4. Freeze Drying QC', sub: 'Vacuum & Moisture', icon: '', device: 'Freeze-Dryer Capacitance Manometer & RTD (INJ-04)', parameters: ['Sublimation Shelf Temp (°C)', 'Chamber Vacuum (mbar)', 'Residual Moisture %', 'Cap Crimping Defect Rate %'] }
     ]
   },
   {
     id: 'wf-api-4step',
     name: '4-Step API Chemical Synthesis & Crystallization',
     category: 'API Synthesis',
-    icon: '🧪',
+    icon: '',
     stages: [
-      { id: 1, name: 'Reagent Dosing & Reactor Loading', label: '1. Reactor Loading', sub: 'Mass Flow & Weight', icon: '⚖️', device: 'Precision Mass Flow Meter & Load Cell (API-01)', parameters: ['Stoichiometric Mass Ratio', 'Reagent Purity %', 'Reactor Nitrogen Blanket (psi)'] },
-      { id: 2, name: 'Controlled Chemical Reaction', label: '2. Reaction & Reflux', sub: 'In-Situ FTIR Spectrometry', icon: '🔬', device: 'In-Situ FTIR & Jacketed Thermal Probe (API-02)', parameters: ['Reaction Conversion %', 'Jacket Temperature (°C)', 'Agitator Impeller Speed (RPM)', 'pH Monitoring'] },
-      { id: 3, name: 'Crystallization & Filtration', label: '3. Crystallization', sub: 'FBRM Particle Probe', icon: '🌀', device: 'Focused Beam Reflectance Measurement FBRM (API-03)', parameters: ['Chord Length Distribution', 'Supersaturation Index', 'Filter Cake Delta Pressure (bar)'] },
-      { id: 4, name: 'Conical Drying & Milling', label: '4. Vacuum Drying & QC', sub: 'Laser Particle Sizer', icon: '🏆', device: 'Laser Diffraction Particle Size Analyzer (API-04)', parameters: ['Loss on Drying LOD %', 'Particle D50 (µm)', 'Residual Solvents (ppm)', 'Final HPLC Assay %'] }
+      { id: 1, name: 'Reagent Dosing & Reactor Loading', label: '1. Reactor Loading', sub: 'Mass Flow & Weight', icon: '', device: 'Precision Mass Flow Meter & Load Cell (API-01)', parameters: ['Stoichiometric Mass Ratio', 'Reagent Purity %', 'Reactor Nitrogen Blanket (psi)'] },
+      { id: 2, name: 'Controlled Chemical Reaction', label: '2. Reaction & Reflux', sub: 'In-Situ FTIR Spectrometry', icon: '', device: 'In-Situ FTIR & Jacketed Thermal Probe (API-02)', parameters: ['Reaction Conversion %', 'Jacket Temperature (°C)', 'Agitator Impeller Speed (RPM)', 'pH Monitoring'] },
+      { id: 3, name: 'Crystallization & Filtration', label: '3. Crystallization', sub: 'FBRM Particle Probe', icon: '', device: 'Focused Beam Reflectance Measurement FBRM (API-03)', parameters: ['Chord Length Distribution', 'Supersaturation Index', 'Filter Cake Delta Pressure (bar)'] },
+      { id: 4, name: 'Conical Drying & Milling', label: '4. Vacuum Drying & QC', sub: 'Laser Particle Sizer', icon: '', device: 'Laser Diffraction Particle Size Analyzer (API-04)', parameters: ['Loss on Drying LOD %', 'Particle D50 (µm)', 'Residual Solvents (ppm)', 'Final HPLC Assay %'] }
     ]
   }
 ];
@@ -95,7 +95,7 @@ function getAllAvailableWorkflows() {
           id: w.id,
           name: w.name,
           category: w.category || 'Custom Formulation',
-          icon: '⚙️',
+          icon: '',
           stages: typeof w.stages === 'string' ? JSON.parse(w.stages) : (w.stages || [])
         });
       }
@@ -288,7 +288,7 @@ function resolveActiveWorkflowForBatch(batch) {
       name: s.name,
       label: s.label || `${idx + 1}. ${s.name}`,
       sub: s.sub || 'In-Line PAT Sensor',
-      icon: s.icon || '⚙️',
+      icon: s.icon || '',
       device: s.device || 'In-Line Process Sensor Interface',
       parameters: s.parameters || ['Process Parameter', 'Process Temperature']
     }));
@@ -305,7 +305,7 @@ function resolveActiveWorkflowForBatch(batch) {
       name: s.name,
       label: s.label || `${idx + 1}. ${s.name}`,
       sub: s.sub || 'PAT Sensor',
-      icon: s.icon || '🔬',
+      icon: s.icon || '',
       device: s.device || 'In-Line Process Instrument',
       parameters: s.parameters || []
     }));
@@ -364,11 +364,11 @@ function populateWorkflowDropdown(selectedWfId) {
   const allAvailable = getAllAvailableWorkflows();
   let html = allAvailable.map(w => `
     <option value="${w.id}" ${selectedWfId === w.id ? 'selected' : ''}>
-      ${w.icon || '⚙️'} ${w.name}
+      ${w.name}
     </option>
   `).join('');
 
-  html += `<option value="custom" ${selectedWfId === 'custom' ? 'selected' : ''}>🛠️ Custom Configured Flow</option>`;
+  html += `<option value="custom" ${selectedWfId === 'custom' ? 'selected' : ''}>Custom Configured Pipeline</option>`;
   select.innerHTML = html;
 }
 
@@ -454,7 +454,7 @@ function renderBatchHeader() {
   const activeStageObj = findStageInActiveWorkflow(currentActiveStage);
   const metaEl = document.getElementById('batchMetaSummary');
   if (metaEl) {
-    metaEl.innerHTML = `<span style="font-weight: 700; color: #1e293b;">📍 Current Stage (${activeStageObj.label}):</span> Monitoring ${activeStageObj.device || 'In-Process Quality Telemetry'}.`;
+    metaEl.innerHTML = `<span style="font-weight: 700; color: #1e293b;">Current Stage (${activeStageObj.label}):</span> Monitoring ${activeStageObj.device || 'In-Process Quality Telemetry'}.`;
   }
 }
 
@@ -469,7 +469,7 @@ function renderStepper() {
 
   const titleEl = document.getElementById('stepperTitle');
   if (titleEl) {
-    titleEl.textContent = `Process Workflow Stages (Total ${activeWorkflowStages.length} Stages)`;
+    titleEl.textContent = `Process Workflow Stages (${activeWorkflowStages.length} Stages)`;
   }
 
   container.innerHTML = activeWorkflowStages.map((s, idx) => {
@@ -482,7 +482,7 @@ function renderStepper() {
 
     return `
       <button class="${classes.join(' ')}" onclick="selectStage('${s.name}')">
-        ${s.icon || '📍'} ${s.label || s.name}
+        ${s.label || `${idx + 1}. ${s.name}`}
       </button>
     `;
   }).join('');
@@ -529,7 +529,7 @@ function renderActiveStageStudio() {
       <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
           <span class="badge badge--pass" style="font-size: 0.82rem; font-weight: 700;">
-            🟢 ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
+            <span class="live-dot"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
           </span>
           <span style="font-size: 0.85rem; color: #475569;">
             <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Target Specs:</strong> 100% Validated
@@ -538,14 +538,14 @@ function renderActiveStageStudio() {
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
           <span style="font-size: 0.8rem; color: #64748b;">Telemetry: <strong>${new Date().toLocaleTimeString()}</strong></span>
           <button type="button" class="button button--secondary" onclick="simulateStageTelemetry()" style="padding: 4px 10px; font-size: 0.8rem;">
-            📡 Sync Sensor
+            Sync Sensor
           </button>
         </div>
       </div>
 
       <!-- Left Card: Stage Parameters & Verification Form -->
       <article class="card card--form">
-        <h4>${stageObj.icon || '📋'} ${stageObj.name} - Verification & Parameters</h4>
+        <h4>${stageObj.name} - Verification & Parameters</h4>
         <form class="panel-form" onsubmit="event.preventDefault();">
           <div class="form-row">
             <div class="form-group">
@@ -576,7 +576,7 @@ function renderActiveStageStudio() {
 
       <!-- Right Card: Quality Gate & Release Sign-Off -->
       <article class="card card--form">
-        <h4>🛡️ Quality Gate & Stage Release</h4>
+        <h4>Quality Gate & Stage Release</h4>
         <form class="panel-form" onsubmit="event.preventDefault(); executeStageAdvance();">
           <div class="form-row">
             <div class="form-group">
@@ -594,7 +594,7 @@ function renderActiveStageStudio() {
           </div>
           <div class="form-actions" style="margin-top: 1rem;">
             <button type="submit" class="button button--primary" style="width: 100%;">
-              ${nextStageObj ? `Approve & Advance to Stage ${activeIdx + 2} (${nextStageObj.name}) →` : '🏆 Execute Final 21 CFR Part 11 Batch Release'}
+              ${nextStageObj ? `Approve & Advance to Stage ${activeIdx + 2} (${nextStageObj.name})` : 'Execute Final 21 CFR Part 11 Batch Release'}
             </button>
           </div>
         </form>
@@ -808,8 +808,8 @@ async function openIndustrialNormsModal() {
     <div style="padding: 0.25rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 16px;">
         <div>
-          <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
-            📜 Pharmaceutical Industrial Norms & Compliance Matrix
+          <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; font-weight: 700;">
+            Pharmaceutical Industrial Norms & Compliance Matrix
           </h3>
           <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Continuous regulatory audit against FDA 21 CFR Part 11, EU/WHO GMP, GAMP 5, and ALCOA+ Data Integrity.</p>
         </div>
@@ -833,7 +833,7 @@ async function openIndustrialNormsModal() {
             <div style="background: #f8fafc; border-radius: 6px; padding: 8px 12px; font-size: 0.82rem;">
               ${m.controls.map(c => `
                 <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0;">
-                  <span><span style="color: #16a34a; font-weight: 700;">✔</span> ${c.check}</span>
+                  <span><span style="color: #16a34a; font-weight: 700; margin-right: 6px;">[PASS]</span> ${c.check}</span>
                   <strong style="color: #16a34a; margin-left: 12px;">${c.evidence}</strong>
                 </div>
               `).join('')}
@@ -846,7 +846,7 @@ async function openIndustrialNormsModal() {
         <span style="font-size: 0.8rem; color: #64748b;">SHA-256 Audit Seal: Validated • 21 CFR Part 11 Electronic Records Compliant</span>
         <div style="display: flex; gap: 10px;">
           <button class="button button--secondary" onclick="closeModal()">Close</button>
-          <button class="button button--primary" onclick="showToast('Compliance Matrix exported to PDF/JSON format', 'success'); closeModal();">📥 Export Compliance Dossier</button>
+          <button class="button button--primary" onclick="showToast('Compliance Matrix exported to PDF/JSON format', 'success'); closeModal();">Export Compliance Dossier</button>
         </div>
       </div>
     </div>
@@ -860,7 +860,7 @@ async function openIndustrialNormsModal() {
 // -----------------------------------------------------------------
 const STANDARD_SENSOR_PRESETS = [
   {
-    category: '🔬 Spectroscopy & In-Line PAT',
+    category: 'Spectroscopy & In-Line PAT',
     options: [
       'InGaAs NIR Fiber Spectrometer (PAT-01)',
       'Raman Chemical Imaging Spectrometer (PAT-RAMAN)',
@@ -870,7 +870,7 @@ const STANDARD_SENSOR_PRESETS = [
     ]
   },
   {
-    category: '⚖️ Weighing, Dosing & Gravimetric',
+    category: 'Weighing, Dosing & Gravimetric',
     options: [
       'Certified Dual Load Cell Balance (WT-02)',
       'Encapsulator Dosing Pin Load Cell (CAP-04)',
@@ -878,7 +878,7 @@ const STANDARD_SENSOR_PRESETS = [
     ]
   },
   {
-    category: '🌪️ Mixing, Granulation & Rheology',
+    category: 'Mixing, Granulation & Rheology',
     options: [
       'In-Situ NIR Multi-Point Blend Probe (PAT-03)',
       'High-Shear Torque & Rheology Sensor (GRAN-04)',
@@ -886,7 +886,7 @@ const STANDARD_SENSOR_PRESETS = [
     ]
   },
   {
-    category: '🌡️ Thermal, Fluid & Drying RTD',
+    category: 'Thermal, Fluid & Drying RTD',
     options: [
       'Fluid Bed In-Situ NIR & Thermal RTD (FBD-05)',
       'Digital Brix Refractometer & Jacketed RTD (LIQ-02)',
@@ -895,7 +895,7 @@ const STANDARD_SENSOR_PRESETS = [
     ]
   },
   {
-    category: '⚙️ Compression, Press & Sealing',
+    category: 'Compression, Press & Sealing',
     options: [
       'Rotary Press Piezoelectric Sensor (PRS-07)',
       'Automated Tablet Hardness Tester (HRD-07)',
@@ -904,7 +904,7 @@ const STANDARD_SENSOR_PRESETS = [
     ]
   },
   {
-    category: '📷 Vision, QA & Chromatography',
+    category: 'Vision, QA & Chromatography',
     options: [
       '360° AI High-Speed Optical Camera (CAM-AI-08)',
       'Automated HPLC Chromatography (HPLC-08)',
@@ -915,7 +915,7 @@ const STANDARD_SENSOR_PRESETS = [
 
 const STANDARD_STAGE_PRESETS = [
   {
-    category: '💊 Solid Dosage (Tablets)',
+    category: 'Solid Dosage (Tablets)',
     options: [
       'Raw Material Receipt & Identification',
       'Dispensing & Gravimetric Weighing',
@@ -929,7 +929,7 @@ const STANDARD_STAGE_PRESETS = [
     ]
   },
   {
-    category: '🍯 Liquid Dosage (Syrups / Suspensions)',
+    category: 'Liquid Dosage (Syrups / Suspensions)',
     options: [
       'Sugar Dissolution & Vehicle Prep',
       'Liquid Homogenization & Suspension',
@@ -937,7 +937,7 @@ const STANDARD_STAGE_PRESETS = [
     ]
   },
   {
-    category: '💊 Capsule Dosage',
+    category: 'Capsule Dosage',
     options: [
       'Precision Micro-Dispensing',
       'Powder Tumbler Blending',
@@ -946,14 +946,14 @@ const STANDARD_STAGE_PRESETS = [
     ]
   },
   {
-    category: '🧴 Semisolid / Ointment',
+    category: 'Semisolid / Ointment',
     options: [
       'Heated Vacuum Emulsification',
       'De-Aeration & Tube Packaging'
     ]
   },
   {
-    category: '❄️ Biotech / Sterile',
+    category: 'Biotech / Sterile',
     options: [
       'Lyophilization / Freeze Drying',
       'Aseptic Filtration & Autoclave'
@@ -968,7 +968,6 @@ function renderCombobox(inputId, menuId, currentValue, type, placeholder) {
     <div class="combobox-header">${grp.category}</div>
     ${grp.options.map(opt => `
       <div class="combobox-option-row" onclick="selectComboboxOption('${inputId}', '${menuId}', '${opt.replace(/'/g, "\\'")}')">
-        <span>${type === 'stage' ? '🏷️' : '📡'}</span>
         <span>${opt}</span>
       </div>
     `).join('')}
@@ -986,8 +985,8 @@ function renderCombobox(inputId, menuId, currentValue, type, placeholder) {
           onfocus="openComboboxMenu('${menuId}')"
           oninput="filterComboboxMenu('${inputId}', '${menuId}')"
         />
-        <button type="button" class="combobox-arrow-btn" title="Click to view & pick standard options" onclick="toggleComboboxMenu('${menuId}', event)">
-          ▼
+        <button type="button" class="combobox-arrow-btn" title="Show standard options" onclick="toggleComboboxMenu('${menuId}', event)">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1L5 5L9 1"/></svg>
         </button>
       </div>
       <div class="combobox-menu" id="${menuId}">
@@ -1106,7 +1105,7 @@ function switchConfigWorkflowTemplate(targetWfId) {
       name: s.name,
       label: s.label || `${idx + 1}. ${s.name}`,
       sub: s.sub || 'In-Line PAT Telemetry',
-      icon: s.icon || '🔬',
+      icon: '',
       device: s.device || 'In-Line Process Instrument',
       parameters: s.parameters || ['Process Assay', 'Process Temperature']
     }));
@@ -1122,10 +1121,10 @@ function openWorkflowConfigModal(selectedTemplateId) {
     <div style="padding: 0.25rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px;">
         <div>
-          <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
-            ⚙️ Process Workflow & Stage Configurator
+          <h3 style="margin: 0; color: #0f172a; font-size: 1.25rem; font-weight: 700;">
+            Process Workflow & Stage Configurator
           </h3>
-          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Reorder stages with ▲/▼, select standard options with ▼, or create new formulation types.</p>
+          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.85rem;">Configure stage sequence with order controls, attach validated PAT instruments, or select formulation profiles.</p>
         </div>
         <span class="badge badge--live" style="font-size: 0.82rem; font-weight: 700;">
           ${activeWorkflowStages.length} Stages Configured
@@ -1135,19 +1134,19 @@ function openWorkflowConfigModal(selectedTemplateId) {
       <!-- Quick Formulation Type Switcher & New Type Creator -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <label for="configWorkflowTypeSelect" style="font-size: 0.82rem; font-weight: 700; color: #334155; white-space: nowrap;">Formulation Type Template:</label>
+          <label for="configWorkflowTypeSelect" style="font-size: 0.82rem; font-weight: 700; color: #334155; white-space: nowrap;">Formulation Profile:</label>
           <select id="configWorkflowTypeSelect" class="batch-select-input" style="padding: 6px 12px; font-size: 0.84rem; min-width: 270px; border-radius: 8px;" onchange="switchConfigWorkflowTemplate(this.value)">
             ${allAvailable.map(w => `
               <option value="${w.id}" ${w.id === currentWfId ? 'selected' : ''}>
-                ${w.icon || '⚙️'} ${w.name}
+                ${w.name}
               </option>
             `).join('')}
-            <option value="custom" ${currentWfId === 'custom' ? 'selected' : ''}>🛠️ Custom Configured Pipeline</option>
+            <option value="custom" ${currentWfId === 'custom' ? 'selected' : ''}>Custom Configured Pipeline</option>
           </select>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 5px;" onclick="openCreateWorkflowTypeModal()">
-            ➕ New Workflow Type
+          <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 600;" onclick="openCreateWorkflowTypeModal()">
+            + New Workflow Type
           </button>
         </div>
       </div>
@@ -1157,8 +1156,8 @@ function openWorkflowConfigModal(selectedTemplateId) {
           <thead>
             <tr>
               <th style="width: 76px; text-align: center;">ORDER</th>
-              <th style="width: 39%;">PROCESS STAGE (SELECT / TYPE)</th>
-              <th style="width: 45%;">ATTACHED SENSOR / INSTRUMENT (SELECT / TYPE)</th>
+              <th style="width: 40%;">PROCESS STAGE (SELECT / TYPE)</th>
+              <th style="width: 46%;">ATTACHED SENSOR / INSTRUMENT (SELECT / TYPE)</th>
               <th style="width: 12%; text-align: center;">ACTION</th>
             </tr>
           </thead>
@@ -1168,8 +1167,12 @@ function openWorkflowConfigModal(selectedTemplateId) {
                 <td style="text-align: center; white-space: nowrap;">
                   <div style="display: inline-flex; align-items: center; gap: 5px;">
                     <div class="order-btn-group">
-                      <button type="button" class="order-btn" title="Move Stage Up" onclick="moveConfigStageUp(${idx})" ${idx === 0 ? 'disabled' : ''}>▲</button>
-                      <button type="button" class="order-btn" title="Move Stage Down" onclick="moveConfigStageDown(${idx})" ${idx === activeWorkflowStages.length - 1 ? 'disabled' : ''}>▼</button>
+                      <button type="button" class="order-btn" title="Move Stage Up" onclick="moveConfigStageUp(${idx})" ${idx === 0 ? 'disabled' : ''}>
+                        <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4L4 1L7 4"/></svg>
+                      </button>
+                      <button type="button" class="order-btn" title="Move Stage Down" onclick="moveConfigStageDown(${idx})" ${idx === activeWorkflowStages.length - 1 ? 'disabled' : ''}>
+                        <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1L4 4L7 1"/></svg>
+                      </button>
                     </div>
                     <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #e0e7ff; color: #3730a3; font-weight: 700; font-size: 0.8rem;">
                       ${idx + 1}
@@ -1184,7 +1187,7 @@ function openWorkflowConfigModal(selectedTemplateId) {
                 </td>
                 <td style="text-align: center;">
                   <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.78rem; color: #dc2626; border-color: #fecaca; background: #fff5f5;" onclick="removeConfigStage(${idx})" title="Remove Stage">
-                    🗑️ Remove
+                    Remove
                   </button>
                 </td>
               </tr>
@@ -1196,10 +1199,10 @@ function openWorkflowConfigModal(selectedTemplateId) {
       <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 14px; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; gap: 8px;">
           <button type="button" class="button button--secondary" onclick="addStageInConfigModal()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
-            ➕ Add New Stage
+            + Add New Stage
           </button>
           <button type="button" class="button button--secondary" onclick="openCreateWorkflowTypeModal()" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
-            💾 Save As New Type
+            Save As New Type
           </button>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -1217,8 +1220,8 @@ function openCreateWorkflowTypeModal() {
   syncConfigInputs();
   const subModalHtml = `
     <div style="padding: 0.5rem;">
-      <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
-        ➕ Create New Workflow Formulation Type
+      <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 1.2rem; font-weight: 700;">
+        Create New Workflow Formulation Type
       </h3>
       <p style="color: #64748b; font-size: 0.85rem; margin-bottom: 14px;">
         Save the current <strong>${activeWorkflowStages.length} configured stages</strong> as a reusable industrial formulation template.
@@ -1251,7 +1254,7 @@ function openCreateWorkflowTypeModal() {
 
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
           <button type="button" class="button button--secondary" onclick="openWorkflowConfigModal()">Back to Configurator</button>
-          <button type="submit" class="button button--primary">💾 Save & Register Workflow Type</button>
+          <button type="submit" class="button button--primary">Save & Register Workflow Type</button>
         </div>
       </form>
     </div>
@@ -1286,7 +1289,7 @@ async function submitCreateWorkflowType() {
         id: created.id,
         name: created.name,
         category: created.category,
-        icon: '⚙️',
+        icon: '',
         stages: created.stages
       });
       populateWorkflowDropdown(created.id);
@@ -1303,7 +1306,7 @@ async function submitCreateWorkflowType() {
       id: offlineId,
       name,
       category,
-      icon: '⚙️',
+      icon: '',
       stages: [...activeWorkflowStages]
     };
     allWorkflows.push(newOfflineWf);
@@ -1321,7 +1324,7 @@ function addStageInConfigModal() {
     name: `Stage ${newNum} Process`,
     label: `${newNum}. Stage ${newNum} Process`,
     sub: 'IoT Sensor Telemetry',
-    icon: '⚙️',
+    icon: '',
     device: 'Certified In-Line Telemetry Sensor',
     parameters: ['Process Parameter', 'Temperature (°C)', 'Processing Time (min)']
   });

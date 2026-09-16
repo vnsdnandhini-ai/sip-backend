@@ -764,32 +764,32 @@ function showImagePopup(imageUrl, analysis, record = null) {
   const btnOrig = document.createElement('button');
   btnOrig.className = 'modern-btn modern-btn-outline active';
   btnOrig.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnOrig.innerHTML = '📷 Optical Raw';
+  btnOrig.innerHTML = 'Optical Raw';
 
   const btnBgRemoved = document.createElement('button');
   btnBgRemoved.className = 'modern-btn modern-btn-success';
   btnBgRemoved.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnBgRemoved.innerHTML = '✂️ Foliar Mask';
+  btnBgRemoved.innerHTML = 'Foliar Mask';
 
   const btnHighlight = document.createElement('button');
   btnHighlight.className = 'modern-btn modern-btn-danger';
   btnHighlight.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnHighlight.innerHTML = '🔬 Pathometry QA';
+  btnHighlight.innerHTML = 'Pathometry QA';
 
   const btnStressMap = document.createElement('button');
   btnStressMap.className = 'modern-btn modern-btn-amber';
   btnStressMap.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnStressMap.innerHTML = '🌡️ VARI Stress Map';
+  btnStressMap.innerHTML = 'VARI Stress Map';
 
   const btnMorpho = document.createElement('button');
   btnMorpho.className = 'modern-btn modern-btn-teal';
   btnMorpho.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnMorpho.innerHTML = '📐 Morphometry';
+  btnMorpho.innerHTML = 'Morphometry';
 
   const btnSegregate = document.createElement('button');
   btnSegregate.className = 'modern-btn modern-btn-purple';
   btnSegregate.style.cssText = 'padding:6px 11px;font-size:0.75rem;white-space:nowrap;';
-  btnSegregate.innerHTML = '🔬 Lesion Isolation';
+  btnSegregate.innerHTML = 'Lesion Isolation';
 
   modeRow.appendChild(btnOrig);
   modeRow.appendChild(btnBgRemoved);
@@ -854,10 +854,10 @@ function showImagePopup(imageUrl, analysis, record = null) {
   const statusBadge = document.createElement('div');
   statusBadge.style.cssText = 'margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
   statusBadge.innerHTML = isHealthySpecimen
-    ? `<span style="background:#dcfce7;color:#15803d;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #86efac;display:inline-flex;align-items:center;gap:6px;">🌿 HEALTHY · PASS (GRADE 0)</span>
-       <span style="background:#f1f5f9;color:#475569;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #e2e8f0;">✔ 100% Viable Tissue</span>`
-    : `<span style="background:#fee2e2;color:#b91c1c;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #fca5a5;display:inline-flex;align-items:center;gap:6px;">🔴 DEFECTIVE · REJECT</span>
-       <span style="background:#fef3c7;color:#92400e;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #fde68a;">⚠️ Pathological Risk</span>`;
+    ? `<span style="background:#dcfce7;color:#15803d;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #86efac;display:inline-flex;align-items:center;gap:6px;">HEALTHY · PASS (GRADE 0)</span>
+       <span style="background:#f1f5f9;color:#475569;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #e2e8f0;">100% Viable Tissue</span>`
+    : `<span style="background:#fee2e2;color:#b91c1c;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #fca5a5;display:inline-flex;align-items:center;gap:6px;">DEFECTIVE · REJECT</span>
+       <span style="background:#fef3c7;color:#92400e;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #fde68a;">Pathological Risk</span>`;
   rightPanel.appendChild(statusBadge);
 
   // 1. Phytopathology Severity Card (Horsfall-Barratt Scale)
@@ -1102,11 +1102,11 @@ function showImagePopup(imageUrl, analysis, record = null) {
     activeBtn.classList.add('active');
 
     const modeLabels = {
-      bg_removed: '✂️ Foliar Lamina Mask',
-      highlight: '🔬 Pathometry QA',
-      stress_map: '🌡️ VARI Stress Map',
-      morphometry: '📐 Lesion Morphometry',
-      segregate: '🔬 Lesion Isolation',
+      bg_removed: 'Foliar Lamina Mask',
+      highlight: 'Pathometry QA',
+      stress_map: 'VARI Stress Map',
+      morphometry: 'Lesion Morphometry',
+      segregate: 'Lesion Isolation',
     };
     const modeLabelEl = document.getElementById('activeModeLabel');
     if (modeLabelEl) modeLabelEl.textContent = modeLabels[mode] || 'Analysis Mode';

@@ -43,8 +43,8 @@
           <div class="topbar-breadcrumb">Pharmaceutical Process Monitoring & Traceability</div>
         </div>
         <div class="topbar-right">
-          <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">⚡ 8-Step Studio</button>
-          <button class="button button--secondary" onclick="window.location.href='batches.html'">← Back to Batches</button>
+          <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">Process Workflow Studio</button>
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">Back to Batches</button>
           <button class="button button--secondary" id="signOutButton">Sign Out</button>
         </div>
       </header>
@@ -64,10 +64,10 @@
               </div>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="button button--primary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">⚡ Open 8-Step Studio ➔</button>
+              <button class="button button--primary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">Open Process Studio</button>
               <button class="button button--secondary" id="addStageDataBtn" onclick="openAddStageDataModal()">+ Record Stage Reading</button>
-              <button class="button button--secondary" id="advanceStageBtn" onclick="openAdvanceStageModal()">Advance Stage →</button>
-              <button class="button button--secondary" id="generateBatchReportBtn" onclick="generateCurrentBatchReport()">📄 Hashed Dossier</button>
+              <button class="button button--secondary" id="advanceStageBtn" onclick="openAdvanceStageModal()">Advance Stage</button>
+              <button class="button button--secondary" id="generateBatchReportBtn" onclick="generateCurrentBatchReport()">Hashed Dossier</button>
             </div>
           </div>
 
@@ -139,14 +139,14 @@
         <!-- Workflow Step Navigator Footer -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
           <button class="button button--secondary" onclick="window.location.href='batches.html'">
-            ← Back to Batch Management
+            Back to Batch Management
           </button>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html' + (currentBatchId ? '?id=' + currentBatchId : '')">
-              ⚡ 8-Step Studio
+              Process Workflow Studio
             </button>
             <button class="button button--primary" onclick="window.location.href='reports.html'">
-              View Batch Compliance Reports →
+              View Batch Compliance Reports
             </button>
           </div>
         </div>

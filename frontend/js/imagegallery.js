@@ -490,11 +490,11 @@ function renderGallery() {
     const isRaw = item.category === 'raw_material';
     const categoryTag = `<span class="gallery-cat-pill">${isRaw ? 'Raw Material · Stage 1' : 'Final QC · Stage 8'}</span>`;
 
-    let statusBadge = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;border:1px solid #86efac;padding:3px 8px;border-radius:4px;font-size:0.72rem;">${isRaw ? '🌿 HEALTHY · PASS' : '💊 PASS'}</span>`;
+    let statusBadge = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;border:1px solid #86efac;padding:3px 8px;border-radius:4px;font-size:0.72rem;">${isRaw ? 'HEALTHY · PASS' : 'PASS'}</span>`;
     if (isDefective) {
-      statusBadge = `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;border:1px solid #fca5a5;padding:3px 8px;border-radius:4px;font-size:0.72rem;">🔴 DEFECT · REJECT</span>`;
+      statusBadge = `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;border:1px solid #fca5a5;padding:3px 8px;border-radius:4px;font-size:0.72rem;">DEFECT · REJECT</span>`;
     } else if (isReview) {
-      statusBadge = `<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;border:1px solid #fde68a;padding:3px 8px;border-radius:4px;font-size:0.72rem;">⚠️ REVIEW</span>`;
+      statusBadge = `<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;border:1px solid #fde68a;padding:3px 8px;border-radius:4px;font-size:0.72rem;">REVIEW</span>`;
     }
 
     // Specimen / Title formulation
@@ -942,10 +942,10 @@ async function reanalyzeAllImages() {
     const res = await fetch(`${BACKEND_URL}/api/reanalyze-all-images`, { method: 'POST' });
     const data = await res.json();
     if (res.ok) {
-      showLiveNotification(`✔ Precision QA complete: ${data.updatedCount || 0} samples processed with background removal`);
+      showLiveNotification(`Precision QA complete: ${data.updatedCount || 0} samples processed with background removal`);
       await loadGallery();
     } else {
-      showLiveNotification(`⚠️ Scan notice: ${data.error || 'Check server logs'}`);
+      showLiveNotification(`Scan notice: ${data.error || 'Check server logs'}`);
     }
   } catch (err) {
     console.error('Reanalysis failed:', err);
