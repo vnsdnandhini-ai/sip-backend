@@ -805,11 +805,12 @@ async function simulateStageTelemetry() {
       body: JSON.stringify({
         stage: stageObj.name,
         readings,
-        operator: 'IoT Telemetry Gateway'
+        operator: document.getElementById('stageOperatorInput')?.value.trim() || 'IoT Telemetry Gateway'
       })
     });
 
     await loadActiveStageSensorData(true);
+    renderActiveStageStudio();
     renderStageLogTable();
     showToast(`Live sensor telemetry ingested for ${stageObj.name}`, 'success');
   } catch (err) {
