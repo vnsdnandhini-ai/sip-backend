@@ -176,3 +176,17 @@ if (document.readyState === 'loading') {
     loadCombinedVerdict();
   }
 }
+
+// Auto-evaluate compliance when real-time sensor streams arrive
+if (typeof window !== 'undefined' && typeof window.subscribeTelemetry === 'function') {
+  window.subscribeTelemetry((eventType) => {
+    if (['compliance-updated', 'sensor-reading', 'stage-telemetry', 'image-uploaded'].includes(eventType)) {
+      if (document.getElementById('complianceTable')) {
+        executeComplianceEvaluation();
+      }
+      if (document.getElementById('combinedVerdictTable')) {
+        loadCombinedVerdict();
+      }
+    }
+  });
+}

@@ -239,9 +239,67 @@ if (document.readyState === 'loading') {
   initManufacturingStudio();
 }
 
+let isRealtimeStreamActive = false;
+
+function initRealtimeTelemetryListener() {
+  if (typeof window.subscribeTelemetry === 'function') {
+    window.subscribeTelemetry((eventType, data) => {
+      handleIncomingTelemetryEvent(eventType, data);
+    });
+  }
+
+  window.addEventListener('telemetry-status-change', (e) => {
+    isRealtimeStreamActive = e.detail?.connected || false;
+    updateTelemetryConnectionBadge();
+  });
+}
+
+function updateTelemetryConnectionBadge() {
+  const badgeEl = document.getElementById('stageRealtimeIndicator');
+  if (badgeEl) {
+    if (isRealtimeStreamActive) {
+      badgeEl.innerHTML = '<span class="live-dot" style="background:#16a34a;box-shadow:0 0 8px #16a34a;"></span> <strong style="color:#16a34a;font-size:0.8rem;">REAL-TIME HARDWARE STREAMING ACTIVE</strong>';
+    } else {
+      badgeEl.innerHTML = '<span class="live-dot" style="background:#94a3b8;"></span> <span style="color:#64748b;font-size:0.8rem;">STREAM CONNECTING...</span>';
+    }
+  }
+}
+
+async function handleIncomingTelemetryEvent(eventType, data) {
+  if (!data) return;
+
+  if (eventType === 'connected') {
+    isRealtimeStreamActive = true;
+    updateTelemetryConnectionBadge();
+    return;
+  }
+
+  if (eventType === 'stage-telemetry' || eventType === 'telemetry') {
+    const matchesBatch = !data.batchId || data.batchId === currentBatchId;
+    const stageObj = data.stage ? findStageInActiveWorkflow(data.stage) : null;
+    const matchesStage = !stageObj || stageObj.name === currentActiveStage;
+
+    if (matchesBatch && matchesStage) {
+      console.log('⚡ Real-time Telemetry Received for active stage:', data);
+      await loadActiveStageSensorData(false);
+      renderActiveStageStudio();
+      renderStageLogTable();
+      showToast(`⚡ Live Stream Ingested: ${data.readings?.length || 'New'} readings from [${data.deviceId || 'Sensor'}]`, 'info');
+    }
+  } else if (eventType === 'batch-updated') {
+    if (data.batchId === currentBatchId) {
+      console.log('⚡ Batch updated via SSE:', data);
+      await loadBatchDetails(currentBatchId, false);
+      renderWorkflowPipeline();
+      renderActiveStageStudio();
+    }
+  }
+}
+
 async function initManufacturingStudio() {
   try {
     await loadPlatformState();
+    initRealtimeTelemetryListener();
 
     const urlParams = new URLSearchParams(window.location.search);
     const storedBatchId = (typeof localStorage !== 'undefined') ? localStorage.getItem('sipActiveBatchId') : null;
@@ -259,7 +317,7 @@ async function initManufacturingStudio() {
       }
       await loadBatchDetails(currentBatchId, true);
 
-      // Auto poll telemetry
+      // Auto poll telemetry (backup to SSE)
       setInterval(async () => {
         if (currentBatchId && !document.hidden) {
           const fresh = await loadActiveStageSensorData(true);
@@ -267,7 +325,7 @@ async function initManufacturingStudio() {
             renderStageLogTable();
           }
         }
-      }, 10000);
+      }, 15000);
     } else {
       renderEmptyState();
     }
@@ -557,8 +615,14 @@ function renderActiveStageStudio() {
           <span class="badge ${isCritical ? 'badge--critical' : 'badge--pass'}" style="font-size: 0.82rem; font-weight: 700;">
             <span class="live-dot" style="background: ${qcStatusColor};"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
           </span>
+          <span id="stageRealtimeIndicator" class="badge badge--neutral" style="font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;">
+            ${isRealtimeStreamActive 
+              ? '<span class="live-dot" style="background:#16a34a;box-shadow:0 0 8px #16a34a;"></span> <strong style="color:#16a34a;font-size:0.8rem;">REAL-TIME HARDWARE STREAMING ACTIVE</strong>'
+              : '<span class="live-dot" style="background:#94a3b8;"></span> <span style="color:#64748b;font-size:0.8rem;">STREAM CONNECTED</span>'
+            }
+          </span>
           <span style="font-size: 0.85rem; color: #475569;">
-            <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Live Telemetry Evaluation:</strong> <span style="color: ${qcStatusColor}; font-weight: 700;">${qcStatusText}</span>
+            <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Live Telemetry:</strong> <span style="color: ${qcStatusColor}; font-weight: 700;">${qcStatusText}</span>
           </span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">

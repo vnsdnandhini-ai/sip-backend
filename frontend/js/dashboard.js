@@ -105,3 +105,14 @@ function renderSetupProgress(state) {
     card.style.display = 'block';
   }
 }
+
+// Auto-refresh dashboard in real-time when telemetry arrives
+if (typeof window !== 'undefined') {
+  if (typeof window.subscribeTelemetry === 'function') {
+    window.subscribeTelemetry((eventType) => {
+      if (['stage-telemetry', 'sensor-reading', 'batch-updated', 'compliance-updated', 'dispensing-updated'].includes(eventType)) {
+        refreshDashboard();
+      }
+    });
+  }
+}

@@ -8,10 +8,54 @@ const { getFullState } = require('./dataAccess');
 const sensorRoutes = require('./sensorRoutes');
 const complianceRoutes = require('./complianceRoutes');
 
+const { EventEmitter } = require('events');
+const realTimeEvents = new EventEmitter();
+realTimeEvents.setMaxListeners(200);
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '..')));
+
+// Real-Time Server-Sent Events (SSE) Live Telemetry Stream
+app.get('/api/telemetry/stream', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'X-Accel-Buffering': 'no'
+  });
+
+  // Flush initial connection packet
+  res.write(`event: connected\ndata: ${JSON.stringify({ type: 'connected', service: 'sip-telemetry-core', timestamp: new Date().toISOString() })}\n\n`);
+
+  const onTelemetry = (data) => {
+    try {
+      const eventName = data.type || 'telemetry';
+      const payload = JSON.stringify(data);
+      res.write(`event: ${eventName}\ndata: ${payload}\n\n`);
+      res.write(`data: ${payload}\n\n`);
+    } catch (e) {
+      // Client closed
+    }
+  };
+
+  realTimeEvents.on('telemetry', onTelemetry);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: heartbeat ${new Date().toISOString()}\n\n`);
+    } catch (e) {
+      clearInterval(heartbeat);
+    }
+  }, 15000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    realTimeEvents.off('telemetry', onTelemetry);
+  });
+});
 
 // Run migrations
 runMigrations();
@@ -328,6 +372,18 @@ app.post('/api/batches/:id/advance-stage', async (req, res) => {
       'INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)',
       [auditId, `Batch stage advanced to ${nextStage}`, 'Batch Lifecycle', operator || 'QC User']
     );
+
+    // Broadcast real-time event
+    if (realTimeEvents) {
+      realTimeEvents.emit('telemetry', {
+        type: 'batch-updated',
+        batchId: req.params.id,
+        currentStage: nextStage,
+        qcStatus,
+        operator,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     res.json({ success: true, batch: result.rows[0] });
   } catch (err) {
@@ -945,6 +1001,19 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
       ]
     );
 
+    // Broadcast real-time SSE telemetry to all connected frontend clients
+    if (realTimeEvents) {
+      realTimeEvents.emit('telemetry', {
+        type: 'stage-telemetry',
+        batchId,
+        stage: canonicalStage,
+        stageIndex: profile.stageIndex,
+        deviceId: activeDeviceId,
+        readings: savedRecords,
+        timestamp
+      });
+    }
+
     res.json({
       success: true,
       batchId,
@@ -1303,6 +1372,22 @@ app.post('/api/dispensing', async (req, res) => {
       [auditId, `Dispensed ${actual} kg (Target: ${target} kg, Deviation: ${deviation}%, Status: ${status})`, 'Dispensing & Weighing', operatorName || 'Operator']
     );
 
+    // Broadcast real-time dispensing event
+    if (realTimeEvents) {
+      realTimeEvents.emit('telemetry', {
+        type: 'dispensing-updated',
+        id,
+        batchId,
+        materialName,
+        targetQuantity: target,
+        actualQuantity: actual,
+        deviationPercent: deviation,
+        status,
+        operatorName,
+        timestamp: new Date().toISOString()
+      });
+    }
+
     res.json({ id, batchId, targetQuantity: target, actualQuantity: actual, deviationPercent: deviation, status, operatorName });
   } catch (err) {
     console.error('Failed to record dispensing:', err);
@@ -1503,16 +1588,106 @@ app.post('/api/analytical', async (req, res) => {
         'manual', parameter, String(value), unit || null, timestamp || null
       ]
     );
+    if (realTimeEvents) {
+      realTimeEvents.emit('telemetry', {
+        type: 'sensor-reading',
+        id,
+        batchId: targetBatchId,
+        projectId: targetBatchId,
+        processStage,
+        parameter,
+        instrument,
+        value,
+        unit,
+        timestamp: timestamp || new Date().toISOString()
+      });
+    }
+
     res.json({ id, parameter, instrument, value, unit, timestamp, projectId: targetBatchId, batchId: targetBatchId, processStage });
   } catch (err) {
     console.error('Failed to save manual analytical entry:', err);
     res.status(500).json({ error: 'Database error.' });
   }
 });
-app.use('/api', sensorRoutes(pool, generateId));
-app.use('/api', complianceRoutes(pool, generateId));
+// High-Speed Universal Real-Time Telemetry Ingestion Endpoint
+// Ingests live sensor streams from ESP32, Spectrometers, PLCs, LabVIEW, or Python sensors
+app.post('/api/telemetry/ingest', async (req, res) => {
+  const { batchId, stage, deviceId, operator, parameters, timestamp } = req.body;
+  const canonicalStage = getCanonicalStageName(stage || 'Raw Material Receipt');
+  const now = timestamp || new Date().toISOString();
+  const activeDeviceId = deviceId || 'ESP32-PAT-IOT';
+  const savedRecords = [];
+
+  try {
+    let targetBatchId = batchId;
+    if (!targetBatchId) {
+      const activeBatch = await pool.query("SELECT id FROM projects ORDER BY created_at DESC LIMIT 1");
+      targetBatchId = activeBatch.rows[0]?.id || 'LOT-PCM-2026-01';
+    }
+
+    if (parameters && typeof parameters === 'object') {
+      for (const [paramName, paramVal] of Object.entries(parameters)) {
+        const readingId = generateId();
+        const numericVal = typeof paramVal === 'number' ? paramVal : parseFloat(paramVal);
+        let resultStatus = 'PASS';
+
+        // Check if value exceeds normal bounds (simple safety check)
+        if (Number.isFinite(numericVal)) {
+          if (paramName.toLowerCase().includes('rsd') && numericVal > 6.0) resultStatus = 'WARNING';
+          if (paramName.toLowerCase().includes('moisture') && numericVal > 2.5) resultStatus = 'WARNING';
+          if (paramName.toLowerCase().includes('hardness') && (numericVal < 6.0 || numericVal > 14.0)) resultStatus = 'WARNING';
+        }
+
+        await pool.query(
+          `INSERT INTO analytical_data (
+            id, project_id, device_id, parameter, value,
+            process_stage, reading_type, result, received_at, device_timestamp
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            readingId, targetBatchId, activeDeviceId, paramName,
+            String(paramVal), canonicalStage, 'realtime_sensor',
+            resultStatus, now, now
+          ]
+        );
+
+        savedRecords.push({
+          id: readingId,
+          parameter: paramName,
+          value: paramVal,
+          result: resultStatus
+        });
+      }
+    }
+
+    if (realTimeEvents) {
+      realTimeEvents.emit('telemetry', {
+        type: 'stage-telemetry',
+        batchId: targetBatchId,
+        stage: canonicalStage,
+        deviceId: activeDeviceId,
+        readings: savedRecords,
+        timestamp: now
+      });
+    }
+
+    res.json({
+      success: true,
+      batchId: targetBatchId,
+      stage: canonicalStage,
+      ingestedCount: savedRecords.length,
+      records: savedRecords,
+      timestamp: now
+    });
+  } catch (err) {
+    console.error('Failed to ingest telemetry:', err);
+    res.status(500).json({ error: 'Database error ingesting telemetry.' });
+  }
+});
+
+app.use('/api', sensorRoutes(pool, generateId, realTimeEvents));
+app.use('/api', complianceRoutes(pool, generateId, realTimeEvents));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Spectroscopic Intelligence backend running on port ${PORT} (PostgreSQL/Supabase)`);
+  console.log(`Spectroscopic Intelligence backend running on port ${PORT} (PostgreSQL/Supabase & Real-Time Telemetry SSE Active)`);
 });

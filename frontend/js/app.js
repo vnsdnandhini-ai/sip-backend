@@ -1,9 +1,144 @@
-var BACKEND_URL = 'https://sip-backend-1.onrender.com';
+function getBackendUrl() {
+  if (typeof window !== 'undefined') {
+    if (localStorage && localStorage.getItem('sip_backend_url')) {
+      return localStorage.getItem('sip_backend_url');
+    }
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '') {
+      return `${window.location.protocol}//${host || 'localhost'}:3000`;
+    }
+  }
+  return 'https://sip-backend-1.onrender.com';
+}
+
+var BACKEND_URL = getBackendUrl();
 window.BACKEND_URL = BACKEND_URL;
 
 // Clean UI initialization
 if (typeof document !== 'undefined' && document.body) {
   document.body.classList.remove('dark-mode');
+}
+
+// --- Real-Time Server-Sent Events (SSE) Live Telemetry Streaming Core ---
+let globalTelemetrySource = null;
+const telemetryListeners = new Set();
+let isTelemetryConnected = false;
+
+function initGlobalTelemetryStream() {
+  if (typeof window === 'undefined' || !window.EventSource) return;
+  if (globalTelemetrySource && globalTelemetrySource.readyState !== EventSource.CLOSED) {
+    return;
+  }
+
+  const sseUrl = `${BACKEND_URL}/api/telemetry/stream`;
+  try {
+    globalTelemetrySource = new EventSource(sseUrl);
+
+    globalTelemetrySource.onopen = () => {
+      isTelemetryConnected = true;
+      console.log('⚡ Connected to Real-time Telemetry Stream:', sseUrl);
+      window.dispatchEvent(new CustomEvent('telemetry-status-change', { detail: { connected: true, url: sseUrl } }));
+    };
+
+    globalTelemetrySource.onerror = (err) => {
+      isTelemetryConnected = false;
+      console.warn('⚡ Telemetry stream reconnecting...', err);
+      window.dispatchEvent(new CustomEvent('telemetry-status-change', { detail: { connected: false, url: sseUrl } }));
+    };
+
+    const dispatchTelemetryEvent = (eventName, data) => {
+      telemetryListeners.forEach(fn => {
+        try { fn(eventName, data); } catch (e) { console.error('Telemetry subscriber error:', e); }
+      });
+      window.dispatchEvent(new CustomEvent(`telemetry:${eventName}`, { detail: data }));
+      window.dispatchEvent(new CustomEvent('telemetry:any', { detail: { event: eventName, data } }));
+    };
+
+    globalTelemetrySource.addEventListener('connected', (e) => {
+      isTelemetryConnected = true;
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('connected', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('telemetry', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('telemetry', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('stage-telemetry', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('stage-telemetry', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('sensor-reading', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('sensor-reading', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('image-uploaded', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('image-uploaded', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('compliance-updated', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('compliance-updated', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('batch-updated', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('batch-updated', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.addEventListener('dispensing-updated', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent('dispensing-updated', payload);
+      } catch (err) {}
+    });
+
+    globalTelemetrySource.onmessage = (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        dispatchTelemetryEvent(payload.type || 'telemetry', payload);
+      } catch (err) {}
+    };
+  } catch (err) {
+    console.error('Failed to initialize telemetry stream:', err);
+  }
+}
+
+window.initGlobalTelemetryStream = initGlobalTelemetryStream;
+window.subscribeTelemetry = function (callback) {
+  if (typeof callback === 'function') {
+    telemetryListeners.add(callback);
+    initGlobalTelemetryStream();
+    return () => telemetryListeners.delete(callback);
+  }
+  return () => {};
+};
+window.isTelemetryConnected = () => isTelemetryConnected;
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initGlobalTelemetryStream());
+  } else {
+    initGlobalTelemetryStream();
+  }
 }
 
 function resolveImageUrl(url) {

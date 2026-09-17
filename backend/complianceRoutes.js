@@ -7,7 +7,7 @@ const { evaluateReading } = require('./complianceEngine');
 const { generateTamperProofReport, verifyReportIntegrity } = require('./tamperProofReports');
 const { runStatisticalAnalysis } = require('./statisticalAnalysis');
 
-module.exports = function (pool, generateId) {
+module.exports = function (pool, generateId, realTimeEvents) {
   const router = express.Router();
 
   async function findMatchingCondition(parameterName, monitoringPointId) {
@@ -83,6 +83,15 @@ for (const reading of pending.rows) {
           );
           newResults.push({ id, ...evaluation });
         }
+      }
+
+      if (realTimeEvents && newResults.length > 0) {
+        realTimeEvents.emit('telemetry', {
+          type: 'compliance-updated',
+          evaluatedCount: newResults.length,
+          results: newResults,
+          timestamp: new Date().toISOString()
+        });
       }
 
       res.json({ evaluatedCount: newResults.length, results: newResults });

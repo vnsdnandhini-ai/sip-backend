@@ -12,7 +12,7 @@ const supabase = require('./supabaseClient');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { findBestMatch } = require('./spectrumSimilarity');
 const { analyzeImage } = require('./imageAnalysis');
-module.exports = function (pool, generateId) {
+module.exports = function (pool, generateId, realTimeEvents) {
   const router = express.Router();
 
   async function requireDeviceAuth(req, res, next) {
@@ -201,6 +201,17 @@ router.post('/reference-color', async (req, res) => {
           imageAnalysisResult ? JSON.stringify(imageAnalysisResult) : null
         ]
       );
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'image-uploaded',
+          batchId: targetBatchId,
+          recordId: id,
+          imagePath,
+          imageAnalysis: imageAnalysisResult,
+          timestamp: new Date().toISOString()
+        });
+      }
+
       res.json({ success: true, recordId: id, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {
       console.error('Failed to save manual image upload:', err);
@@ -419,6 +430,21 @@ router.post('/reference-color', async (req, res) => {
         ]
       );
       await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [req.device.device_id]);
+
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'sensor-reading',
+          batchId: targetBatchId,
+          monitoringPointId,
+          parameter: derivedParameter,
+          value: derivedValue,
+          dataType: resolvedDataType,
+          spectrumResult,
+          imagePath,
+          imageAnalysis: imageAnalysisResult,
+          timestamp: new Date().toISOString()
+        });
+      }
 
       res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {

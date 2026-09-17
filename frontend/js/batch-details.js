@@ -29,6 +29,18 @@ async function initBatchDetailsPage() {
     return;
   }
 
+  if (typeof window.subscribeTelemetry === 'function') {
+    window.subscribeTelemetry(async (eventType, data) => {
+      if (!data) return;
+      if (eventType === 'stage-telemetry' || eventType === 'dispensing-updated' || eventType === 'sensor-reading' || eventType === 'batch-updated') {
+        if (!data.batchId || data.batchId === currentBatchId) {
+          console.log('⚡ Batch passport auto-refreshing from live SSE:', eventType, data);
+          await loadBatchPassport();
+        }
+      }
+    });
+  }
+
   await loadBatchPassport();
 }
 
