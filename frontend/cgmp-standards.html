@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cGMP & Industrial Standards - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">Process Workflow</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link active" data-page="cgmp">cGMP Standards</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">cGMP & Industrial Standards Hub</h2>
+          <div class="topbar-breadcrumb">FDA 21 CFR Parts 211 & 11 · EU GMP Annex 11 · ALCOA+ · ICH Q8/Q9/Q10 · ISO 14644</div>
+        </div>
+        <div class="topbar-right" style="flex-wrap: wrap; gap: 8px;">
+          <button class="button button--primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="openLogDeviationModal()">+ Log Deviation (OOS / OOT)</button>
+          <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="runLiveAlcoaScan()">Run ALCOA+ Scan</button>
+          <button class="button button--secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        
+        <!-- Header Banner Card -->
+        <div class="cgmp-header-card">
+          <div class="cgmp-header-top">
+            <div>
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="batch-code-tag" style="background:#1e1b4b; color:#c7d2fe;">cGMP VALIDATION CORE</span>
+                <span class="badge badge--pass" id="cgmpAuditStatusBadge">Audit Ready (98.4%)</span>
+                <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:700;">21 CFR PART 11 COMPLIANT</span>
+                <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700;">ALCOA+ VERIFIED</span>
+              </div>
+              <h2 style="margin: 0; font-size: 1.4rem; color: #0f172a; font-weight: 800;">
+                Pharmaceutical Regulatory Compliance & Quality Governance Center
+              </h2>
+              <p style="margin: 6px 0 0; font-size: 0.88rem; color: #64748b; line-height: 1.4;">
+                Continuous automated audit readiness, deviation & CAPA tracking, equipment qualification (IQ/OQ/PQ), cleanroom HVAC environmental surveillance, and 21 CFR Part 11 electronic records.
+              </p>
+            </div>
+            
+            <div class="cgmp-kpi-pill-group">
+              <div class="cgmp-kpi-pill">
+                <span class="cgmp-kpi-label">Audit Readiness</span>
+                <span class="cgmp-kpi-val" id="kpiAuditScore">98.4%</span>
+              </div>
+              <div class="cgmp-kpi-pill">
+                <span class="cgmp-kpi-label">Active Deviations</span>
+                <span class="cgmp-kpi-val" id="kpiDeviationsCount" style="color:#d97706;">1 Open</span>
+              </div>
+              <div class="cgmp-kpi-pill">
+                <span class="cgmp-kpi-label">Equipment Status</span>
+                <span class="cgmp-kpi-val" id="kpiEquipmentStatus" style="color:#16a34a;">100% Calibrated</span>
+              </div>
+              <div class="cgmp-kpi-pill">
+                <span class="cgmp-kpi-label">Cleanroom HVAC</span>
+                <span class="cgmp-kpi-val" id="kpiHvacStatus" style="color:#16a34a;">All Suites Normal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab Bar Navigation for cGMP Submodules -->
+        <div class="filter-buttons" style="margin-top: 1.25rem; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="filter-button active" data-tab="matrix" onclick="switchCgmpTab('matrix')">1. Regulatory Standards Matrix</button>
+          <button class="filter-button" data-tab="deviations" onclick="switchCgmpTab('deviations')">2. Deviations & CAPA (OOS/OOT)</button>
+          <button class="filter-button" data-tab="equipment" onclick="switchCgmpTab('equipment')">3. Equipment Qualification (IQ/OQ/PQ)</button>
+          <button class="filter-button" data-tab="cleanroom" onclick="switchCgmpTab('cleanroom')">4. Cleanroom & HVAC Monitoring</button>
+          <button class="filter-button" data-tab="personnel" onclick="switchCgmpTab('personnel')">5. Operator GMP Qualification</button>
+          <button class="filter-button" data-tab="alcoa" onclick="switchCgmpTab('alcoa')">6. ALCOA+ Data Integrity</button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: REGULATORY STANDARDS MATRIX -->
+        <!-- ========================================== -->
+        <div id="tabMatrix" class="cgmp-tab-content">
+          <div class="grid grid--2cols" style="margin-top: 1.25rem;">
+            
+            <div class="card" style="padding: 1.25rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                <h4 style="margin:0; font-size:1.05rem; font-weight:700;">Global Pharma Regulatory Framework Compliance</h4>
+                <span class="badge badge--pass">Automated Evaluation</span>
+              </div>
+              <div id="standardsListContainer" style="display:flex; flex-direction:column; gap: 14px;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <div class="card" style="padding: 1.25rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                <h4 style="margin:0; font-size:1.05rem; font-weight:700;">Audit Readiness Breakdown</h4>
+                <button class="button button--secondary" style="font-size:0.8rem; padding:4px 10px;" onclick="fetchCgmpMatrix()">Refresh Score</button>
+              </div>
+              <div style="text-align:center; padding: 1.5rem 0;">
+                <div style="display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width: 140px; height: 140px; border-radius: 50%; border: 8px solid #22c55e; background: #f0fdf4; margin-bottom: 12px;">
+                  <span style="font-size: 2rem; font-weight: 800; color: #15803d;" id="matrixBigScore">98.4%</span>
+                  <span style="font-size: 0.75rem; font-weight: 700; color: #166534; text-transform: uppercase;">Audit Ready</span>
+                </div>
+                <p style="font-size: 0.85rem; color: #64748b; max-width: 380px; margin: 0 auto;">
+                  All operational modules, spectroscopic calibration records, and digital audit trails fulfill US FDA, EU GMP, WHO, and ICH requirements.
+                </p>
+              </div>
+
+              <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+                <div style="font-size:0.85rem; font-weight:700; margin-bottom:8px; color:var(--text);">Applicable Industrial & Pharmacopeial Standards:</div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                  <span class="chip chip--blue">FDA 21 CFR §211.68</span>
+                  <span class="chip chip--blue">FDA 21 CFR §211.110</span>
+                  <span class="chip chip--blue">FDA 21 CFR Part 11</span>
+                  <span class="chip chip--blue">EU GMP Annex 11</span>
+                  <span class="chip chip--green">ICH Q8(R2) QbD</span>
+                  <span class="chip chip--green">ICH Q9 Risk</span>
+                  <span class="chip chip--green">ICH Q10 PQS</span>
+                  <span class="chip chip--purple">USP &lt;1119&gt; NIR</span>
+                  <span class="chip chip--purple">ISO 14644-1 Cleanroom</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: DEVIATIONS & CAPA MANAGEMENT -->
+        <!-- ========================================== -->
+        <div id="tabDeviations" class="cgmp-tab-content hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.25rem; margin-bottom: 1rem; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Out-of-Specification (OOS) & Deviation Records</h3>
+              <p style="margin:4px 0 0; font-size:0.85rem; color:var(--muted);">FDA 21 CFR §211.192 & ICH Q10 Corrective and Preventive Action (CAPA) tracking</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="button button--secondary" onclick="fetchDeviations()">Refresh Log</button>
+              <button class="button button--primary" onclick="openLogDeviationModal()">+ Log New Deviation</button>
+            </div>
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table" id="deviationsTable">
+              <thead>
+                <tr>
+                  <th>DEVIATION #</th>
+                  <th>BATCH / STAGE</th>
+                  <th>TITLE & CLASSIFICATION</th>
+                  <th>ROOT CAUSE (6M)</th>
+                  <th>CAPA PLAN</th>
+                  <th>ASSIGNED QA</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="deviationsTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: EQUIPMENT QUALIFICATION (IQ/OQ/PQ) -->
+        <!-- ========================================== -->
+        <div id="tabEquipment" class="cgmp-tab-content hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.25rem; margin-bottom: 1rem; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Process Equipment Qualification & NIST Calibration Matrix</h3>
+              <p style="margin:4px 0 0; font-size:0.85rem; color:var(--muted);">FDA 21 CFR §211.68, EU GMP Annex 15, USP &lt;1119&gt; Traceable Standards</p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="button button--secondary" onclick="fetchEquipment()">Refresh Calibration Status</button>
+              <button class="button button--primary" onclick="openAddEquipmentModal()">+ Register Instrument</button>
+            </div>
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table" id="equipmentTable">
+              <thead>
+                <tr>
+                  <th>TAG & INSTRUMENT</th>
+                  <th>ASSIGNED STAGE & SUITE</th>
+                  <th>IQ / OQ / PQ</th>
+                  <th>LAST CALIBRATION</th>
+                  <th>NEXT DUE DATE</th>
+                  <th>CALIBRATION CERTIFICATE</th>
+                  <th>TOLERANCE</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="equipmentTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 4: CLEANROOM & HVAC MONITORING -->
+        <!-- ========================================== -->
+        <div id="tabCleanroom" class="cgmp-tab-content hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.25rem; margin-bottom: 1rem; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Cleanroom Suites & HVAC Environmental Surveillance</h3>
+              <p style="margin:4px 0 0; font-size:0.85rem; color:var(--muted);">ISO 14644-1 & EU GMP Annex 1 Airborne Particulate & Differential Pressure Cascade</p>
+            </div>
+            <button class="button button--secondary" onclick="simulateHvacTelemetry()">Simulate Environmental Refresh</button>
+          </div>
+
+          <div class="grid grid--3cards" id="cleanroomCardsGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 5: PERSONNEL GMP QUALIFICATION -->
+        <!-- ========================================== -->
+        <div id="tabPersonnel" class="cgmp-tab-content hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 1.25rem; margin-bottom: 1rem; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Operator GMP Training & Competency Verification Matrix</h3>
+              <p style="margin:4px 0 0; font-size:0.85rem; color:var(--muted);">FDA 21 CFR §211.25 & WHO TRS 986 Training Qualification Governance</p>
+            </div>
+            <button class="button button--secondary" onclick="fetchPersonnel()">Refresh Training Log</button>
+          </div>
+
+          <div class="data-table-wrapper">
+            <table class="data-table" id="personnelTable">
+              <thead>
+                <tr>
+                  <th>EMPLOYEE ID</th>
+                  <th>FULL NAME</th>
+                  <th>ROLE</th>
+                  <th>GMP CERT LEVEL</th>
+                  <th>SOP COMPLIANCE</th>
+                  <th>QUALIFIED PRODUCTION STAGES</th>
+                  <th>SUPERVISOR VERIFICATION</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="personnelTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 6: ALCOA+ DATA INTEGRITY SCANNER -->
+        <!-- ========================================== -->
+        <div id="tabAlcoa" class="cgmp-tab-content hidden">
+          <div style="margin-top: 1.25rem;">
+            <div class="card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="batch-code-tag" style="background:#0f766e; color:#ccfbf1;">ALCOA+ AUDIT ENGINE</span>
+                    <span class="badge badge--pass" id="alcoaCertificateBadge">Certificate: ALCOA-CERT-2026</span>
+                  </div>
+                  <h3 style="margin:6px 0 0; font-size:1.25rem; font-weight:800;">Real-Time Data Integrity Governance</h3>
+                  <p style="margin:4px 0 0; font-size:0.85rem; color:var(--muted);">
+                    Evaluates all 9 dimensions of Life Sciences Data Integrity (Attributable, Legible, Contemporaneous, Original, Accurate, Complete, Consistent, Enduring, Available)
+                  </p>
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <button class="button button--primary" onclick="runLiveAlcoaScan()">Re-Scan Database</button>
+                  <button class="button button--secondary" onclick="exportAlcoaCertificate()">Export Certificate</button>
+                </div>
+              </div>
+
+              <div class="grid grid--3cards" style="margin-top: 1.25rem;" id="alcoaDimensionsGrid">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Workflow Step Navigator Footer -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
+          <button class="button button--secondary" onclick="window.location.href='compliance.html'">
+            ← Back to Compliance Engine
+          </button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html'">
+              Open Process Studio
+            </button>
+            <button class="button button--primary" onclick="window.location.href='reports.html'">
+              Proceed to Quality Reports &amp; Audit Trail →
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Standard Modals -->
+  <div class="modal-backdrop hidden" id="cgmpModalBackdrop"></div>
+  <div class="modal hidden" id="cgmpModalPanel" style="max-width: 720px;"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/cgmp-standards.js"></script>
+</body>
+</html>

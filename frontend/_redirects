@@ -1,0 +1,3 @@
+# Netlify redirects for Spectroscopic Intelligence Platform
+/api/*  https://sip-backend-1.onrender.com/api/:splat  200!
+/*      /index.html                                     200

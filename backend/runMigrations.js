@@ -363,6 +363,168 @@ async function runMigrations() {
       }
     }
 
+    // --- cGMP Compliance Tables ---
+    // 1. Deviations & CAPA Management (FDA 21 CFR 211.192 / ICH Q10)
+    await safeAlter(`
+      CREATE TABLE IF NOT EXISTS cgmp_deviations (
+        id VARCHAR(255) PRIMARY KEY,
+        deviation_number VARCHAR(100) UNIQUE,
+        batch_id VARCHAR(255),
+        stage_name VARCHAR(255),
+        title VARCHAR(255) NOT NULL,
+        classification VARCHAR(50) DEFAULT 'MAJOR',
+        deviation_type VARCHAR(100) DEFAULT 'OOS',
+        parameter_involved VARCHAR(255),
+        observed_value VARCHAR(255),
+        limit_specified VARCHAR(255),
+        root_cause_category VARCHAR(100),
+        root_cause_details TEXT,
+        capa_action TEXT,
+        preventive_action TEXT,
+        assigned_qa VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'OPEN',
+        logged_by VARCHAR(255),
+        created_at TIMESTAMPTZ DEFAULT now(),
+        closed_at TIMESTAMPTZ,
+        qa_signature_hash VARCHAR(255)
+      );
+    `);
+
+    // 2. Equipment Qualification & Calibration (FDA 21 CFR 211.68 / EU GMP Annex 15)
+    await safeAlter(`
+      CREATE TABLE IF NOT EXISTS equipment_qualification (
+        id VARCHAR(255) PRIMARY KEY,
+        equipment_tag VARCHAR(100) UNIQUE NOT NULL,
+        equipment_name VARCHAR(255) NOT NULL,
+        stage_assigned VARCHAR(255),
+        cleanroom_location VARCHAR(255),
+        qualification_status VARCHAR(50) DEFAULT 'QUALIFIED',
+        iq_status VARCHAR(50) DEFAULT 'PASSED',
+        oq_status VARCHAR(50) DEFAULT 'PASSED',
+        pq_status VARCHAR(50) DEFAULT 'PASSED',
+        last_calibration_date DATE,
+        next_calibration_date DATE,
+        calibration_standard VARCHAR(255),
+        calibration_certificate_id VARCHAR(100),
+        accuracy_tolerance VARCHAR(100),
+        status_interlock BOOLEAN DEFAULT true,
+        updated_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+
+    // 3. Cleanroom & Environmental HVAC Monitoring (ISO 14644-1 / EU GMP Grade A-D)
+    await safeAlter(`
+      CREATE TABLE IF NOT EXISTS environmental_monitoring (
+        id VARCHAR(255) PRIMARY KEY,
+        suite_id VARCHAR(100) NOT NULL,
+        suite_name VARCHAR(255) NOT NULL,
+        cleanroom_grade VARCHAR(50) NOT NULL,
+        differential_pressure_pa NUMERIC NOT NULL,
+        particle_count_05um NUMERIC NOT NULL,
+        particle_count_50um NUMERIC NOT NULL,
+        temperature_c NUMERIC NOT NULL,
+        relative_humidity_pct NUMERIC NOT NULL,
+        air_changes_per_hr NUMERIC,
+        status VARCHAR(50) DEFAULT 'NORMAL',
+        recorded_at TIMESTAMPTZ DEFAULT now()
+      );
+    `);
+
+    // 4. Operator Training & Competency Matrix (FDA 21 CFR 211.25 / WHO GMP)
+    await safeAlter(`
+      CREATE TABLE IF NOT EXISTS personnel_training (
+        id VARCHAR(255) PRIMARY KEY,
+        employee_id VARCHAR(100) UNIQUE NOT NULL,
+        full_name VARCHAR(255) NOT NULL,
+        role VARCHAR(100) NOT NULL,
+        gmp_certification_level VARCHAR(50) DEFAULT 'GMP-Level-2',
+        sop_compliance_score NUMERIC DEFAULT 98.5,
+        qualified_stages JSONB NOT NULL,
+        qualification_status VARCHAR(50) DEFAULT 'CERTIFIED',
+        last_training_date DATE,
+        next_refresher_date DATE,
+        supervisor_verification VARCHAR(255)
+      );
+    `);
+
+    // 5. 21 CFR Part 11 Dual Electronic Signatures (FDA 21 CFR 11.50 / 11.200)
+    await safeAlter(`
+      CREATE TABLE IF NOT EXISTS electronic_signatures (
+        id VARCHAR(255) PRIMARY KEY,
+        record_id VARCHAR(255) NOT NULL,
+        record_type VARCHAR(100) NOT NULL,
+        signer_name VARCHAR(255) NOT NULL,
+        signer_role VARCHAR(100) NOT NULL,
+        signer_id VARCHAR(100),
+        signature_intent VARCHAR(255) NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT now(),
+        sha256_hash VARCHAR(255) NOT NULL,
+        verification_status VARCHAR(50) DEFAULT 'VALID'
+      );
+    `);
+
+    // Seed cGMP records if empty
+    const existingDeviations = await pool.query('SELECT count(*) FROM cgmp_deviations');
+    if (parseInt(existingDeviations.rows[0].count, 10) === 0) {
+      console.log('Seeding initial cGMP deviations & CAPAs...');
+      await pool.query(`
+        INSERT INTO cgmp_deviations 
+        (id, deviation_number, batch_id, stage_name, title, classification, deviation_type, parameter_involved, observed_value, limit_specified, root_cause_category, root_cause_details, capa_action, preventive_action, assigned_qa, status, logged_by, created_at)
+        VALUES 
+        ('dev-001', 'DEV-2026-089', 'LOT-PCM-2026-01', 'Granulation', 'Transient Torque Surge in High-Shear Impeller', 'MINOR', 'OOT', 'Impeller Torque Peak', '19.4 N·m', '12.0 - 18.0 N·m', 'Machine', 'Viscous binder atomization spray nozzle pressure dropped temporarily by 0.3 bar.', 'Cleaned liquid binder delivery nozzle and verified spray pattern reproducibility.', 'Scheduled weekly nozzle ultrasonic cleaning in preventative maintenance SOP-EQ-014.', 'Dr. S. K. Narayanan (QA Head)', 'CLOSED', 'V. Rajesh (Senior Process Chemist)', now() - interval '2 days'),
+        ('dev-002', 'DEV-2026-092', 'LOT-PCM-2026-01', 'Final Blending', 'Stratified Lubrication Blend RSD Borderline Warning', 'MAJOR', 'OOS', 'Lubrication Blend RSD', '4.4%', '<= 4.0%', 'Method', 'Extended tumble mixing duration caused mild electrostatic agglomeration at tumble top wall.', 'Extended mixing stopped. Stratified 10-point core blend re-sampled per USP <905> with acceptable uniformity.', 'Added optical PAT blend end-point detection in SOP-MFG-302 to prevent over-lubrication.', 'K. Meenakshi (Lead QA Auditor)', 'OPEN', 'M. Anitha (QA Officer)', now() - interval '4 hours')
+        ON CONFLICT DO NOTHING;
+      `);
+    }
+
+    const existingEquipment = await pool.query('SELECT count(*) FROM equipment_qualification');
+    if (parseInt(existingEquipment.rows[0].count, 10) === 0) {
+      console.log('Seeding cGMP equipment qualification records...');
+      await pool.query(`
+        INSERT INTO equipment_qualification 
+        (id, equipment_tag, equipment_name, stage_assigned, cleanroom_location, qualification_status, iq_status, oq_status, pq_status, last_calibration_date, next_calibration_date, calibration_standard, calibration_certificate_id, accuracy_tolerance, status_interlock)
+        VALUES 
+        ('eq-01', 'PAT-NIR-01', 'InGaAs High-Res Fiber NIR Spectrometer', 'Raw Material Receipt', 'Sampling Room ISO 7 / Suite A', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-08-01', '2027-02-01', 'USP <1119> / NIST Polystyrene & Wavelength Traceable Standard', 'CAL-CERT-2026-NIR01', '±0.002 AU Absorbance', true),
+        ('eq-02', 'BAL-WT-02', 'Certified Dual-Range Analytical Balance', 'Dispensing', 'Dispensing Suite ISO 7 / Suite B', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-08-15', '2027-02-15', 'NABL / OIML Class E2 Traceable Weight Set (1mg - 50kg)', 'CAL-CERT-2026-WT02', '±0.01% of span', true),
+        ('eq-03', 'PAT-BLD-03', 'Stratified NIR Micro-Probe', 'Blending', 'Granulation Suite ISO 8 / Suite C', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-07-20', '2027-01-20', 'Spectralon 99% Diffuse Reflectance Standard', 'CAL-CERT-2026-PAT03', '±0.05% RSD', true),
+        ('eq-04', 'FBD-DRY-05', 'Fluidized Bed NIR & RTD Thermal Telemetry', 'Drying', 'Drying Suite ISO 8 / Suite D', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-08-10', '2027-02-10', 'RTD Class A PT100 Calibrator & Karl Fischer Reference', 'CAL-CERT-2026-FBD05', '±0.2 °C Temp / ±0.1% LOD', true),
+        ('eq-05', 'PRS-TAB-07', 'Rotary Tablet Press Force Transducer', 'Compression', 'Compression Suite ISO 7 / Suite E', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-08-25', '2027-02-25', 'Piezoelectric Load Cell NIST Traceable Hydraulic Calibrator', 'CAL-CERT-2026-PRS07', '±0.1 kN Force', true),
+        ('eq-06', 'VIS-CAM-08', '360° AI High-Speed Optical Vision Inspector', 'Final QC', 'Packaging & QC Lab ISO 8 / Suite F', 'QUALIFIED', 'PASSED', 'PASSED', 'PASSED', '2026-09-01', '2027-03-01', 'USAF 1951 Optical Resolution Target & Color Chart', 'CAL-CERT-2026-VIS08', '0.05 mm Defect Resolution', true)
+        ON CONFLICT DO NOTHING;
+      `);
+    }
+
+    const existingEnv = await pool.query('SELECT count(*) FROM environmental_monitoring');
+    if (parseInt(existingEnv.rows[0].count, 10) === 0) {
+      console.log('Seeding cleanroom HVAC environmental records...');
+      await pool.query(`
+        INSERT INTO environmental_monitoring 
+        (id, suite_id, suite_name, cleanroom_grade, differential_pressure_pa, particle_count_05um, particle_count_50um, temperature_c, relative_humidity_pct, air_changes_per_hr, status, recorded_at)
+        VALUES 
+        ('env-01', 'SUITE-A', 'Raw Material Sampling Cleanroom', 'Grade C / ISO 7', 18.5, 124500, 820, 21.2, 44.5, 32.0, 'NORMAL', now() - interval '5 minutes'),
+        ('env-02', 'SUITE-B', 'Dispensing & Weighing Suite', 'Grade C / ISO 7', 22.0, 98200, 640, 20.8, 42.1, 35.0, 'NORMAL', now() - interval '4 minutes'),
+        ('env-03', 'SUITE-C', 'Wet Granulation & Fluid Bed Suite', 'Grade D / ISO 8', 15.2, 850400, 6200, 22.4, 46.8, 22.5, 'NORMAL', now() - interval '3 minutes'),
+        ('env-04', 'SUITE-D', 'Tablet Compression Suite', 'Grade C / ISO 7', 24.8, 142100, 910, 21.0, 43.2, 34.0, 'NORMAL', now() - interval '2 minutes'),
+        ('env-05', 'SUITE-E', 'Finished Product QC & Release Lab', 'Grade D / ISO 8', 16.4, 620300, 4800, 21.5, 45.0, 25.0, 'NORMAL', now() - interval '1 minute')
+        ON CONFLICT DO NOTHING;
+      `);
+    }
+
+    const existingPersonnel = await pool.query('SELECT count(*) FROM personnel_training');
+    if (parseInt(existingPersonnel.rows[0].count, 10) === 0) {
+      console.log('Seeding GMP personnel training records...');
+      await pool.query(`
+        INSERT INTO personnel_training 
+        (id, employee_id, full_name, role, gmp_certification_level, sop_compliance_score, qualified_stages, qualification_status, last_training_date, next_refresher_date, supervisor_verification)
+        VALUES 
+        ('trn-01', 'EMP-GMP-101', 'V. Rajesh', 'Senior Process Chemist', 'GMP Level 3 (Master)', 99.4, '["Raw Material Receipt", "Dispensing", "Blending", "Granulation", "Drying", "Final Blending", "Compression", "Final QC"]', 'CERTIFIED', '2026-07-15', '2027-01-15', 'Dr. S. K. Narayanan (QA Head)'),
+        ('trn-02', 'EMP-GMP-104', 'M. Anitha', 'Quality Control Officer', 'GMP Level 2 (Advanced)', 98.8, '["Raw Material Receipt", "Final Blending", "Final QC"]', 'CERTIFIED', '2026-08-01', '2027-02-01', 'K. Meenakshi (Lead QA Auditor)'),
+        ('trn-03', 'EMP-GMP-109', 'S. Dinesh Kumar', 'Line Operator (Granulation & Compression)', 'GMP Level 2 (Advanced)', 97.5, '["Dispensing", "Granulation", "Drying", "Compression"]', 'CERTIFIED', '2026-08-20', '2027-02-20', 'V. Rajesh (Senior Process Chemist)'),
+        ('trn-04', 'EMP-GMP-201', 'Dr. S. K. Narayanan', 'Director of Quality Assurance', 'GMP Level 3 (QP / QA Executive)', 100.0, '["ALL_STAGES_QA_RELEASE_AUTHORITY"]', 'CERTIFIED', '2026-06-01', '2027-06-01', 'Executive Board Certification')
+        ON CONFLICT DO NOTHING;
+      `);
+    }
+
     console.log('Schema check & workflow seeding complete.');
   } catch (err) {
     console.error('Migration failed:', err);
