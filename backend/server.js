@@ -1,7 +1,11 @@
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const path = require('path');
 const pool = require('./db');
 const runMigrations = require('./runMigrations');
 const { getFullState } = require('./dataAccess');

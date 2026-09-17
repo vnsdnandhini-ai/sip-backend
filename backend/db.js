@@ -9,6 +9,7 @@
 const path = require('path');
 const { Pool } = require('pg');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 require('dotenv').config(); // fallback to cwd
 
 const pool = new Pool({
