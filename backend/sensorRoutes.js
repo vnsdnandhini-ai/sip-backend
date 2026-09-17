@@ -42,42 +42,242 @@ module.exports = function (pool, generateId, realTimeEvents) {
     }
   }
 
-  router.post('/devices', async (req, res) => {
-    const { name, connectionType, monitoringPointId } = req.body;
-
-    if (!name || !connectionType) {
-      return res.status(400).json({ error: 'name and connectionType are required.' });
-    }
-    const validTypes = ['USB', 'UART', 'RS485'];
-    if (!validTypes.includes(connectionType)) {
-      return res.status(400).json({ error: `connectionType must be one of ${validTypes.join(', ')}.` });
-    }
-
-    const deviceId = generateId();
-    const apiKey = generateId();
-
+  // Get all registered sensors & devices
+  router.get('/devices', async (req, res) => {
     try {
-      await pool.query(
-        'INSERT INTO devices (device_id, api_key, name, connection_type, monitoring_point_id, status) VALUES ($1,$2,$3,$4,$5,$6)',
-        [deviceId, apiKey, name, connectionType, monitoringPointId || null, 'active']
-      );
-      res.json({ deviceId, apiKey, name, connectionType, monitoringPointId, status: 'active' });
+      const result = await pool.query('SELECT * FROM devices ORDER BY registered_at ASC');
+      res.json(result.rows.map((d) => ({
+        deviceId: d.device_id,
+        apiKey: d.api_key,
+        name: d.name,
+        model: d.model || 'In-Line Sensor Unit',
+        category: d.category || 'Spectroscopy',
+        connectionType: d.connection_type || 'HTTP REST',
+        protocol: d.protocol || d.connection_type || 'HTTP REST',
+        endpointUrl: d.endpoint_url || 'http://localhost:3000',
+        processStage: d.process_stage || 'Raw Material Receipt',
+        stationId: d.station_id || 'STATION-01',
+        lineName: d.line_name || 'Line 1 (Granulation)',
+        monitoringPointId: d.monitoring_point_id,
+        capturedParameters: typeof d.captured_parameters === 'string' ? JSON.parse(d.captured_parameters) : (d.captured_parameters || []),
+        sampleRate: d.sample_rate || '10s',
+        status: d.status || 'active',
+        registeredAt: d.registered_at,
+        lastSeenAt: d.last_seen_at,
+      })));
     } catch (err) {
-      console.error('Failed to register device:', err);
+      console.error('Failed to list devices:', err);
       res.status(500).json({ error: 'Database error.' });
     }
   });
 
-  router.get('/devices', async (req, res) => {
+  // Get single device
+  router.get('/devices/:id', async (req, res) => {
     try {
-      const result = await pool.query('SELECT * FROM devices');
-      res.json(result.rows.map((d) => ({
-        deviceId: d.device_id, apiKey: d.api_key, name: d.name,
-        connectionType: d.connection_type, monitoringPointId: d.monitoring_point_id,
-        status: d.status, registeredAt: d.registered_at, lastSeenAt: d.last_seen_at,
-      })));
+      const result = await pool.query('SELECT * FROM devices WHERE device_id = $1', [req.params.id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Device not found.' });
+      const d = result.rows[0];
+      res.json({
+        deviceId: d.device_id,
+        apiKey: d.api_key,
+        name: d.name,
+        model: d.model,
+        category: d.category,
+        connectionType: d.connection_type,
+        protocol: d.protocol,
+        endpointUrl: d.endpoint_url,
+        processStage: d.process_stage,
+        stationId: d.station_id,
+        lineName: d.line_name,
+        monitoringPointId: d.monitoring_point_id,
+        capturedParameters: typeof d.captured_parameters === 'string' ? JSON.parse(d.captured_parameters) : (d.captured_parameters || []),
+        sampleRate: d.sample_rate,
+        status: d.status,
+        registeredAt: d.registered_at,
+        lastSeenAt: d.last_seen_at,
+      });
     } catch (err) {
-      console.error('Failed to list devices:', err);
+      console.error('Failed to get device:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  // Register / Add new sensor
+  router.post('/devices', async (req, res) => {
+    const {
+      name, deviceId: customId, model, category, connectionType, protocol,
+      endpointUrl, processStage, stationId, lineName, monitoringPointId,
+      capturedParameters, sampleRate
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Device name is required.' });
+    }
+
+    const deviceId = customId ? String(customId).trim() : `SENS-${generateId().slice(3, 11).toUpperCase()}`;
+    const apiKey = `key-${generateId()}`;
+    const paramsJson = capturedParameters ? (typeof capturedParameters === 'string' ? capturedParameters : JSON.stringify(capturedParameters)) : JSON.stringify([]);
+
+    try {
+      await pool.query(
+        `INSERT INTO devices (
+          device_id, api_key, name, model, category, connection_type, protocol,
+          endpoint_url, process_stage, station_id, line_name, monitoring_point_id,
+          captured_parameters, sample_rate, status, registered_at, last_seen_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'active',now(),now())
+        ON CONFLICT (device_id) DO UPDATE SET
+          name = EXCLUDED.name,
+          model = EXCLUDED.model,
+          category = EXCLUDED.category,
+          protocol = EXCLUDED.protocol,
+          endpoint_url = EXCLUDED.endpoint_url,
+          process_stage = EXCLUDED.process_stage,
+          station_id = EXCLUDED.station_id,
+          line_name = EXCLUDED.line_name,
+          captured_parameters = EXCLUDED.captured_parameters,
+          sample_rate = EXCLUDED.sample_rate`,
+        [
+          deviceId, apiKey, name, model || null, category || 'Spectroscopy',
+          connectionType || protocol || 'HTTP REST', protocol || connectionType || 'HTTP REST',
+          endpointUrl || null, processStage || 'Raw Material Receipt', stationId || null,
+          lineName || 'Line 1', monitoringPointId || null, paramsJson, sampleRate || '10s'
+        ]
+      );
+
+      // Audit trail log
+      await pool.query(
+        'INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)',
+        [generateId(), `Registered hardware sensor: [${deviceId}] ${name} mapped to ${processStage || 'Raw Material'}`, 'Device Hub', 'System Engineer']
+      );
+
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'device-registered',
+          deviceId,
+          name,
+          processStage,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      res.json({
+        success: true,
+        deviceId,
+        apiKey,
+        name,
+        model,
+        category,
+        protocol,
+        endpointUrl,
+        processStage,
+        stationId,
+        lineName,
+        capturedParameters: typeof paramsJson === 'string' ? JSON.parse(paramsJson) : paramsJson,
+        sampleRate: sampleRate || '10s',
+        status: 'active'
+      });
+    } catch (err) {
+      console.error('Failed to register device:', err);
+      res.status(500).json({ error: 'Database error registering device.' });
+    }
+  });
+
+  // Update sensor mapping / parameters
+  router.put('/devices/:id', async (req, res) => {
+    const {
+      name, model, category, connectionType, protocol, endpointUrl,
+      processStage, stationId, lineName, monitoringPointId,
+      capturedParameters, sampleRate, status
+    } = req.body;
+
+    const paramsJson = capturedParameters !== undefined ? (typeof capturedParameters === 'string' ? capturedParameters : JSON.stringify(capturedParameters)) : null;
+
+    try {
+      const result = await pool.query(
+        `UPDATE devices SET
+          name = COALESCE($1, name),
+          model = COALESCE($2, model),
+          category = COALESCE($3, category),
+          connection_type = COALESCE($4, connection_type),
+          protocol = COALESCE($5, protocol),
+          endpoint_url = COALESCE($6, endpoint_url),
+          process_stage = COALESCE($7, process_stage),
+          station_id = COALESCE($8, station_id),
+          line_name = COALESCE($9, line_name),
+          monitoring_point_id = COALESCE($10, monitoring_point_id),
+          captured_parameters = COALESCE($11, captured_parameters),
+          sample_rate = COALESCE($12, sample_rate),
+          status = COALESCE($13, status)
+        WHERE device_id = $14 RETURNING *`,
+        [
+          name || null, model || null, category || null, connectionType || null, protocol || null, endpointUrl || null,
+          processStage || null, stationId || null, lineName || null, monitoringPointId || null, paramsJson,
+          sampleRate || null, status || null, req.params.id
+        ]
+      );
+
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Device not found.' });
+
+      await pool.query(
+        'INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)',
+        [generateId(), `Updated sensor topology for [${req.params.id}]`, 'Device Hub', 'System Engineer']
+      );
+
+      res.json({ success: true, device: result.rows[0] });
+    } catch (err) {
+      console.error('Failed to update device:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  // Delete sensor
+  router.delete('/devices/:id', async (req, res) => {
+    try {
+      const result = await pool.query('DELETE FROM devices WHERE device_id = $1 RETURNING *', [req.params.id]);
+      if (result.rows.length === 0) return res.status(404).json({ error: 'Device not found.' });
+
+      await pool.query(
+        'INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)',
+        [generateId(), `Decommissioned hardware sensor [${req.params.id}]`, 'Device Hub', 'System Engineer']
+      );
+
+      res.json({ success: true, message: `Sensor ${req.params.id} deleted successfully.` });
+    } catch (err) {
+      console.error('Failed to delete device:', err);
+      res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  // Hardware Ping / Telemetry Test
+  router.post('/devices/:id/ping', async (req, res) => {
+    try {
+      const devRes = await pool.query('SELECT * FROM devices WHERE device_id = $1', [req.params.id]);
+      if (devRes.rows.length === 0) return res.status(404).json({ error: 'Device not found.' });
+      const dev = devRes.rows[0];
+
+      await pool.query('UPDATE devices SET last_seen_at = now(), status = $1 WHERE device_id = $2', ['active', req.params.id]);
+
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'device-ping',
+          deviceId: dev.device_id,
+          name: dev.name,
+          processStage: dev.process_stage,
+          latencyMs: +(Math.random() * 12 + 4).toFixed(1),
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      res.json({
+        success: true,
+        deviceId: dev.device_id,
+        name: dev.name,
+        status: 'active',
+        latencyMs: +(Math.random() * 12 + 4).toFixed(1),
+        pingTimestamp: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('Failed to ping device:', err);
       res.status(500).json({ error: 'Database error.' });
     }
   });

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensors & Hardware Topology - Spectroscopic Intelligence Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <style>
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+    .sensor-card {
+      background: var(--surface, #ffffff);
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: 14px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sensor-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.07);
+      border-color: #cbd5e1;
+    }
+    .sensor-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .sensor-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+    .sensor-model {
+      font-size: 0.82rem;
+      color: #64748b;
+      font-family: monospace;
+    }
+    .topology-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 0.85rem;
+      margin-bottom: 0.85rem;
+    }
+    .topology-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topology-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.83rem;
+      margin-bottom: 0.35rem;
+    }
+    .topology-label {
+      color: #64748b;
+    }
+    .topology-val {
+      font-weight: 600;
+      color: #1e293b;
+      text-align: right;
+    }
+    .capture-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .capture-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: #166534;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .param-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px solid #86efac;
+      color: #15803d;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .sensor-card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: 0.75rem;
+      border-top: 1px solid #f1f5f9;
+    }
+    .sensor-card-actions .button {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.8rem;
+      flex: 1;
+      min-width: 75px;
+      text-align: center;
+      justify-content: center;
+    }
+    .live-ping-pulse {
+      animation: ping-pulse 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    @keyframes ping-pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .param-entry-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr 36px;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 16 Q5 8, 8 16 T14 16 T20 16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="8" r="2.5" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="brand-text">Spectroscopic Intelligence</div>
+      </div>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="batches">Batch Management</button>
+        <button class="nav-link" data-page="workflow">Process Workflow</button>
+        <button class="nav-link active" data-page="sensors">Sensors & Hardware</button>
+        <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+        <button class="nav-link" data-page="parameters">Process Parameters</button>
+        <button class="nav-link" data-page="checkout">Checkout Conditions</button>
+        <button class="nav-link" data-page="rules">Regulatory Rules</button>
+        <button class="nav-link" data-page="data-entry">Analytical Data</button>
+        <button class="nav-link" data-page="gallery">Image Gallery</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Reports & Audit</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Sensors & Hardware Topology</h2>
+          <div class="topbar-breadcrumb">Hardware Device Hub • PAT Instrument Mapping • Telemetry Ingestion</div>
+        </div>
+        <div class="topbar-right" style="flex-wrap: wrap; gap: 8px;">
+          <button class="button button--secondary" onclick="simulateAllTelemetry()">⚡ Ping All Sensors</button>
+          <button class="button button--primary" onclick="openAddSensorModal()">+ Register New Sensor</button>
+          <button class="button button--secondary" id="signOutButton">Sign Out</button>
+        </div>
+      </header>
+
+      <section class="content-section">
+        
+        <!-- Summary Metric Cards -->
+        <div class="grid grid--4cols" style="margin-bottom: 1.5rem;">
+          <div class="card card--metric">
+            <span class="label">Total Registered Instruments</span>
+            <span class="value" id="metricTotalSensors">0</span>
+            <span class="subtext">PAT Probes & Industrial Sensors</span>
+          </div>
+          <div class="card card--metric status-good">
+            <span class="label">Online & Streaming</span>
+            <span class="value" id="metricOnlineSensors">0</span>
+            <span class="subtext">Real-time SSE Hardware Feeds</span>
+          </div>
+          <div class="card card--metric">
+            <span class="label">Equipped Stages</span>
+            <span class="value" id="metricMappedStages">0</span>
+            <span class="subtext">Of 8 Configured Process Steps</span>
+          </div>
+          <div class="card card--metric">
+            <span class="label">Active Measurement Channels</span>
+            <span class="value" id="metricTotalChannels">0</span>
+            <span class="subtext">Live Critical Process Parameters (CPP)</span>
+          </div>
+        </div>
+
+        <!-- Filter & Search Action Bar -->
+        <div class="card" style="padding: 1rem 1.25rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+              <input type="search" id="sensorSearchInput" placeholder="Search by name, model, station, or stage..." style="min-width: 240px; padding: 0.5rem 0.85rem;" oninput="applySensorFilters()" />
+              
+              <select id="stageFilterSelect" style="padding: 0.5rem 0.75rem;" onchange="applySensorFilters()">
+                <option value="all">All Process Stages</option>
+                <option value="Raw Material Receipt">Stage 1: Raw Material Receipt</option>
+                <option value="Dispensing">Stage 2: Dispensing</option>
+                <option value="Blending">Stage 3: Blending</option>
+                <option value="Granulation">Stage 4: Granulation</option>
+                <option value="Drying">Stage 5: Drying</option>
+                <option value="Final Blending">Stage 6: Final Blending</option>
+                <option value="Compression">Stage 7: Compression</option>
+                <option value="Final QC">Stage 8: Final QC</option>
+              </select>
+
+              <select id="categoryFilterSelect" style="padding: 0.5rem 0.75rem;" onchange="applySensorFilters()">
+                <option value="all">All Categories</option>
+                <option value="NIR Spectroscopy">NIR Spectroscopy</option>
+                <option value="Gravimetric / Load Cell">Gravimetric / Load Cell</option>
+                <option value="Vision Camera & HPLC">Vision Camera & HPLC</option>
+                <option value="Torque / Rheology">Torque / Rheology</option>
+                <option value="Thermal & Moisture">Thermal & Moisture</option>
+                <option value="Piezoelectric / Force">Piezoelectric / Force</option>
+              </select>
+
+              <select id="protocolFilterSelect" style="padding: 0.5rem 0.75rem;" onchange="applySensorFilters()">
+                <option value="all">All Protocols</option>
+                <option value="HTTP REST">HTTP REST</option>
+                <option value="Modbus TCP">Modbus TCP</option>
+                <option value="RS485">RS485 / Serial</option>
+                <option value="MQTT">MQTT Broker</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="button button--secondary" onclick="loadSensorsHub()" title="Reload Sensors">Refresh</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensors Hub Container -->
+        <div id="sensorsContainer" class="sensor-grid">
+          <!-- Dynamically populated by JS -->
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
+            Loading registered sensors and hardware interfaces...
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Register / Edit Sensor -->
+  <div class="modal-backdrop hidden" id="sensorModalBackdrop" onclick="closeSensorModal()"></div>
+  <div class="modal hidden" id="sensorModal" style="max-width: 780px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+      <h3 id="sensorModalTitle" style="margin: 0; font-size: 1.2rem; color: #0f172a;">Register Hardware Sensor</h3>
+      <button type="button" class="button button--secondary" onclick="closeSensorModal()" style="padding: 4px 10px;">✕</button>
+    </div>
+
+    <form id="sensorConfigForm" onsubmit="event.preventDefault(); saveSensorConfiguration();">
+      <input type="hidden" id="editSensorId" value="" />
+
+      <!-- Section 1: Identity -->
+      <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">
+        1. Sensor & Instrument Identity
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label>Device / Sensor Name *</label>
+          <input type="text" id="sensorNameInput" placeholder="e.g. InGaAs FT-NIR Fiber Spectrometer" required />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Device ID / Asset Tag *</label>
+          <input type="text" id="sensorTagInput" placeholder="e.g. PAT-NIR-01" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Hardware Model / Transducer Core</label>
+          <input type="text" id="sensorModelInput" placeholder="e.g. Brimrose Luminar 5030 InGaAs Core" />
+        </div>
+        <div class="form-group">
+          <label>Category / Measurement Principle</label>
+          <select id="sensorCategorySelect">
+            <option value="NIR Spectroscopy">NIR Spectroscopy</option>
+            <option value="Gravimetric / Load Cell">Gravimetric / Load Cell</option>
+            <option value="Torque / Rheology">Torque / Rheology</option>
+            <option value="Thermal & Moisture">Thermal & Moisture</option>
+            <option value="Piezoelectric / Force">Piezoelectric / Force</option>
+            <option value="Vision Camera & HPLC">Vision Camera & HPLC</option>
+            <option value="Analytical Chemistry / pH">Analytical Chemistry / pH</option>
+            <option value="Environmental Transducer">Environmental Transducer</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 2: Where It Connects -->
+      <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b; margin: 16px 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">
+        2. Where It Connects (Hardware & Process Topology)
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mapped Manufacturing Stage *</label>
+          <select id="sensorStageSelect" required>
+            <option value="Raw Material Receipt">Stage 1: Raw Material Receipt</option>
+            <option value="Dispensing">Stage 2: Dispensing</option>
+            <option value="Blending">Stage 3: Blending</option>
+            <option value="Granulation">Stage 4: Granulation</option>
+            <option value="Drying">Stage 5: Drying</option>
+            <option value="Final Blending">Stage 6: Final Blending</option>
+            <option value="Compression">Stage 7: Compression</option>
+            <option value="Final QC">Stage 8: Final QC</option>
+            <option value="Custom Stage">Custom In-Line Stage</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Station / Suite Location ID</label>
+          <input type="text" id="sensorStationInput" placeholder="e.g. STATION-01 (Dispensing Suite 104)" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Manufacturing Line</label>
+          <input type="text" id="sensorLineInput" value="Line 1 (Granulation)" placeholder="e.g. Line 1 / Line 2" />
+        </div>
+        <div class="form-group">
+          <label>Connection Protocol & Interface</label>
+          <select id="sensorProtocolSelect">
+            <option value="HTTP REST">HTTP REST (JSON Webhook / ESP32)</option>
+            <option value="SSE Stream">Server-Sent Events (SSE) Stream</option>
+            <option value="Modbus TCP">Modbus TCP (Industrial PLC)</option>
+            <option value="RS485">RS-485 / Serial COM (Baud 115200)</option>
+            <option value="MQTT">MQTT Broker (Sparkplug B)</option>
+            <option value="WebSocket">WebSocket (WSS)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Network IP / Port / Topic Endpoint</label>
+          <input type="text" id="sensorEndpointInput" placeholder="e.g. http://192.168.1.101:8080/api/sensor" />
+        </div>
+        <div class="form-group">
+          <label>Sampling Frequency</label>
+          <select id="sensorSampleRateSelect">
+            <option value="100ms">Continuous High-Speed (100ms)</option>
+            <option value="1s">1 Second (1 Hz)</option>
+            <option value="5s">5 Seconds</option>
+            <option value="10s" selected>10 Seconds (Standard PAT)</option>
+            <option value="30s">30 Seconds</option>
+            <option value="1min">1 Minute</option>
+            <option value="per_batch">Per Batch / Manual Trigger</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Section 3: What It Captures -->
+      <div style="font-weight: 700; font-size: 0.9rem; color: #1e293b; margin: 16px 0 8px 0; display: flex; justify-content: space-between; align-items: center;">
+        <span style="text-transform: uppercase; letter-spacing: 0.05em;">3. What It Captures (Measurement Channels)</span>
+        <button type="button" class="button button--secondary" style="padding: 2px 8px; font-size: 0.78rem;" onclick="addParameterRow()">+ Add Parameter Channel</button>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 36px; gap: 8px; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px; padding: 0 4px;">
+          <span>PARAMETER NAME</span>
+          <span>UNIT</span>
+          <span>DATA TYPE</span>
+          <span>SPEC / TOLERANCE</span>
+          <span></span>
+        </div>
+        <div id="parameterRowsContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <button type="button" class="button button--secondary" onclick="closeSensorModal()">Cancel</button>
+        <button type="submit" class="button button--primary" id="saveSensorSubmitBtn">Save Sensor Configuration</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Modal: Hardware Integration & Code Generator -->
+  <div class="modal-backdrop hidden" id="snippetModalBackdrop" onclick="closeSnippetModal()"></div>
+  <div class="modal hidden" id="snippetModal" style="max-width: 780px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+      <div>
+        <h3 id="snippetModalTitle" style="margin: 0; font-size: 1.15rem; color: #0f172a;">Hardware Ingestion Code Generator</h3>
+        <p id="snippetModalSubtitle" style="margin: 4px 0 0 0; font-size: 0.82rem; color: #64748b;">Ready-to-flash code for your microcontroller or instrument</p>
+      </div>
+      <button type="button" class="button button--secondary" onclick="closeSnippetModal()" style="padding: 4px 10px;">✕</button>
+    </div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+      <button class="button button--primary" id="tabBtnEsp32" onclick="switchSnippetTab('esp32')" style="padding: 4px 12px; font-size: 0.8rem;">ESP32 C++</button>
+      <button class="button button--secondary" id="tabBtnPython" onclick="switchSnippetTab('python')" style="padding: 4px 12px; font-size: 0.8rem;">Python Script</button>
+      <button class="button button--secondary" id="tabBtnCurl" onclick="switchSnippetTab('curl')" style="padding: 4px 12px; font-size: 0.8rem;">cURL REST</button>
+    </div>
+
+    <pre id="snippetCodeBlock" style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 8px; font-size: 0.82rem; overflow-x: auto; max-height: 380px; font-family: monospace;"></pre>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
+      <span style="font-size: 0.82rem; color: #64748b;" id="snippetAuthNote">Using Secure API Key Authentication</span>
+      <button class="button button--primary" onclick="copySnippetCode()">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/sensors.js"></script>
+</body>
+</html>
