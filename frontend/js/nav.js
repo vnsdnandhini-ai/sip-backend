@@ -33,6 +33,7 @@
       'analytical': 'Analytical Data',
       'gallery': 'Image Gallery',
       'compliance': 'Compliance Engine',
+      'cgmp': 'cGMP & Industrial Standards',
       'reports': 'Reports & Audit',
       'settings': 'Settings'
     };
@@ -58,6 +59,7 @@
         'data-entry': 'analytical.html',
         'gallery': 'imagegallery.html',
         'compliance': 'compliance.html',
+        'cgmp': 'cgmp-standards.html',
         'reports': 'reports.html',
         'settings': 'settings.html',
         'audit': 'reports.html?tab=audit'
@@ -85,6 +87,7 @@
     'imagegallery': 'gallery',
     'live-camera': 'gallery',
     'compliance': 'compliance',
+    'cgmp-standards': 'cgmp',
     'reports': 'reports',
     'settings': 'settings',
     'audit': 'reports'

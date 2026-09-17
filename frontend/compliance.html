@@ -30,6 +30,7 @@
         <button class="nav-link" data-page="data-entry">Analytical Data</button>
         <button class="nav-link" data-page="gallery">Image Gallery</button>
         <button class="nav-link active" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="cgmp">cGMP Standards</button>
         <button class="nav-link" data-page="reports">Reports & Audit</button>
         <button class="nav-link" data-page="settings">Settings</button>
       </nav>
@@ -42,10 +43,8 @@
           <h2 id="pageTitle">Compliance Engine</h2>
           <div class="topbar-breadcrumb">Cloud-Connected Pharmaceutical QMS</div>
         </div>
-        <div class="topbar-right">
-          <div class="search-wrapper">
-            <input id="globalSearch" type="search" placeholder="Search modules, projects, records..." />
-          </div>
+        <div class="topbar-right" style="flex-wrap: wrap; gap: 8px;">
+          <button class="button button--secondary" style="white-space: nowrap; padding: 0.55rem 0.95rem; font-size: 0.85rem;" onclick="window.location.href='cgmp-standards.html'">cGMP Standards Hub →</button>
           <button class="button button--secondary" id="signOutButton">Sign Out</button>
         </div>
       </header>
@@ -56,8 +55,11 @@
             <h3>Compliance Evaluation Engine</h3>
             <p>Validate data against checkout conditions, identify deviations, and generate corrective guidance.</p>
           </div>
-<button class="button button--primary" id="runCompliance">Run Evaluation</button>
-<button class="button button--secondary" id="clearComplianceResults">Clear Results</button>
+          <div style="display:flex; gap:8px;">
+            <button class="button button--primary" id="runCompliance">Run Evaluation</button>
+            <button class="button button--secondary" id="clearComplianceResults">Clear Results</button>
+            <button class="button button--secondary" onclick="window.location.href='cgmp-standards.html?tab=deviations'">View cGMP Deviations</button>
+          </div>
         </div>
         <div class="filter-buttons">
           <button class="filter-button active" data-filter="all" onclick="setComplianceFilter('all')">All</button>
