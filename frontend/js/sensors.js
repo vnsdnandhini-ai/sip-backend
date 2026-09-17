@@ -88,43 +88,80 @@ function renderSensorsTable() {
   tbody.innerHTML = filtered.map(s => {
     const isOnline = s.status === 'active';
     const params = Array.isArray(s.capturedParameters) ? s.capturedParameters : [];
-    const paramsSummary = params.length > 0 
-      ? params.map(p => typeof p === 'string' ? p : `${p.name} (${p.unit || ''})`).join(', ')
-      : '<span style="color:#94a3b8;">Not configured</span>';
+    
+    // Parameter Tag Chips (Max 2 inline chips + count badge)
+    let paramsHtml = '<span style="color:#94a3b8; font-size:0.75rem; font-style:italic;">None</span>';
+    if (params.length > 0) {
+      const paramNames = params.map(p => typeof p === 'string' ? p : p.name).filter(Boolean);
+      const firstTwo = paramNames.slice(0, 2);
+      const remaining = paramNames.length - 2;
+      const fullList = escapeHtml(paramNames.join(', '));
+      
+      paramsHtml = `<div style="display:flex; gap:3px; flex-wrap:wrap; align-items:center;">`;
+      firstTwo.forEach(name => {
+        const shortName = name.length > 16 ? name.slice(0, 14) + '…' : name;
+        paramsHtml += `<span class="param-chip" title="${escapeHtml(name)}">${escapeHtml(shortName)}</span>`;
+      });
+      if (remaining > 0) {
+        paramsHtml += `<span class="param-chip-more" title="All parameters: ${fullList}">+${remaining}</span>`;
+      }
+      paramsHtml += `</div>`;
+    }
 
     const stageDisplay = s.processStage ? s.processStage : 'Raw Material Receipt';
-    const stationDisplay = s.stationId ? s.stationId : 'STATION-01';
+    const stationDisplay = s.stationId ? s.stationId.replace(/\s*\([^)]*\)/g, '') : 'STATION-01';
+    const lineDisplay = s.lineName || 'Line 1';
     const protocolDisplay = s.protocol || s.connectionType || 'HTTP REST';
+    
+    let cleanEndpoint = s.endpointUrl || '';
+    if (cleanEndpoint.startsWith('http://')) cleanEndpoint = cleanEndpoint.replace('http://', '');
+    if (cleanEndpoint.startsWith('https://')) cleanEndpoint = cleanEndpoint.replace('https://', '');
+    if (cleanEndpoint.length > 20) cleanEndpoint = cleanEndpoint.slice(0, 18) + '…';
 
     return `
       <tr id="row-${s.deviceId}">
-        <td>
-          <strong>${escapeHtml(s.name)}</strong>
-          ${s.model ? `<div style="font-size:0.78rem; color:#64748b;">${escapeHtml(s.model)}</div>` : ''}
+        <td style="vertical-align:middle;">
+          <div style="font-weight:700; color:#0f172a; font-size:0.88rem; line-height:1.2;">${escapeHtml(s.name)}</div>
+          ${s.model ? `<div style="font-size:0.74rem; color:#64748b; margin-top:1px;">${escapeHtml(s.model)}</div>` : ''}
         </td>
-        <td><code>${escapeHtml(s.deviceId)}</code></td>
-        <td>
-          <span style="font-weight:600; color:#2563eb;">${escapeHtml(stageDisplay)}</span>
-          <div style="font-size:0.78rem; color:#64748b;">Station: ${escapeHtml(stationDisplay)} • ${escapeHtml(s.lineName || 'Line 1')}</div>
+        <td style="vertical-align:middle;">
+          <code style="font-size:0.78rem; font-weight:600; padding:2px 5px; background:#f1f5f9; border-radius:4px; border:1px solid #e2e8f0; color:#0f172a;">${escapeHtml(s.deviceId)}</code>
         </td>
-        <td>
-          <span class="badge badge--neutral">${escapeHtml(protocolDisplay)}</span>
-          ${s.endpointUrl ? `<div style="font-size:0.75rem; color:#64748b; font-family:monospace;">${escapeHtml(s.endpointUrl)}</div>` : ''}
+        <td style="vertical-align:middle;">
+          <div style="font-weight:600; color:#2563eb; font-size:0.83rem; line-height:1.2;">${escapeHtml(stageDisplay)}</div>
+          <div style="font-size:0.73rem; color:#64748b; margin-top:1px;">${escapeHtml(stationDisplay)} • ${escapeHtml(lineDisplay)}</div>
         </td>
-        <td style="max-width:280px; font-size:0.85rem;">${paramsSummary}</td>
-        <td>
-          <span class="badge ${isOnline ? 'badge--pass' : 'badge--neutral'}">
+        <td style="vertical-align:middle;">
+          <span class="badge badge--neutral" style="font-size:0.70rem; padding:1px 5px;">${escapeHtml(protocolDisplay)}</span>
+          ${cleanEndpoint ? `<div style="font-size:0.70rem; color:#64748b; font-family:monospace; margin-top:1px;" title="${escapeHtml(s.endpointUrl)}">${escapeHtml(cleanEndpoint)}</div>` : ''}
+        </td>
+        <td style="vertical-align:middle; max-width:200px;">${paramsHtml}</td>
+        <td style="vertical-align:middle; text-align:center;">
+          <span class="badge ${isOnline ? 'badge--pass' : 'badge--neutral'}" style="font-size:0.70rem; padding:1px 6px;">
             <span class="live-dot" style="background:${isOnline ? '#16a34a' : '#94a3b8'};"></span>
             ${isOnline ? 'Active' : 'Offline'}
           </span>
         </td>
-        <td>
-          <div style="display:flex; gap:4px; flex-wrap:wrap;">
-            <button class="table-action-button" onclick="pingSensor('${s.deviceId}')" title="Test Live Ping">Ping</button>
-            <button class="table-action-button" onclick="openCodeSnippet('${s.deviceId}')" title="Integration Code">Code</button>
-            <button class="table-action-button" onclick="openSensorForm('${s.deviceId}')" title="Customize Sensor">Edit</button>
-            <button class="table-action-button" onclick="cloneSensor('${s.deviceId}')" title="Clone / Duplicate Sensor">Clone</button>
-            <button class="table-action-button danger" onclick="deleteSensor('${s.deviceId}')" title="Delete Sensor">Delete</button>
+        <td style="vertical-align:middle; text-align:right; white-space:nowrap;">
+          <div class="sensor-actions-cell">
+            <button class="sensor-btn-action sensor-btn--workflow" onclick="window.location.href='manufacturing-process.html?stage=${encodeURIComponent(stageDisplay)}'" title="View Stage in Process Workflow">
+              <span>↗ Workflow</span>
+            </button>
+            <button class="sensor-btn-action sensor-btn--ping" onclick="pingSensor('${s.deviceId}')" title="Test Live Ping Latency">
+              <span>⚡ Ping</span>
+            </button>
+            <button class="sensor-icon-action" onclick="openCodeSnippet('${s.deviceId}')" title="API & Ingestion Code">
+              <span>💻</span>
+            </button>
+            <button class="sensor-icon-action" onclick="openSensorForm('${s.deviceId}')" title="Configure Sensor">
+              <span>✏️</span>
+            </button>
+            <button class="sensor-icon-action" onclick="cloneSensor('${s.deviceId}')" title="Duplicate Sensor">
+              <span>📋</span>
+            </button>
+            <button class="sensor-icon-action sensor-icon-action--danger" onclick="deleteSensor('${s.deviceId}')" title="Delete Sensor">
+              <span>🗑️</span>
+            </button>
           </div>
         </td>
       </tr>

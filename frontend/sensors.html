@@ -22,8 +22,8 @@
       <nav class="nav-menu" id="navMenu">
         <button class="nav-link" data-page="dashboard">Dashboard</button>
         <button class="nav-link" data-page="batches">Batch Management</button>
-        <button class="nav-link" data-page="workflow">Process Workflow</button>
         <button class="nav-link active" data-page="sensors">Sensors & Hardware</button>
+        <button class="nav-link" data-page="workflow">Process Workflow</button>
         <button class="nav-link" data-page="monitoring">Monitoring Points</button>
         <button class="nav-link" data-page="parameters">Process Parameters</button>
         <button class="nav-link" data-page="checkout">Checkout Conditions</button>
@@ -92,13 +92,13 @@
           <table class="data-table" id="sensorsTable">
             <thead>
               <tr>
-                <th>Sensor / Device</th>
-                <th>Device ID</th>
-                <th>Where It Connects (Stage & Station)</th>
-                <th>Protocol & Interface</th>
-                <th>What It Captures (Parameters)</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th style="min-width: 170px;">Sensor / Device</th>
+                <th style="min-width: 105px;">Device ID</th>
+                <th style="min-width: 155px;">Process Stage & Location</th>
+                <th style="min-width: 125px;">Interface</th>
+                <th style="min-width: 165px;">Monitored Parameters</th>
+                <th style="text-align: center; min-width: 75px;">Status</th>
+                <th style="text-align: right; width: 195px; min-width: 190px;">Actions</th>
               </tr>
             </thead>
             <tbody id="sensorsTableBody">
@@ -109,11 +109,11 @@
 
         <!-- Workflow Step Navigator Footer -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:12px;">
-          <button class="button button--secondary" onclick="window.location.href='manufacturing-process.html'">
-            ← Back to Process Workflow
+          <button class="button button--secondary" onclick="window.location.href='batches.html'">
+            ← Back to Batch Management
           </button>
-          <button class="button button--primary" onclick="window.location.href='monitoring.html'">
-            Proceed to Monitoring Points →
+          <button class="button button--primary" onclick="window.location.href='manufacturing-process.html'">
+            Proceed to Process Workflow →
           </button>
         </div>
       </section>

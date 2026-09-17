@@ -223,6 +223,16 @@ module.exports = function (pool, generateId, realTimeEvents) {
         [generateId(), `Updated sensor topology for [${req.params.id}]`, 'Device Hub', 'System Engineer']
       );
 
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'device-updated',
+          deviceId: req.params.id,
+          device: result.rows[0],
+          processStage: result.rows[0].process_stage,
+          timestamp: new Date().toISOString()
+        });
+      }
+
       res.json({ success: true, device: result.rows[0] });
     } catch (err) {
       console.error('Failed to update device:', err);
@@ -240,6 +250,14 @@ module.exports = function (pool, generateId, realTimeEvents) {
         'INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)',
         [generateId(), `Decommissioned hardware sensor [${req.params.id}]`, 'Device Hub', 'System Engineer']
       );
+
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'device-deleted',
+          deviceId: req.params.id,
+          timestamp: new Date().toISOString()
+        });
+      }
 
       res.json({ success: true, message: `Sensor ${req.params.id} deleted successfully.` });
     } catch (err) {

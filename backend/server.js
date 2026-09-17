@@ -580,9 +580,10 @@ const STAGE_SENSOR_PROFILES = {
   }
 };
 
-function getCanonicalStageName(inputStage) {
-  if (!inputStage) return 'Raw Material Receipt';
+function getCanonicalStageName(inputStage, defaultVal = '') {
+  if (!inputStage) return defaultVal;
   const q = String(inputStage).toLowerCase().trim();
+  if (!q) return defaultVal;
   if (q.includes('final blend') || q.includes('lubricat') || q === '6' || q === 'stage 6') return 'Final Blending';
   if (q.includes('pre-blend') || q.includes('blending') || q.includes('dry mix') || q.includes('mixing') || q === '3' || q === 'stage 3') return 'Blending';
   if (q.includes('dispens') || q.includes('weigh') || q === '2' || q === 'stage 2') return 'Dispensing';
@@ -786,63 +787,186 @@ app.get('/api/compliance/industrial-norms', async (req, res) => {
   }
 });
 
-// GET Live Sensor Telemetry for a specific stage & batch (Dynamic & Generic)
+// GET Live Sensor Telemetry for a specific stage & batch (Dynamic & Generic, linked to Devices table)
 app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
   const batchId = req.params.id;
   const rawStage = req.query.stage || 'Raw Material Receipt';
-  const canonicalStage = getCanonicalStageName(rawStage);
+  const canonicalStage = getCanonicalStageName(rawStage, 'Raw Material Receipt');
 
   try {
-    const [batchRes, readingsRes, dispensingRes] = await Promise.all([
+    const [batchRes, readingsRes, dispensingRes, devicesRes] = await Promise.all([
       pool.query('SELECT * FROM projects WHERE id = $1', [batchId]),
       pool.query(
         `SELECT * FROM analytical_data
          WHERE project_id = $1 AND (process_stage ILIKE $2 OR process_stage ILIKE $3)
-         ORDER BY received_at DESC LIMIT 50`,
+         ORDER BY received_at DESC LIMIT 100`,
         [batchId, canonicalStage, `%${canonicalStage}%`]
       ),
       canonicalStage === 'Dispensing'
         ? pool.query('SELECT * FROM dispensing_logs WHERE batch_id = $1 ORDER BY timestamp DESC LIMIT 5', [batchId])
-        : Promise.resolve({ rows: [] })
+        : Promise.resolve({ rows: [] }),
+      pool.query('SELECT * FROM devices ORDER BY registered_at ASC')
     ]);
 
     const batch = batchRes.rows[0] || null;
     const existingReadings = readingsRes.rows || [];
     const dispensingLogs = dispensingRes.rows || [];
+    const allDevices = devicesRes.rows || [];
 
-    // Check if standard profile exists
-    let profile = STAGE_SENSOR_PROFILES[canonicalStage];
+    // Match registered devices from the sensors table for this stage using canonical matching
+    const matchingDevices = allDevices.filter((d) => {
+      if (!d.process_stage) return false;
+      const devCanonical = getCanonicalStageName(d.process_stage, '').toLowerCase();
+      const targetCanonical = canonicalStage.toLowerCase();
+      const rawMatch = (d.process_stage || '').toLowerCase().trim() === rawStage.toLowerCase().trim();
+      return (devCanonical && devCanonical === targetCanonical) || rawMatch;
+    }).sort((a, b) => {
+      // Prioritize devices with custom configured parameters or recent activity
+      const paramsA = Array.isArray(a.captured_parameters) ? a.captured_parameters.length : (typeof a.captured_parameters === 'string' ? JSON.parse(a.captured_parameters || '[]').length : 0);
+      const paramsB = Array.isArray(b.captured_parameters) ? b.captured_parameters.length : (typeof b.captured_parameters === 'string' ? JSON.parse(b.captured_parameters || '[]').length : 0);
+      return paramsB - paramsA;
+    });
 
-    // If not in standard 8 profiles, check custom batch stages or generate generic profile
-    if (!profile) {
-      let customStageObj = null;
-      if (batch && batch.custom_stages) {
-        const cStages = typeof batch.custom_stages === 'string' ? JSON.parse(batch.custom_stages) : batch.custom_stages;
-        customStageObj = Array.isArray(cStages) ? cStages.find(s => s.name.toLowerCase() === rawStage.toLowerCase() || s.name.toLowerCase() === canonicalStage.toLowerCase()) : null;
-      }
+    const connectedDevices = matchingDevices.map((d) => ({
+      deviceId: d.device_id,
+      name: d.name,
+      model: d.model || '',
+      category: d.category || 'Spectroscopy',
+      protocol: d.protocol || d.connection_type || 'HTTP REST',
+      endpointUrl: d.endpoint_url || '',
+      processStage: d.process_stage,
+      stationId: d.station_id || 'STATION-01',
+      lineName: d.line_name || 'Line 1',
+      sampleRate: d.sample_rate || '10s',
+      status: d.status || 'active',
+      lastSeenAt: d.last_seen_at,
+      capturedParameters: typeof d.captured_parameters === 'string' ? JSON.parse(d.captured_parameters) : (d.captured_parameters || [])
+    }));
 
-      if (customStageObj && customStageObj.parameters) {
-        profile = {
-          stageIndex: customStageObj.id || 1,
-          device: { id: `PAT-SENS-${customStageObj.id || 1}`, name: customStageObj.device || 'In-Line PAT Telemetry Device', type: 'iot_sensor', status: 'ONLINE' },
-          parameters: customStageObj.parameters.map(pName => (typeof pName === 'string' ? { name: pName, instrument: customStageObj.device || 'In-Line Sensor', unit: '%', defaultVal: 95.0, spec: 'Target ±5%' } : pName))
-        };
-      } else {
-        // Fallback generic profile
-        profile = {
-          stageIndex: 1,
-          device: { id: 'GEN-PAT-01', name: `${rawStage} Process Sensor Interface`, type: 'process_telemetry', status: 'ONLINE' },
-          parameters: [
-            { name: `${rawStage} Telemetry Parameter`, instrument: 'Digital Transducer', unit: 'Unit', defaultVal: 100.0, spec: 'Validated Range' },
-            { name: 'Process Temperature', instrument: 'In-Situ RTD Thermal Probe', unit: '°C', defaultVal: 22.5, spec: '19.0 - 25.0 °C' },
-            { name: 'Cycle Processing Time', instrument: 'Digital Automation Timer', unit: 'min', defaultVal: 10.0, spec: 'Standard SOP' }
-          ]
-        };
+    // Standard profile fallback
+    const defaultProfile = STAGE_SENSOR_PROFILES[canonicalStage];
+    let stageIndex = defaultProfile ? defaultProfile.stageIndex : 1;
+
+    // Check custom batch stages
+    if (batch && batch.custom_stages) {
+      const cStages = typeof batch.custom_stages === 'string' ? JSON.parse(batch.custom_stages) : batch.custom_stages;
+      const customStageObj = Array.isArray(cStages) ? cStages.find((s) => s.name.toLowerCase() === rawStage.toLowerCase() || s.name.toLowerCase() === canonicalStage.toLowerCase()) : null;
+      if (customStageObj) {
+        stageIndex = customStageObj.id || stageIndex;
       }
     }
 
-    // Map each parameter in the stage sensor profile to its latest live sensor reading
-    const mappedParameters = profile.parameters.map((paramDef) => {
+    // Determine primary sensor device for this stage
+    let primaryDevice = null;
+    if (connectedDevices.length > 0) {
+      const firstDev = connectedDevices[0];
+      primaryDevice = {
+        id: firstDev.deviceId,
+        name: firstDev.name,
+        model: firstDev.model,
+        category: firstDev.category,
+        protocol: firstDev.protocol,
+        endpointUrl: firstDev.endpointUrl,
+        stationId: firstDev.stationId,
+        lineName: firstDev.lineName,
+        sampleRate: firstDev.sampleRate,
+        status: firstDev.status === 'active' ? 'ONLINE' : (firstDev.status || 'ONLINE'),
+        lastSeenAt: firstDev.lastSeenAt,
+        type: firstDev.category
+      };
+    } else if (defaultProfile) {
+      primaryDevice = {
+        ...defaultProfile.device,
+        stationId: `STATION-0${stageIndex}`,
+        lineName: batch?.line || 'Line 1',
+        protocol: 'HTTP REST',
+        status: 'ONLINE'
+      };
+    } else {
+      primaryDevice = {
+        id: `PAT-SENS-${stageIndex}`,
+        name: `${rawStage} Process Sensor Interface`,
+        model: 'In-Line PAT Telemetry Unit',
+        category: 'Process Telemetry',
+        protocol: 'HTTP REST',
+        stationId: `STATION-0${stageIndex}`,
+        lineName: batch?.line || 'Line 1',
+        status: 'ONLINE',
+        type: 'process_telemetry'
+      };
+    }
+
+    // Collect all parameter definitions:
+    // 1) From registered devices on this stage (Sensor Page custom parameters)
+    const collectedParams = [];
+
+    connectedDevices.forEach((dev) => {
+      const devParams = Array.isArray(dev.capturedParameters) ? dev.capturedParameters : [];
+      devParams.forEach((p) => {
+        const pName = typeof p === 'string' ? p : p.name;
+        const pUnit = typeof p === 'string' ? '%' : (p.unit || '%');
+        const pSpec = typeof p === 'string' ? 'Validated Range' : (p.spec || (p.minSpec !== undefined && p.maxSpec !== undefined ? `${p.minSpec} - ${p.maxSpec} ${pUnit}` : 'Validated Range'));
+        const pTarget = (typeof p === 'object' && p.target !== undefined) ? p.target : 95.0;
+
+        if (pName && !collectedParams.some((cp) => cp.name.toLowerCase() === pName.toLowerCase())) {
+          collectedParams.push({
+            name: pName,
+            instrument: `${dev.name} (${dev.deviceId})`,
+            deviceId: dev.deviceId,
+            unit: pUnit,
+            spec: pSpec,
+            defaultVal: pTarget,
+            dataType: (typeof p === 'object' && p.dataType) ? p.dataType : 'Float'
+          });
+        }
+      });
+    });
+
+    // 2) From standard profile if not already included
+    if (defaultProfile && Array.isArray(defaultProfile.parameters)) {
+      defaultProfile.parameters.forEach((dp) => {
+        if (!collectedParams.some((cp) => cp.name.toLowerCase() === dp.name.toLowerCase())) {
+          collectedParams.push({
+            ...dp,
+            deviceId: primaryDevice.id
+          });
+        }
+      });
+    }
+
+    // 3) From custom batch stages if any
+    if (batch && batch.custom_stages) {
+      const cStages = typeof batch.custom_stages === 'string' ? JSON.parse(batch.custom_stages) : batch.custom_stages;
+      const customStageObj = Array.isArray(cStages) ? cStages.find((s) => s.name.toLowerCase() === rawStage.toLowerCase() || s.name.toLowerCase() === canonicalStage.toLowerCase()) : null;
+      if (customStageObj && Array.isArray(customStageObj.parameters)) {
+        customStageObj.parameters.forEach((pName) => {
+          const pStr = typeof pName === 'string' ? pName : pName.name;
+          if (pStr && !collectedParams.some((cp) => cp.name.toLowerCase() === pStr.toLowerCase())) {
+            collectedParams.push({
+              name: pStr,
+              instrument: customStageObj.device || primaryDevice.name,
+              deviceId: primaryDevice.id,
+              unit: '%',
+              spec: 'Target ±5%',
+              defaultVal: 95.0,
+              dataType: 'Float'
+            });
+          }
+        });
+      }
+    }
+
+    // 4) Fallback generic parameters if empty
+    if (collectedParams.length === 0) {
+      collectedParams.push(
+        { name: `${rawStage} Assay & Purity`, instrument: primaryDevice.name, deviceId: primaryDevice.id, unit: '%', defaultVal: 99.2, spec: '>=98.0%' },
+        { name: 'Process Temperature', instrument: 'In-Situ RTD Thermal Probe', deviceId: primaryDevice.id, unit: '°C', defaultVal: 22.0, spec: '19.0 - 25.0 °C' },
+        { name: 'Cycle Processing Time', instrument: 'Digital Automation Timer', deviceId: primaryDevice.id, unit: 'min', defaultVal: 15.0, spec: 'Standard SOP' }
+      );
+    }
+
+    // Map each parameter to its latest live sensor reading
+    const mappedParameters = collectedParams.map((paramDef) => {
       const found = existingReadings.find((r) =>
         r.parameter && (
           r.parameter.toLowerCase() === paramDef.name.toLowerCase() ||
@@ -861,7 +985,7 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
           result: found.result || 'PASS',
           timestamp: found.received_at || found.device_timestamp || new Date().toISOString(),
           isLiveSensor: true,
-          deviceId: found.device_id || profile.device.id,
+          deviceId: found.device_id || paramDef.deviceId || primaryDevice.id,
           id: found.id
         };
       }
@@ -878,7 +1002,7 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
             result: dLog.status || 'PASS',
             timestamp: dLog.timestamp,
             isLiveSensor: true,
-            deviceId: profile.device.id
+            deviceId: paramDef.deviceId || primaryDevice.id
           };
         }
         if (paramDef.name.includes('Actual')) {
@@ -891,7 +1015,7 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
             result: 'PASS',
             timestamp: dLog.timestamp,
             isLiveSensor: true,
-            deviceId: profile.device.id
+            deviceId: paramDef.deviceId || primaryDevice.id
           };
         }
       }
@@ -905,7 +1029,7 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
         result: 'PASS',
         timestamp: new Date().toISOString(),
         isLiveSensor: false,
-        deviceId: profile.device.id
+        deviceId: paramDef.deviceId || primaryDevice.id
       };
     });
 
@@ -917,8 +1041,9 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
       batchId,
       stage: rawStage,
       canonicalStage,
-      stageIndex: profile.stageIndex,
-      sensorDevice: profile.device,
+      stageIndex,
+      sensorDevice: primaryDevice,
+      connectedDevices,
       batch: batch ? {
         batchNumber: batch.batch_number,
         product: batch.product,
@@ -932,7 +1057,8 @@ app.get('/api/batches/:id/stage-sensor-data', async (req, res) => {
       summary: {
         status: hasCritical ? 'CRITICAL' : allPass ? 'PASS' : 'WARNING',
         lastUpdated: new Date().toISOString(),
-        hasLiveTelemetry: existingReadings.length > 0 || dispensingLogs.length > 0
+        hasLiveTelemetry: existingReadings.length > 0 || dispensingLogs.length > 0,
+        connectedSensorsCount: connectedDevices.length
       }
     });
   } catch (err) {
@@ -952,7 +1078,7 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
   }
 
   const profile = STAGE_SENSOR_PROFILES[canonicalStage] || STAGE_SENSOR_PROFILES['Raw Material Receipt'];
-  const activeDeviceId = deviceId || profile.device.id;
+  const activeDeviceId = deviceId || (profile?.device?.id) || 'PAT-IOT-01';
   const timestamp = new Date().toISOString();
   const savedRecords = [];
 
@@ -962,10 +1088,10 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
       const paramName = item.parameter || item.name;
       const paramValue = item.value !== undefined ? item.value : item.defaultVal;
       const paramUnit = item.unit || '';
-      const instrument = item.instrument || profile.parameters.find(p => p.name === paramName)?.instrument || profile.device.name;
+      const instrument = item.instrument || (profile?.parameters?.find((p) => p.name === paramName)?.instrument) || profile?.device?.name || 'In-Line Process Instrument';
 
       // Determine result status
-      let resultStatus = item.result || 'PASS';
+      const resultStatus = item.result || 'PASS';
 
       await pool.query(
         `INSERT INTO analytical_data (
@@ -974,7 +1100,7 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           readingId, batchId, activeDeviceId, paramName, instrument,
-          String(paramValue), paramUnit, canonicalStage, String(profile.stageIndex),
+          String(paramValue), paramUnit, canonicalStage, String(profile?.stageIndex || 1),
           'sensor_iot', resultStatus, timestamp, timestamp
         ]
       );
@@ -989,13 +1115,20 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
       });
     }
 
+    // Update active device heartbeat in database
+    await pool.query(
+      `UPDATE devices SET last_seen_at = now(), status = 'active'
+       WHERE device_id = $1 OR process_stage ILIKE $2`,
+      [activeDeviceId, canonicalStage]
+    ).catch(() => {});
+
     // Record audit trail
     const auditId = generateId();
     await pool.query(
       `INSERT INTO audit_trail (id, activity, module, user_name) VALUES ($1, $2, $3, $4)`,
       [
         auditId,
-        `Stage ${profile.stageIndex} (${canonicalStage}) IoT Sensor Telemetry Ingested: ${savedRecords.length} channels from [${activeDeviceId}]`,
+        `Stage ${profile?.stageIndex || 1} (${canonicalStage}) IoT Sensor Telemetry Ingested: ${savedRecords.length} channels from [${activeDeviceId}]`,
         'Sensor IoT Core',
         operator || 'IoT Gateway'
       ]
@@ -1007,7 +1140,7 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
         type: 'stage-telemetry',
         batchId,
         stage: canonicalStage,
-        stageIndex: profile.stageIndex,
+        stageIndex: profile?.stageIndex || 1,
         deviceId: activeDeviceId,
         readings: savedRecords,
         timestamp
@@ -1018,7 +1151,7 @@ app.post('/api/batches/:id/stage-sensor-data', async (req, res) => {
       success: true,
       batchId,
       stage: canonicalStage,
-      stageIndex: profile.stageIndex,
+      stageIndex: profile?.stageIndex || 1,
       deviceId: activeDeviceId,
       timestamp,
       savedCount: savedRecords.length,
@@ -1613,12 +1746,26 @@ app.post('/api/analytical', async (req, res) => {
 // Ingests live sensor streams from ESP32, Spectrometers, PLCs, LabVIEW, or Python sensors
 app.post('/api/telemetry/ingest', async (req, res) => {
   const { batchId, stage, deviceId, operator, parameters, timestamp } = req.body;
-  const canonicalStage = getCanonicalStageName(stage || 'Raw Material Receipt');
-  const now = timestamp || new Date().toISOString();
   const activeDeviceId = deviceId || 'ESP32-PAT-IOT';
+  const now = timestamp || new Date().toISOString();
   const savedRecords = [];
 
   try {
+    // Resolve device info if registered in devices table
+    let resolvedStage = stage;
+    let deviceName = 'In-Line Sensor Unit';
+    if (activeDeviceId) {
+      const devRes = await pool.query('SELECT name, process_stage FROM devices WHERE device_id = $1', [activeDeviceId]).catch(() => ({ rows: [] }));
+      if (devRes.rows.length > 0) {
+        if (!resolvedStage) resolvedStage = devRes.rows[0].process_stage;
+        deviceName = devRes.rows[0].name || deviceName;
+      }
+      // Update device heartbeat in DB
+      await pool.query("UPDATE devices SET last_seen_at = now(), status = 'active' WHERE device_id = $1", [activeDeviceId]).catch(() => {});
+    }
+
+    const canonicalStage = getCanonicalStageName(resolvedStage || 'Raw Material Receipt');
+
     let targetBatchId = batchId;
     if (!targetBatchId) {
       const activeBatch = await pool.query("SELECT id FROM projects ORDER BY created_at DESC LIMIT 1");
@@ -1640,11 +1787,11 @@ app.post('/api/telemetry/ingest', async (req, res) => {
 
         await pool.query(
           `INSERT INTO analytical_data (
-            id, project_id, device_id, parameter, value,
+            id, project_id, device_id, parameter, instrument, value,
             process_stage, reading_type, result, received_at, device_timestamp
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
-            readingId, targetBatchId, activeDeviceId, paramName,
+            readingId, targetBatchId, activeDeviceId, paramName, deviceName,
             String(paramVal), canonicalStage, 'realtime_sensor',
             resultStatus, now, now
           ]
@@ -1654,6 +1801,7 @@ app.post('/api/telemetry/ingest', async (req, res) => {
           id: readingId,
           parameter: paramName,
           value: paramVal,
+          instrument: deviceName,
           result: resultStatus
         });
       }
@@ -1674,6 +1822,7 @@ app.post('/api/telemetry/ingest', async (req, res) => {
       success: true,
       batchId: targetBatchId,
       stage: canonicalStage,
+      deviceId: activeDeviceId,
       ingestedCount: savedRecords.length,
       records: savedRecords,
       timestamp: now

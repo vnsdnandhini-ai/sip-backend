@@ -106,6 +106,7 @@ function getAllAvailableWorkflows() {
 
 let allBatches = [];
 let allWorkflows = [];
+let registeredDevices = [];
 let currentBatchId = null;
 let currentBatch = null;
 let activeWorkflowStages = [...DEFAULT_TABLET_STAGES];
@@ -167,6 +168,17 @@ function findStageInActiveWorkflow(stageNameOrLabel) {
   return activeWorkflowStages[0] || DEFAULT_TABLET_STAGES[0];
 }
 
+async function loadRegisteredDevices() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/devices`);
+    if (res.ok) {
+      registeredDevices = await res.json();
+    }
+  } catch (err) {
+    console.warn('Failed to fetch devices:', err);
+  }
+}
+
 async function loadPlatformState() {
   try {
     const res = await fetch(`${BACKEND_URL}/api/state`, { signal: AbortSignal.timeout(3000) });
@@ -174,9 +186,15 @@ async function loadPlatformState() {
       const data = await res.json();
       allBatches = (data.batches || data.projects || []).map(normalizeBatch);
       allWorkflows = data.workflows || [];
+      registeredDevices = data.devices || [];
     }
   } catch (e) {
     console.warn('Backend state fetch error:', e);
+  }
+
+  // Fetch devices if not populated from state
+  if (!registeredDevices || registeredDevices.length === 0) {
+    await loadRegisteredDevices();
   }
 
   // Fetch workflows if not present
@@ -286,13 +304,56 @@ async function handleIncomingTelemetryEvent(eventType, data) {
       renderStageLogTable();
       showToast(`⚡ Live Stream Ingested: ${data.readings?.length || 'New'} readings from [${data.deviceId || 'Sensor'}]`, 'info');
     }
+  } else if (eventType === 'sensor-reading') {
+    const matchesBatch = !data.batchId || data.batchId === currentBatchId;
+    const stageObj = data.processStage ? findStageInActiveWorkflow(data.processStage) : null;
+    const matchesStage = !stageObj || stageObj.name === currentActiveStage;
+
+    if (matchesBatch && matchesStage) {
+      await loadActiveStageSensorData(false);
+      renderActiveStageStudio();
+      renderStageLogTable();
+    }
+  } else if (eventType === 'device-ping') {
+    const activeDevId = currentStageSensorData?.sensorDevice?.id;
+    if (data.deviceId === activeDevId || (data.processStage && data.processStage.toLowerCase() === currentActiveStage.toLowerCase())) {
+      showToast(`⚡ Hardware Ping: [${data.deviceId}] Active (${data.latencyMs}ms latency)`, 'success');
+      await loadActiveStageSensorData(false);
+      renderActiveStageStudio();
+    }
+  } else if (['device-registered', 'device-updated', 'device-deleted'].includes(eventType)) {
+    console.log(`⚡ Sensor Hub Topology Changed (${eventType}):`, data);
+    await loadRegisteredDevices();
+    await loadActiveStageSensorData(false);
+    renderActiveStageStudio();
+    renderStageLogTable();
+    showToast(`Sensor Hub updated: ${data.name || data.deviceId || 'Topology refreshed'}`, 'info');
   } else if (eventType === 'batch-updated') {
     if (data.batchId === currentBatchId) {
       console.log('⚡ Batch updated via SSE:', data);
       await loadBatchDetails(currentBatchId, false);
-      renderWorkflowPipeline();
+      renderStepper();
       renderActiveStageStudio();
     }
+  }
+}
+
+async function pingSensorFromWorkflow(deviceId) {
+  if (!deviceId) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/devices/${encodeURIComponent(deviceId)}/ping`, {
+      method: 'POST'
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showToast(`⚡ [${deviceId}] ${data.name || 'Sensor'} Ping Successful! Latency: ${data.latencyMs} ms`, 'success');
+      await loadActiveStageSensorData(false);
+      renderActiveStageStudio();
+    } else {
+      showToast(`Ping failed for sensor [${deviceId}]`, 'error');
+    }
+  } catch (err) {
+    showToast(`Connection error pinging sensor [${deviceId}]`, 'error');
   }
 }
 
@@ -579,6 +640,18 @@ function renderActiveStageStudio() {
   const activeIdx = activeWorkflowStages.findIndex(s => s.name === stageObj.name);
   const nextStageObj = (activeIdx >= 0 && activeIdx < activeWorkflowStages.length - 1) ? activeWorkflowStages[activeIdx + 1] : null;
 
+  const sensorDevice = currentStageSensorData?.sensorDevice || {
+    id: 'PAT-01',
+    name: stageObj.device || 'In-Line Sensor Unit',
+    model: '',
+    category: 'Spectroscopy',
+    protocol: 'HTTP REST',
+    status: 'ONLINE',
+    stationId: `STATION-0${activeIdx + 1}`
+  };
+  const connectedDevices = currentStageSensorData?.connectedDevices || [];
+  const isDeviceOnline = (sensorDevice.status === 'active' || sensorDevice.status === 'ONLINE');
+
   // Calculate live QC metrics from stage sensor telemetry
   const params = (currentStageSensorData && currentStageSensorData.parameters) ? currentStageSensorData.parameters : [];
   const totalCount = params.length;
@@ -603,17 +676,18 @@ function renderActiveStageStudio() {
     ? localStorage.getItem('sipActiveOperator') 
     : 'Production Operator / QA Specialist';
 
-  const defaultStation = `STATION-0${activeIdx + 1} (${currentBatch?.line || 'LINE-1'})`;
+  const defaultStation = sensorDevice.stationId || `STATION-0${activeIdx + 1} (${currentBatch?.line || 'LINE-1'})`;
 
   // Render clean 2-column cards
   container.innerHTML = `
     <div class="grid grid--2cols">
       
       <!-- Stage Telemetry Header Banner -->
-      <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <span class="badge ${isCritical ? 'badge--critical' : 'badge--pass'}" style="font-size: 0.82rem; font-weight: 700;">
-            <span class="live-dot" style="background: ${qcStatusColor};"></span> ${stageObj.device || 'In-Line Process Instrument (ONLINE)'}
+      <div class="card" style="grid-column: 1 / -1; margin-bottom: 0.75rem; padding: 0.85rem 1.25rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="badge ${isDeviceOnline ? 'badge--pass' : 'badge--neutral'}" style="font-size: 0.82rem; font-weight: 700;">
+            <span class="live-dot" style="background: ${isDeviceOnline ? '#16a34a' : '#94a3b8'};"></span>
+            ${escapeHtml(sensorDevice.name)} <code style="font-size:0.75rem;">${escapeHtml(sensorDevice.id)}</code>
           </span>
           <span id="stageRealtimeIndicator" class="badge badge--neutral" style="font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px;">
             ${isRealtimeStreamActive 
@@ -625,41 +699,64 @@ function renderActiveStageStudio() {
             <strong>Stage ${activeIdx + 1} of ${activeWorkflowStages.length}:</strong> ${stageObj.name} • <strong>Live Telemetry:</strong> <span style="color: ${qcStatusColor}; font-weight: 700;">${qcStatusText}</span>
           </span>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
-          <span style="font-size: 0.8rem; color: #64748b;">Telemetry: <strong>${new Date().toLocaleTimeString()}</strong></span>
-          <button type="button" class="button button--secondary" onclick="simulateStageTelemetry()" style="padding: 4px 10px; font-size: 0.8rem;">
-            Sync Sensor
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="button button--secondary" onclick="pingSensorFromWorkflow('${escapeHtml(sensorDevice.id)}')" style="padding: 4px 10px; font-size: 0.8rem;" title="Test Hardware Ping to Device">
+            ⚡ Ping Sensor
+          </button>
+          <button type="button" class="button button--secondary" onclick="simulateStageTelemetry()" style="padding: 4px 10px; font-size: 0.8rem;" title="Ingest Real-Time Sensor Stream">
+            📡 Sync Sensor
+          </button>
+          <button type="button" class="button button--secondary" onclick="window.location.href='sensors.html?search=${encodeURIComponent(sensorDevice.id)}'" style="padding: 4px 10px; font-size: 0.8rem;" title="Configure in Sensors Hub">
+            ⚙️ Sensor Hub
           </button>
         </div>
       </div>
 
       <!-- Left Card: Stage Parameters & Verification Form -->
       <article class="card card--form">
-        <h4>${stageObj.name} - Verification & Parameters</h4>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+          <h4 style="margin:0;">${stageObj.name} - Verification & Hardware</h4>
+          <span class="badge ${isDeviceOnline ? 'badge--pass' : 'badge--neutral'}" style="font-size:0.75rem;">
+            ${isDeviceOnline ? 'Hardware Online' : 'Hardware Offline'}
+          </span>
+        </div>
         <form class="panel-form" onsubmit="event.preventDefault();">
           <div class="form-row">
             <div class="form-group">
               <label>Formulation / Product</label>
-              <input type="text" value="${currentBatch?.product || 'Paracetamol Tablet USP 500mg'}" readonly title="Inherited from Batch Master Record" />
+              <input type="text" value="${escapeHtml(currentBatch?.product || 'Paracetamol Tablet USP 500mg')}" readonly title="Inherited from Batch Master Record" />
             </div>
             <div class="form-group">
               <label>Batch / Lot Number</label>
-              <input type="text" value="${currentBatch?.batchNumber || 'LOT-PCM-2026-01'}" readonly title="Inherited from Batch Master Record" />
+              <input type="text" value="${escapeHtml(currentBatch?.batchNumber || 'LOT-PCM-2026-01')}" readonly title="Inherited from Batch Master Record" />
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>Active Instrument / Sensor</label>
-              <input type="text" value="${stageObj.device || 'Certified Process Sensor'}" readonly title="Configured via Process Workflow Studio" />
+              <label>Active Instrument / Sensor ID</label>
+              <input type="text" value="${escapeHtml(sensorDevice.name)} [${escapeHtml(sensorDevice.id)}]${sensorDevice.model ? ' (' + escapeHtml(sensorDevice.model) + ')' : ''}" readonly title="Configured via Sensors & Hardware Hub" />
             </div>
             <div class="form-group">
-              <label>Container / Station ID (Editable)</label>
-              <input id="stageContainerId" type="text" value="${defaultStation}" placeholder="e.g. REACTOR-02 / SUITE-104" />
+              <label>Protocol & Station Location</label>
+              <input id="stageContainerId" type="text" value="${escapeHtml(defaultStation)} • ${escapeHtml(sensorDevice.protocol || 'HTTP REST')}" placeholder="e.g. REACTOR-02 / SUITE-104" />
             </div>
           </div>
+
+          <!-- Captured Measurement Channels configured on the Sensor -->
+          <div style="margin-top: 4px; margin-bottom: 8px;">
+            <label style="font-size:0.78rem; font-weight:700; color:#475569; margin-bottom:4px; display:block;">Active Sensor Measurement Channels:</label>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              ${params.map(p => `
+                <span class="badge badge--neutral" style="font-size:0.75rem; background:#f1f5f9; border:1px solid #cbd5e1; color:#334155;">
+                  🔬 <strong>${escapeHtml(p.name)}</strong> <span style="color:#64748b;">(${escapeHtml(p.unit || '%')})</span>
+                </span>
+              `).join('')}
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Operator / QA Inspector (Digital Signature ID)</label>
-            <input id="stageOperatorInput" type="text" value="${defaultOperator}" placeholder="Enter operator name / badge ID..." onchange="if(typeof localStorage!=='undefined') localStorage.setItem('sipActiveOperator', this.value.trim())" />
+            <input id="stageOperatorInput" type="text" value="${escapeHtml(defaultOperator)}" placeholder="Enter operator name / badge ID..." onchange="if(typeof localStorage!=='undefined') localStorage.setItem('sipActiveOperator', this.value.trim())" />
           </div>
         </form>
       </article>
@@ -768,55 +865,111 @@ function renderStageLogTable() {
   if (!tbody) return;
 
   const stageObj = findStageInActiveWorkflow(currentActiveStage);
-  const params = (currentStageSensorData && currentStageSensorData.parameters) ? currentStageSensorData.parameters : [
-    { name: `${stageObj.name} Assay & Purity`, instrument: stageObj.device || 'In-Line Sensor', value: 99.4, unit: '%', result: 'PASS' },
-    { name: 'Process Temperature', instrument: 'RTD Thermal Probe', value: 21.8, unit: '°C', result: 'PASS' },
-    { name: 'Cycle Processing Time', instrument: 'Automated Timer', value: 15.0, unit: 'min', result: 'PASS' }
-  ];
+  const sensorDevice = currentStageSensorData?.sensorDevice || { id: 'PAT-01', name: stageObj.device || 'In-Line Sensor' };
+  const params = (currentStageSensorData && currentStageSensorData.parameters && currentStageSensorData.parameters.length > 0)
+    ? currentStageSensorData.parameters
+    : [
+        { name: `${stageObj.name} Assay & Purity`, instrument: sensorDevice.name, deviceId: sensorDevice.id, value: 99.4, unit: '%', spec: '>=98.0%', result: 'PASS' },
+        { name: 'Process Temperature', instrument: 'RTD Thermal Probe', deviceId: 'RTD-01', value: 21.8, unit: '°C', spec: '19.0 - 25.0 °C', result: 'PASS' },
+        { name: 'Cycle Processing Time', instrument: 'Automated Timer', deviceId: 'TMR-01', value: 15.0, unit: 'min', spec: 'Standard SOP', result: 'PASS' }
+      ];
 
-  tbody.innerHTML = params.map(p => `
-    <tr>
-      <td><strong>${p.name || 'Parameter'}</strong></td>
-      <td>${p.instrument || stageObj.device || 'In-Line Sensor'}</td>
-      <td><strong>${p.value !== undefined ? p.value : 99.2}</strong></td>
-      <td>${p.unit || '%'}</td>
-      <td>Live (${new Date().toLocaleTimeString()})</td>
-      <td><span class="badge badge--pass">${p.result || 'PASS'}</span></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = params.map(p => {
+    const isCrit = (p.result || '').toUpperCase() === 'CRITICAL';
+    const isWarn = (p.result || '').toUpperCase() === 'WARNING';
+    const badgeClass = isCrit ? 'badge--critical' : (isWarn ? 'badge--warning' : 'badge--pass');
+    const timeDisplay = p.timestamp ? (new Date(p.timestamp).toLocaleTimeString()) : new Date().toLocaleTimeString();
+
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(p.name || 'Parameter')}</strong>
+          ${p.spec ? `<div style="font-size:0.75rem; color:#64748b;">Spec: ${escapeHtml(p.spec)}</div>` : ''}
+        </td>
+        <td>
+          <div>${escapeHtml(p.instrument || sensorDevice.name)}</div>
+          ${p.deviceId ? `<code style="font-size:0.75rem; color:#2563eb;">${escapeHtml(p.deviceId)}</code>` : ''}
+        </td>
+        <td><strong style="font-size:0.95rem; color:${isCrit ? '#dc2626' : (isWarn ? '#d97706' : '#1e293b')};">${p.value !== undefined ? p.value : 99.2}</strong></td>
+        <td>${escapeHtml(p.unit || '%')}</td>
+        <td><span style="font-size:0.8rem; color:#64748b;">${escapeHtml(timeDisplay)}</span></td>
+        <td><span class="badge ${badgeClass}">${escapeHtml(p.result || 'PASS')}</span></td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function simulateStageTelemetry() {
   if (!currentBatchId) return;
   const stageObj = findStageInActiveWorkflow(currentActiveStage);
+  const sensorDevice = currentStageSensorData?.sensorDevice || { id: 'PAT-01', name: stageObj.device || 'In-Line Sensor' };
+  const params = (currentStageSensorData && currentStageSensorData.parameters && currentStageSensorData.parameters.length > 0)
+    ? currentStageSensorData.parameters
+    : (stageObj.parameters || ['In-Process Telemetry', 'Temperature', 'Duration']);
 
   try {
-    const readings = (stageObj.parameters || ['In-Process Telemetry', 'Temperature', 'Duration']).map(pName => ({
-      parameter: typeof pName === 'string' ? pName : pName.name,
-      value: +(95 + Math.random() * 4.8).toFixed(2),
-      unit: '%',
-      instrument: stageObj.device || 'IoT Telemetry Gateway',
-      result: 'PASS'
-    }));
+    const readings = params.map(p => {
+      const pName = typeof p === 'string' ? p : p.name;
+      const pUnit = typeof p === 'string' ? '%' : (p.unit || '%');
+      const pInst = (typeof p === 'object' && p.instrument) ? p.instrument : sensorDevice.name;
+
+      let val = 99.2;
+      const lower = pName.toLowerCase();
+      if (lower.includes('moisture') || lower.includes('lod')) {
+        val = +(1.1 + Math.random() * 0.4).toFixed(2);
+      } else if (lower.includes('rsd') || lower.includes('dev')) {
+        val = +(1.8 + Math.random() * 0.9).toFixed(2);
+      } else if (lower.includes('temp')) {
+        val = +(21.0 + Math.random() * 2.0).toFixed(1);
+      } else if (lower.includes('force') || lower.includes('kn') || lower.includes('torque')) {
+        val = +(15.0 + Math.random() * 3.0).toFixed(1);
+      } else if (lower.includes('speed') || lower.includes('rpm')) {
+        val = +(20 + Math.random() * 4).toFixed(0);
+      } else if (lower.includes('identity') || lower.includes('pearson')) {
+        val = +(0.988 + Math.random() * 0.009).toFixed(4);
+      } else if (typeof p === 'object' && p.defaultVal !== undefined) {
+        val = typeof p.defaultVal === 'number' ? +(p.defaultVal + (Math.random() * 0.4 - 0.2)).toFixed(2) : p.defaultVal;
+      } else {
+        val = +(98.5 + Math.random() * 1.5).toFixed(2);
+      }
+
+      return {
+        parameter: pName,
+        value: val,
+        unit: pUnit,
+        instrument: pInst,
+        result: 'PASS'
+      };
+    });
 
     await fetch(`${BACKEND_URL}/api/batches/${currentBatchId}/stage-sensor-data`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         stage: stageObj.name,
-        readings,
-        operator: document.getElementById('stageOperatorInput')?.value.trim() || 'IoT Telemetry Gateway'
+        deviceId: sensorDevice.id || 'PAT-01',
+        operator: document.getElementById('stageOperatorInput')?.value.trim() || 'IoT Telemetry Gateway',
+        readings
       })
     });
 
     await loadActiveStageSensorData(true);
     renderActiveStageStudio();
     renderStageLogTable();
-    showToast(`Live sensor telemetry ingested for ${stageObj.name}`, 'success');
+    showToast(`⚡ Live telemetry stream ingested from [${sensorDevice.id || 'Sensor'}] for ${stageObj.name}`, 'success');
   } catch (err) {
     console.warn('Telemetry simulation error:', err);
     showToast(`Telemetry updated for ${stageObj.name}`, 'success');
   }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // -----------------------------------------------------------------
@@ -1067,7 +1220,18 @@ const STANDARD_STAGE_PRESETS = [
 ];
 
 function renderCombobox(inputId, menuId, currentValue, type, placeholder) {
-  const presets = type === 'stage' ? STANDARD_STAGE_PRESETS : STANDARD_SENSOR_PRESETS;
+  let presets = [];
+  if (type === 'sensor') {
+    const hubOptions = (Array.isArray(registeredDevices) && registeredDevices.length > 0)
+      ? [{
+          category: '⭐ Registered Sensors & Instruments (Live in DB)',
+          options: registeredDevices.map(d => `${d.name} (${d.deviceId})`)
+        }]
+      : [];
+    presets = [...hubOptions, ...STANDARD_SENSOR_PRESETS];
+  } else {
+    presets = STANDARD_STAGE_PRESETS;
+  }
   
   const menuRows = presets.map(grp => `
     <div class="combobox-header">${grp.category}</div>

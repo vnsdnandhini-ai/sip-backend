@@ -255,14 +255,18 @@ textarea:focus {
 }
 
 .sidebar {
-  width: 280px;
-  padding: 2rem 1.2rem;
+  width: 250px;
+  min-width: 250px;
+  max-width: 250px;
+  flex: 0 0 250px;
+  padding: 1.5rem 1rem;
   background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   border-right: 1px solid var(--border);
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .sidebar-brand {
@@ -343,8 +347,10 @@ textarea:focus {
 }
 
 .main-content {
-  flex: 1;
-  padding: 2rem 2rem 3rem;
+  flex: 1 1 0%;
+  min-width: 0;
+  padding: 1.5rem 1.8rem 3rem;
+  box-sizing: border-box;
 }
 
 .topbar {
@@ -446,10 +452,11 @@ textarea:focus {
 .data-table th,
 .data-table td {
   border-bottom: 1.5px solid #e2e8f0;
-  padding: 1.05rem 1rem;
+  padding: 0.65rem 0.85rem;
   text-align: left;
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
+  vertical-align: middle;
 }
 
 .data-table th {
@@ -1981,5 +1988,136 @@ body.dark-mode .settings-notification {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================
+   SENSORS & HARDWARE TABLE ACTIONS & PARAMETER CHIPS
+   ============================================================ */
+
+.param-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.param-chip-more {
+  display: inline-flex;
+  align-items: center;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  cursor: help;
+  white-space: nowrap;
+}
+
+.sensor-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.sensor-btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  line-height: 1.1;
+}
+
+.sensor-btn--workflow {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.sensor-btn--workflow:hover {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.sensor-btn--ping {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.sensor-btn--ping:hover {
+  background: #dcfce7;
+  color: #14532d;
+  border-color: #86efac;
+  transform: translateY(-1px);
+}
+
+.sensor-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.sensor-icon-action:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.sensor-icon-action--danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+body.dark-mode .param-chip {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+body.dark-mode .param-chip-more {
+  background: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+  border-color: rgba(14, 165, 233, 0.4);
+}
+body.dark-mode .sensor-icon-action {
+  background: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+body.dark-mode .sensor-icon-action:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+
 
 
