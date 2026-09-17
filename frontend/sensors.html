@@ -62,6 +62,32 @@
           </div>
         </div>
 
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <select id="stageFilterSelect" style="padding:0.45rem 0.75rem; font-size:0.85rem;" onchange="renderSensorsTable()">
+              <option value="all">All Process Stages</option>
+              <option value="Raw Material Receipt">Stage 1: Raw Material Receipt</option>
+              <option value="Dispensing">Stage 2: Dispensing</option>
+              <option value="Blending">Stage 3: Blending</option>
+              <option value="Granulation">Stage 4: Granulation</option>
+              <option value="Drying">Stage 5: Drying</option>
+              <option value="Final Blending">Stage 6: Final Blending</option>
+              <option value="Compression">Stage 7: Compression</option>
+              <option value="Final QC">Stage 8: Final QC</option>
+            </select>
+
+            <select id="protocolFilterSelect" style="padding:0.45rem 0.75rem; font-size:0.85rem;" onchange="renderSensorsTable()">
+              <option value="all">All Protocols</option>
+              <option value="HTTP REST">HTTP REST</option>
+              <option value="Modbus TCP">Modbus TCP</option>
+              <option value="RS485">RS-485</option>
+              <option value="MQTT">MQTT</option>
+              <option value="SSE Stream">SSE Stream</option>
+            </select>
+          </div>
+          <div style="font-size:0.85rem; color:#64748b;" id="sensorCountSummary"></div>
+        </div>
+
         <div class="data-table-wrapper">
           <table class="data-table" id="sensorsTable">
             <thead>

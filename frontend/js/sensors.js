@@ -1,6 +1,6 @@
 /**
  * sensors.js
- * Clean, generic line-by-line Sensors Management Controller
+ * Clean, generic line-by-line Sensors Management Controller with Customization Options
  * Matches the platform standard table & modal design.
  */
 
@@ -57,19 +57,31 @@ function renderSensorsTable() {
   if (!tbody) return;
 
   const query = (document.getElementById('sensorSearchInput')?.value || '').toLowerCase().trim();
+  const stageFilter = document.getElementById('stageFilterSelect')?.value || 'all';
+  const protocolFilter = document.getElementById('protocolFilterSelect')?.value || 'all';
+
   const filtered = sensorsCache.filter(s => {
-    if (!query) return true;
-    return (
+    const matchesQuery = !query || (
       (s.name && s.name.toLowerCase().includes(query)) ||
       (s.deviceId && s.deviceId.toLowerCase().includes(query)) ||
       (s.processStage && s.processStage.toLowerCase().includes(query)) ||
       (s.stationId && s.stationId.toLowerCase().includes(query)) ||
       (s.model && s.model.toLowerCase().includes(query))
     );
+
+    const matchesStage = stageFilter === 'all' || (s.processStage && s.processStage.toLowerCase() === stageFilter.toLowerCase());
+    const matchesProtocol = protocolFilter === 'all' || (s.protocol && s.protocol.toLowerCase().includes(protocolFilter.toLowerCase()));
+
+    return matchesQuery && matchesStage && matchesProtocol;
   });
 
+  const countSummary = document.getElementById('sensorCountSummary');
+  if (countSummary) {
+    countSummary.textContent = `Showing ${filtered.length} of ${sensorsCache.length} instruments`;
+  }
+
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:24px;">No sensors found. Click "+ Add Sensor" to register one.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:24px;">No sensors found. Click "+ Add Sensor" to customize and register one.</td></tr>`;
     return;
   }
 
@@ -110,7 +122,8 @@ function renderSensorsTable() {
           <div style="display:flex; gap:4px; flex-wrap:wrap;">
             <button class="table-action-button" onclick="pingSensor('${s.deviceId}')" title="Test Live Ping">Ping</button>
             <button class="table-action-button" onclick="openCodeSnippet('${s.deviceId}')" title="Integration Code">Code</button>
-            <button class="table-action-button" onclick="openSensorForm('${s.deviceId}')" title="Edit Sensor">Edit</button>
+            <button class="table-action-button" onclick="openSensorForm('${s.deviceId}')" title="Customize Sensor">Edit</button>
+            <button class="table-action-button" onclick="cloneSensor('${s.deviceId}')" title="Clone / Duplicate Sensor">Clone</button>
             <button class="table-action-button danger" onclick="deleteSensor('${s.deviceId}')" title="Delete Sensor">Delete</button>
           </div>
         </td>
@@ -119,6 +132,9 @@ function renderSensorsTable() {
   }).join('');
 }
 
+// -----------------------------------------------------------------
+// CUSTOM SENSOR BUILDER & FORM
+// -----------------------------------------------------------------
 function openSensorForm(deviceId = null) {
   const sensor = sensorsCache.find(s => s.deviceId === deviceId) || {
     name: '',
@@ -135,9 +151,18 @@ function openSensorForm(deviceId = null) {
   };
 
   const isEdit = Boolean(deviceId);
-  const paramsList = Array.isArray(sensor.capturedParameters) 
-    ? sensor.capturedParameters.map(p => typeof p === 'string' ? p : `${p.name} (${p.unit || '%'})`).join(', ')
-    : '';
+  const standardStages = [
+    'Raw Material Receipt',
+    'Dispensing',
+    'Blending',
+    'Granulation',
+    'Drying',
+    'Final Blending',
+    'Compression',
+    'Final QC'
+  ];
+
+  const isCustomStage = !standardStages.includes(sensor.processStage);
 
   const formHtml = `
     <form id="sensorForm" class="panel-form" onsubmit="event.preventDefault();">
@@ -155,7 +180,7 @@ function openSensorForm(deviceId = null) {
       <div class="form-row">
         <div class="form-group">
           <label>Hardware Model / Transducer</label>
-          <input id="formSensorModel" type="text" value="${escapeHtml(sensor.model || '')}" placeholder="e.g. Brimrose Luminar 5030" />
+          <input id="formSensorModel" type="text" value="${escapeHtml(sensor.model || '')}" placeholder="e.g. Brimrose Luminar 5030 / Custom ESP32" />
         </div>
         <div class="form-group">
           <label>Sensor Category</label>
@@ -166,7 +191,9 @@ function openSensorForm(deviceId = null) {
             <option value="Thermal & Moisture" ${sensor.category === 'Thermal & Moisture' ? 'selected' : ''}>Thermal & Moisture</option>
             <option value="Piezoelectric / Force" ${sensor.category === 'Piezoelectric / Force' ? 'selected' : ''}>Piezoelectric / Force</option>
             <option value="Vision Camera & HPLC" ${sensor.category === 'Vision Camera & HPLC' ? 'selected' : ''}>Vision Camera & HPLC</option>
+            <option value="Analytical Chemistry / pH" ${sensor.category === 'Analytical Chemistry / pH' ? 'selected' : ''}>Analytical Chemistry / pH</option>
             <option value="Environmental / RH" ${sensor.category === 'Environmental / RH' ? 'selected' : ''}>Environmental / RH</option>
+            <option value="Custom Transducer" ${sensor.category === 'Custom Transducer' ? 'selected' : ''}>Custom Transducer</option>
           </select>
         </div>
       </div>
@@ -174,7 +201,7 @@ function openSensorForm(deviceId = null) {
       <div class="form-row">
         <div class="form-group">
           <label>Where It Connects (Manufacturing Stage) *</label>
-          <select id="formSensorStage">
+          <select id="formSensorStageSelect" onchange="toggleCustomStageInput(this.value)">
             <option value="Raw Material Receipt" ${sensor.processStage === 'Raw Material Receipt' ? 'selected' : ''}>Stage 1: Raw Material Receipt</option>
             <option value="Dispensing" ${sensor.processStage === 'Dispensing' ? 'selected' : ''}>Stage 2: Dispensing</option>
             <option value="Blending" ${sensor.processStage === 'Blending' ? 'selected' : ''}>Stage 3: Blending</option>
@@ -183,11 +210,13 @@ function openSensorForm(deviceId = null) {
             <option value="Final Blending" ${sensor.processStage === 'Final Blending' ? 'selected' : ''}>Stage 6: Final Blending</option>
             <option value="Compression" ${sensor.processStage === 'Compression' ? 'selected' : ''}>Stage 7: Compression</option>
             <option value="Final QC" ${sensor.processStage === 'Final QC' ? 'selected' : ''}>Stage 8: Final QC</option>
+            <option value="__custom__" ${isCustomStage ? 'selected' : ''}>Custom Process Stage...</option>
           </select>
+          <input id="formCustomStageInput" type="text" value="${isCustomStage ? escapeHtml(sensor.processStage) : ''}" placeholder="Enter custom stage name..." style="margin-top:6px; display:${isCustomStage ? 'block' : 'none'};" />
         </div>
         <div class="form-group">
-          <label>Station / Location ID</label>
-          <input id="formSensorStation" type="text" value="${escapeHtml(sensor.stationId || 'STATION-01')}" placeholder="e.g. STATION-01 (Cleanroom A)" />
+          <label>Station / Suite Location ID</label>
+          <input id="formSensorStation" type="text" value="${escapeHtml(sensor.stationId || 'STATION-01')}" placeholder="e.g. STATION-01 (Suite 104)" />
         </div>
       </div>
 
@@ -200,28 +229,119 @@ function openSensorForm(deviceId = null) {
             <option value="Modbus TCP" ${sensor.protocol === 'Modbus TCP' ? 'selected' : ''}>Modbus TCP</option>
             <option value="RS485" ${sensor.protocol === 'RS485' ? 'selected' : ''}>RS-485 / Serial COM</option>
             <option value="MQTT" ${sensor.protocol === 'MQTT' ? 'selected' : ''}>MQTT Broker</option>
+            <option value="WebSocket" ${sensor.protocol === 'WebSocket' ? 'selected' : ''}>WebSocket (WSS)</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Network Endpoint / IP / COM Port</label>
-          <input id="formSensorEndpoint" type="text" value="${escapeHtml(sensor.endpointUrl || '')}" placeholder="e.g. 192.168.1.101 or COM3" />
+          <label>Network Endpoint / IP / Address</label>
+          <input id="formSensorEndpoint" type="text" value="${escapeHtml(sensor.endpointUrl || '')}" placeholder="e.g. 192.168.1.101:8080 or COM3" />
         </div>
       </div>
 
-      <div class="form-group">
-        <label>What It Captures (Comma-separated parameters)</label>
-        <input id="formSensorParams" type="text" value="${escapeHtml(paramsList)}" placeholder="e.g. NIR Spectral Identity (Pearson R), Residual Moisture (%), Weight (kg)" />
-        <span style="font-size:0.75rem; color:#64748b;">Enter parameter names and optional units in parentheses.</span>
+      <!-- Customizable Parameters Section -->
+      <div style="margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+          <label style="font-weight:700; color:#1e293b; margin:0;">What It Captures (Custom Measurement Channels)</label>
+          <button type="button" class="button button--secondary" style="padding: 2px 8px; font-size:0.75rem;" onclick="addCustomParamRow()">+ Add Channel</button>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+          <span style="font-size:0.75rem; color:#64748b; align-self:center;">Quick Presets:</span>
+          <button type="button" class="button button--secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="applyParamPreset('nir')">🔬 NIR</button>
+          <button type="button" class="button button--secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="applyParamPreset('weight')">⚖️ Weight</button>
+          <button type="button" class="button button--secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="applyParamPreset('torque')">🧪 Torque</button>
+          <button type="button" class="button button--secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="applyParamPreset('thermal')">🌡️ Temp/LOD</button>
+          <button type="button" class="button button--secondary" style="padding:2px 6px; font-size:0.72rem;" onclick="applyParamPreset('qc')">🏆 QA Release</button>
+        </div>
+
+        <div id="customParamsList" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; padding-right:4px;">
+          <!-- Dynamically populated rows -->
+        </div>
       </div>
     </form>
   `;
 
   openModal(
-    isEdit ? `Edit Sensor [${sensor.deviceId}]` : 'Register New Hardware Sensor',
+    isEdit ? `Customize Sensor [${sensor.deviceId}]` : 'Customize & Register New Sensor',
     formHtml,
     isEdit ? 'Save Changes' : 'Register Sensor',
     () => submitSensorForm(deviceId)
   );
+
+  // Populate initial parameters
+  const params = Array.isArray(sensor.capturedParameters) ? sensor.capturedParameters : [];
+  if (params.length > 0) {
+    params.forEach(p => {
+      const pName = typeof p === 'string' ? p : p.name;
+      const pUnit = typeof p === 'string' ? '%' : (p.unit || '%');
+      const pSpec = typeof p === 'string' ? '' : (p.spec || '');
+      addCustomParamRow(pName, pUnit, pSpec);
+    });
+  } else {
+    addCustomParamRow('Process Parameter', '%', 'Target ±5%');
+  }
+}
+
+function toggleCustomStageInput(val) {
+  const input = document.getElementById('formCustomStageInput');
+  if (input) {
+    input.style.display = val === '__custom__' ? 'block' : 'none';
+    if (val === '__custom__') input.focus();
+  }
+}
+
+function addCustomParamRow(name = '', unit = '%', spec = '') {
+  const container = document.getElementById('customParamsList');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.className = 'custom-param-row';
+  row.style.cssText = 'display:grid; grid-template-columns: 2fr 1fr 1.5fr 30px; gap:6px; align-items:center;';
+  row.innerHTML = `
+    <input type="text" class="custom-p-name" value="${escapeHtml(name)}" placeholder="Parameter name (e.g. Moisture)" style="padding:4px 8px; font-size:0.82rem;" required />
+    <input type="text" class="custom-p-unit" value="${escapeHtml(unit)}" placeholder="Unit (%)" style="padding:4px 8px; font-size:0.82rem;" />
+    <input type="text" class="custom-p-spec" value="${escapeHtml(spec)}" placeholder="Tolerance (0.98 - 1.0)" style="padding:4px 8px; font-size:0.82rem;" />
+    <button type="button" class="button button--secondary" onclick="this.closest('.custom-param-row').remove()" style="padding:2px 6px; color:#dc2626; font-size:0.8rem;" title="Remove">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+function applyParamPreset(type) {
+  const container = document.getElementById('customParamsList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const presets = {
+    'nir': [
+      { name: 'NIR Spectral Identity (R)', unit: 'Pearson R', spec: '0.98 - 1.00' },
+      { name: 'Residual Moisture (LOD)', unit: '%', spec: '< 2.0%' },
+      { name: 'Container Barcode Reconciliation', unit: 'ID', spec: 'Exact Match' }
+    ],
+    'weight': [
+      { name: 'Dispense Weight Tolerance', unit: '% Dev', spec: '±1.0%' },
+      { name: 'Actual Weighed Quantity', unit: 'kg', spec: '50.0 kg Target' },
+      { name: 'Cleanroom Relative Humidity', unit: '% RH', spec: '40 - 45%' },
+      { name: 'Cleanroom Temperature', unit: '°C', spec: '20 - 24 °C' }
+    ],
+    'torque': [
+      { name: 'Impeller Torque Peak', unit: 'Nm', spec: '12 - 18 Nm' },
+      { name: 'Wet Mass Consistency', unit: 'mN·m', spec: '85 - 100' },
+      { name: 'Binder Spray Rate', unit: 'g/min', spec: '45 - 55 g/min' }
+    ],
+    'thermal': [
+      { name: 'Loss on Drying (LOD)', unit: '%', spec: '1.0 - 2.5%' },
+      { name: 'Inlet Air Temperature', unit: '°C', spec: '55 - 65 °C' },
+      { name: 'Outlet Air Temperature', unit: '°C', spec: '38 - 44 °C' }
+    ],
+    'qc': [
+      { name: 'Active Assay', unit: '% Claim', spec: '98.0 - 102.0%' },
+      { name: 'Dissolution at 30 min', unit: '% Q', spec: '> 80%' },
+      { name: 'Visual Defect Rate', unit: '%', spec: '< 0.1%' }
+    ]
+  };
+
+  const list = presets[type] || [];
+  list.forEach(p => addCustomParamRow(p.name, p.unit, p.spec));
 }
 
 async function submitSensorForm(editId) {
@@ -229,26 +349,36 @@ async function submitSensorForm(editId) {
   const deviceId = document.getElementById('formSensorId')?.value.trim();
   const model = document.getElementById('formSensorModel')?.value.trim();
   const category = document.getElementById('formSensorCategory')?.value;
-  const processStage = document.getElementById('formSensorStage')?.value;
+  
+  const stageSelect = document.getElementById('formSensorStageSelect')?.value;
+  const customStageVal = document.getElementById('formCustomStageInput')?.value.trim();
+  const processStage = (stageSelect === '__custom__' && customStageVal) ? customStageVal : (stageSelect === '__custom__' ? 'Custom Stage' : stageSelect);
+
   const stationId = document.getElementById('formSensorStation')?.value.trim();
   const protocol = document.getElementById('formSensorProtocol')?.value;
   const endpointUrl = document.getElementById('formSensorEndpoint')?.value.trim();
-  const rawParams = document.getElementById('formSensorParams')?.value.trim();
 
   if (!name || !deviceId) {
     alert('Sensor Name and Device ID are required.');
     return;
   }
 
-  // Parse comma separated parameter string
-  const capturedParameters = rawParams ? rawParams.split(',').map(p => {
-    const trimmed = p.trim();
-    const match = trimmed.match(/^(.+?)\s*\((.*?)\)$/);
-    if (match) {
-      return { name: match[1].trim(), unit: match[2].trim(), dataType: 'Float' };
+  // Collect dynamic parameter rows
+  const paramRows = document.querySelectorAll('#customParamsList .custom-param-row');
+  const capturedParameters = [];
+  paramRows.forEach(r => {
+    const pName = r.querySelector('.custom-p-name')?.value.trim();
+    const pUnit = r.querySelector('.custom-p-unit')?.value.trim();
+    const pSpec = r.querySelector('.custom-p-spec')?.value.trim();
+    if (pName) {
+      capturedParameters.push({
+        name: pName,
+        unit: pUnit || '%',
+        dataType: 'Float',
+        spec: pSpec || 'Validated Range'
+      });
     }
-    return { name: trimmed, unit: '%', dataType: 'Float' };
-  }).filter(p => p.name) : [];
+  });
 
   const payload = {
     name,
@@ -270,7 +400,7 @@ async function submitSensorForm(editId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      recordAudit(`Updated Sensor [${editId}]`, 'Sensors & Hardware Hub');
+      recordAudit(`Customized Sensor [${editId}]`, 'Sensors & Hardware Hub');
     } else {
       await fetch(`${BACKEND_URL}/api/devices`, {
         method: 'POST',
@@ -288,6 +418,30 @@ async function submitSensorForm(editId) {
   }
 }
 
+function cloneSensor(deviceId) {
+  const sensor = sensorsCache.find(s => s.deviceId === deviceId);
+  if (!sensor) return;
+
+  const cloned = {
+    ...sensor,
+    name: `${sensor.name} (Copy)`,
+    deviceId: `PAT-${Math.random().toString(36).slice(2, 6).toUpperCase()}-01`
+  };
+
+  openSensorForm(null);
+  setTimeout(() => {
+    const nameInput = document.getElementById('formSensorName');
+    const idInput = document.getElementById('formSensorId');
+    const modelInput = document.getElementById('formSensorModel');
+    if (nameInput) nameInput.value = cloned.name;
+    if (idInput) idInput.value = cloned.deviceId;
+    if (modelInput) modelInput.value = cloned.model || '';
+  }, 50);
+}
+
+// -----------------------------------------------------------------
+// ACTIONS: PING, CODE SNIPPET & DELETE
+// -----------------------------------------------------------------
 async function pingSensor(deviceId) {
   try {
     const res = await fetch(`${BACKEND_URL}/api/devices/${encodeURIComponent(deviceId)}/ping`, {
