@@ -52,7 +52,9 @@ if (typeof document !== 'undefined') {
           });
           
           form.reset();
-          await refreshAuditTable();
+          localStorage.setItem('auditStepCompleted', 'true');
+          alert('Audit event recorded successfully! Workflow unlocked.');
+          window.location.reload();
         } catch (err) {
           console.error('Failed to log manual audit event:', err);
           alert('Failed to log event. Check connection.');
@@ -64,3 +66,4 @@ if (typeof document !== 'undefined') {
     }
   });
 }
+

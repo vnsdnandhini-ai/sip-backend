@@ -46,10 +46,26 @@
     }
   }
 
+  // Enforce Audit Log Step Completion
+  const isAuditComplete = localStorage.getItem('auditStepCompleted') === 'true';
+  const currentFileName = window.location.pathname.split('/').pop() || 'dashboard.html';
+  const currentPg = currentFileName.replace('.html', '');
+  
+  // Protect all pages except audit, dashboard, index, settings
+  if (!isAuditComplete && !['audit', 'dashboard', 'index', 'settings', ''].includes(currentPg)) {
+    alert('Workflow Locked: Please log an initial Audit Event first to unlock the platform.');
+    window.location.href = 'audit.html';
+    return;
+  }
+
   // Handle nav clicks
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', () => {
       const page = link.getAttribute('data-page');
+      if (!isAuditComplete && !['audit', 'dashboard', 'settings'].includes(page)) {
+        alert('Workflow Locked: Please complete the Audit Log entry first.');
+        return;
+      }
       const pageMap = {
         'dashboard': 'dashboard.html',
         'batches': 'batches.html',
@@ -74,6 +90,18 @@
       }
     });
   });
+
+  // Visually lock nav links
+  if (!isAuditComplete) {
+    document.querySelectorAll('.nav-link').forEach(link => {
+      const p = link.getAttribute('data-page');
+      if (!['audit', 'dashboard', 'settings'].includes(p)) {
+        link.style.opacity = '0.5';
+        link.style.cursor = 'not-allowed';
+        link.title = 'Complete Audit Log first';
+      }
+    });
+  }
 
   // Extract current page from URL
   const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
@@ -112,3 +140,4 @@
     });
   }
 })();
+
