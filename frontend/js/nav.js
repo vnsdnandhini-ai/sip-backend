@@ -136,8 +136,10 @@
   if (signOutBtn) {
     signOutBtn.addEventListener('click', () => {
       localStorage.removeItem('sipState');
+      localStorage.removeItem('auditStepCompleted');
       window.location.href = 'index.html';
     });
   }
 })();
+
 
