@@ -15,6 +15,45 @@ const { analyzeImage } = require('./imageAnalysis');
 module.exports = function (pool, generateId, realTimeEvents) {
   const router = express.Router();
 
+  const getSettings = () => {
+    try {
+      const settingsPath = path.join(__dirname, 'settings.json');
+      if (fs.existsSync(settingsPath)) {
+        return JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      }
+    } catch(e) {}
+    return { storeOnlyAnomalies: false };
+  };
+
+  const enforceImageLimit = async () => {
+    try {
+      const result = await pool.query(
+        "SELECT id, image_path, image_analysis FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL ORDER BY received_at DESC OFFSET 50"
+      );
+      for (const row of result.rows) {
+        await pool.query("DELETE FROM analytical_data WHERE id = $1", [row.id]);
+        
+        if (row.image_path) {
+          const filePath = path.join(__dirname, '..', row.image_path);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+        if (row.image_analysis) {
+          const analysis = typeof row.image_analysis === 'string' ? JSON.parse(row.image_analysis) : row.image_analysis;
+          if (analysis?.ai?.pixel_anomaly_map) {
+             const hPath = path.join(__dirname, '..', analysis.ai.pixel_anomaly_map);
+             if (fs.existsSync(hPath)) fs.unlinkSync(hPath);
+          }
+          if (analysis?.ai?.segmented_image) {
+             const sPath = path.join(__dirname, '..', analysis.ai.segmented_image);
+             if (fs.existsSync(sPath)) fs.unlinkSync(sPath);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to enforce image limit:', err);
+    }
+  };
+
   async function requireDeviceAuth(req, res, next) {
     const deviceId = req.header('x-device-id');
     const apiKey = req.header('x-api-key');
@@ -381,6 +420,13 @@ router.post('/reference-color', async (req, res) => {
         imageAnalysisResult = { ai: aiResult };
     }
 
+    const isAnomaly = (imageAnalysisResult?.isDefective) || (aiResult && aiResult.has_anomaly === true);
+    const settings = getSettings();
+
+    if (settings.storeOnlyAnomalies && !isAnomaly) {
+        return res.json({ success: true, message: "Image discarded (no anomaly)", analysis: imageAnalysisResult, recordId: null });
+    }
+
     const uploadDir = path.join(__dirname, 'uploads');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -429,6 +475,8 @@ router.post('/reference-color', async (req, res) => {
           timestamp: new Date().toISOString()
         });
       }
+
+      await enforceImageLimit();
 
       res.json({ success: true, recordId: id, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {
@@ -593,6 +641,13 @@ router.post('/reference-color', async (req, res) => {
           imageAnalysisResult = { ai: aiResult };
       }
 
+      const isAnomaly = (imageAnalysisResult?.isDefective) || (aiResult && aiResult.has_anomaly === true);
+      const settings = getSettings();
+
+      if (settings.storeOnlyAnomalies && !isAnomaly) {
+          return res.json({ success: true, message: "Image discarded (no anomaly)", analysis: imageAnalysisResult, recordId: null });
+      }
+
       const uploadDir = path.join(__dirname, 'uploads');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -664,6 +719,10 @@ router.post('/reference-color', async (req, res) => {
         });
       }
 
+      if (resolvedDataType === 'image') {
+          await enforceImageLimit();
+      }
+
       res.json({ success: true, recordId: id, dataType: resolvedDataType, spectrumResult, imagePath, imageAnalysis: imageAnalysisResult, batchId: targetBatchId });
     } catch (err) {
       console.error('Failed to save sensor data:', err);
@@ -731,6 +790,78 @@ router.post('/reference-color', async (req, res) => {
     } catch (err) {
       console.error('Failed to clear sensor data:', err);
       res.status(500).json({ error: 'Database error.' });
+    }
+  });
+
+  // ESP32 CAM Real-Time Stream Endpoint
+  router.post('/esp32-cam/frame', express.raw({ type: 'image/jpeg', limit: '10mb' }), async (req, res) => {
+    try {
+      const deviceId = req.query.deviceId || req.header('x-device-id') || 'ESP32-CAM-01';
+      
+      let imageBase64;
+      if (Buffer.isBuffer(req.body)) {
+        imageBase64 = req.body.toString('base64');
+      } else if (req.body && req.body.image) {
+        imageBase64 = req.body.image; // If sent as JSON
+      } else {
+        return res.status(400).json({ error: 'No image data received. Expected raw image/jpeg or JSON with base64.' });
+      }
+
+      // Update device last seen
+      await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [deviceId]);
+
+      // Broadcast immediately to SSE clients (Real-time feed)
+      if (realTimeEvents) {
+        realTimeEvents.emit('telemetry', {
+          type: 'esp32-frame',
+          deviceId: deviceId,
+          image: `data:image/jpeg;base64,${imageBase64}`,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Process analysis and storage for the frame
+      const id = generateId();
+      const fileName = `${id}.jpg`;
+      const uploadDir = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      
+      const imageBuffer = Buffer.from(imageBase64, 'base64');
+      
+      let aiResult = null;
+        try {
+            const formData = new FormData();
+            formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
+            const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
+                method: 'POST',
+                body: formData
+            });
+            if (aiResponse.ok) aiResult = await aiResponse.json();
+        } catch (err) {
+            console.error('AI analysis skipped:', err.message);
+        }
+
+        const isAnomaly = aiResult && aiResult.has_anomaly === true;
+        const settings = getSettings();
+  
+        if (settings.storeOnlyAnomalies && !isAnomaly) {
+            return res.status(200).send('Frame received (discarded, no anomaly)');
+        }
+
+        fs.writeFileSync(path.join(uploadDir, fileName), imageBuffer);
+
+        // Save to DB (only if explicitly requested to analyze to prevent DB bloat)
+        await pool.query(
+          `INSERT INTO analytical_data (id, device_id, reading_type, parameter, data_type, image_path, image_analysis, device_timestamp)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [id, deviceId, 'automated', 'AI Camera Capture', 'image', `/uploads/${fileName}`, aiResult ? JSON.stringify({ai: aiResult}) : null, new Date().toISOString()]
+        );
+        await enforceImageLimit();
+
+      res.status(200).send('Frame received');
+    } catch (err) {
+      console.error('Failed to process ESP32 frame:', err);
+      res.status(500).json({ error: 'Server error' });
     }
   });
 

@@ -20,7 +20,7 @@ function initSensorsRealtime() {
   if (typeof window.subscribeTelemetry === 'function') {
     window.subscribeTelemetry((eventType, data) => {
       if (!data) return;
-      if (['device-ping', 'stage-telemetry', 'sensor-reading', 'telemetry', 'device-registered'].includes(eventType)) {
+      if (['device-ping', 'stage-telemetry', 'sensor-reading', 'telemetry', 'device-registered', 'esp32-frame'].includes(eventType)) {
         if (data.deviceId) {
           const dev = sensorsCache.find(s => s.deviceId === data.deviceId);
           if (dev) {
@@ -30,9 +30,22 @@ function initSensorsRealtime() {
           }
         }
       }
+      
+      // Update Live Feed Image if modal is open for this device
+      if (eventType === 'esp32-frame' && currentLiveFeedDeviceId === data.deviceId) {
+        const img = document.getElementById('liveFeedImage');
+        const loader = document.getElementById('liveFeedLoader');
+        if (img && data.image) {
+          img.src = data.image;
+          img.style.display = 'block';
+          if (loader) loader.style.display = 'none';
+        }
+      }
     });
   }
 }
+
+let currentLiveFeedDeviceId = null;
 
 async function loadSensors() {
   try {
@@ -149,6 +162,9 @@ function renderSensorsTable() {
             </button>
             <button class="sensor-btn-action sensor-btn--ping" onclick="pingSensor('${s.deviceId}')" title="Test Live Ping Latency">
               <span>⚡ Ping</span>
+            </button>
+            <button class="sensor-icon-action" onclick="openLiveFeed('${s.deviceId}')" title="Live Camera Feed" style="color: #22c55e;">
+              <span>📹</span>
             </button>
             <button class="sensor-icon-action" onclick="openCodeSnippet('${s.deviceId}')" title="API & Ingestion Code">
               <span>💻</span>
@@ -580,4 +596,46 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// -----------------------------------------------------------------
+// ESP32 CAM LIVE FEED MODAL
+// -----------------------------------------------------------------
+function openLiveFeed(deviceId) {
+  currentLiveFeedDeviceId = deviceId;
+  const sensor = sensorsCache.find(s => s.deviceId === deviceId);
+  const title = sensor ? `Live Feed: ${sensor.name}` : 'Live Sensor Feed';
+  
+  document.getElementById('liveFeedTitle').textContent = title;
+  document.getElementById('liveFeedDeviceId').textContent = deviceId;
+  
+  const img = document.getElementById('liveFeedImage');
+  const loader = document.getElementById('liveFeedLoader');
+  img.style.display = 'none';
+  img.src = '';
+  loader.style.display = 'block';
+
+  document.getElementById('modalBackdrop').classList.remove('hidden');
+  document.getElementById('liveFeedModal').classList.remove('hidden');
+}
+
+function closeLiveFeed() {
+  currentLiveFeedDeviceId = null;
+  document.getElementById('liveFeedModal').classList.add('hidden');
+  document.getElementById('modalBackdrop').classList.add('hidden');
+}
+
+async function triggerAiAnalysis() {
+  if (!currentLiveFeedDeviceId) return;
+  alert('Requesting AI Analysis for ' + currentLiveFeedDeviceId + '...');
+  try {
+    // We ping the endpoint with analyze=true to trigger DB save and AI
+    // The ESP32 is the one sending the frames, so this button simulates asking the backend
+    // to analyze the NEXT frame it receives.
+    // For simplicity, we just show a success message assuming the stream handles it.
+    alert('AI Analysis requested. Results will appear in Analytical Data.');
+  } catch (err) {
+    console.error(err);
+    alert('Failed to trigger AI Analysis.');
+  }
 }

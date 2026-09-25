@@ -12,30 +12,24 @@ const pool = require('./db');
 
 async function getFullState() {
   try {
-    const [
-      users, projects, devices, monitoringPoints, parameters,
-      checkoutConditions, regulatoryRules, analyticalData,
-      complianceResults, auditTrail, reports, dispensingLogs, workflows,
-    ] = await Promise.all([
-      pool.query('SELECT id, username, role FROM users'),
-      pool.query('SELECT * FROM projects ORDER BY created_at DESC'),
-      pool.query('SELECT * FROM devices'),
-      pool.query('SELECT * FROM monitoring_points ORDER BY created_at'),
-      pool.query('SELECT * FROM parameters ORDER BY created_at'),
-      pool.query('SELECT * FROM checkout_conditions ORDER BY created_at'),
-      pool.query('SELECT * FROM regulatory_rules ORDER BY created_at'),
-      pool.query(`
-        (SELECT * FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL ORDER BY received_at DESC)
-        UNION ALL
-        (SELECT * FROM analytical_data WHERE (data_type IS NULL OR data_type != 'image') AND image_path IS NULL ORDER BY received_at DESC LIMIT 250)
-        ORDER BY received_at DESC
-      `),
-      pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at DESC LIMIT 200'),
-      pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC LIMIT 100'),
-      pool.query('SELECT * FROM reports ORDER BY created_at DESC'),
-      pool.query('SELECT * FROM dispensing_logs ORDER BY timestamp DESC LIMIT 100').catch(() => ({ rows: [] })),
-      pool.query('SELECT * FROM process_workflows ORDER BY created_at ASC').catch(() => ({ rows: [] })),
-    ]);
+    const users = await pool.query('SELECT id, username, role FROM users');
+    const projects = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
+    const devices = await pool.query('SELECT * FROM devices');
+    const monitoringPoints = await pool.query('SELECT * FROM monitoring_points ORDER BY created_at');
+    const parameters = await pool.query('SELECT * FROM parameters ORDER BY created_at');
+    const checkoutConditions = await pool.query('SELECT * FROM checkout_conditions ORDER BY created_at');
+    const regulatoryRules = await pool.query('SELECT * FROM regulatory_rules ORDER BY created_at');
+    const analyticalData = await pool.query(`
+      (SELECT * FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL ORDER BY received_at DESC)
+      UNION ALL
+      (SELECT * FROM analytical_data WHERE (data_type IS NULL OR data_type != 'image') AND image_path IS NULL ORDER BY received_at DESC LIMIT 250)
+      ORDER BY received_at DESC
+    `);
+    const complianceResults = await pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at DESC LIMIT 200');
+    const auditTrail = await pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC LIMIT 100');
+    const reports = await pool.query('SELECT * FROM reports ORDER BY created_at DESC');
+    const dispensingLogs = await pool.query('SELECT * FROM dispensing_logs ORDER BY timestamp DESC LIMIT 100').catch(() => ({ rows: [] }));
+    const workflows = await pool.query('SELECT * FROM process_workflows ORDER BY created_at ASC').catch(() => ({ rows: [] }));
 
   const mappedBatches = projects.rows.map((p) => ({
     id: p.id,

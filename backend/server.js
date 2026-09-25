@@ -1837,6 +1837,35 @@ app.post('/api/telemetry/ingest', async (req, res) => {
   }
 });
 
+// Settings API
+app.get('/api/settings', (req, res) => {
+  const settingsPath = path.join(__dirname, 'settings.json');
+  let settings = { storeOnlyAnomalies: false };
+  try {
+    if (require('fs').existsSync(settingsPath)) {
+      settings = JSON.parse(require('fs').readFileSync(settingsPath, 'utf8'));
+    }
+  } catch(e) {}
+  res.json(settings);
+});
+
+app.put('/api/settings', (req, res) => {
+  const settingsPath = path.join(__dirname, 'settings.json');
+  let settings = { storeOnlyAnomalies: false };
+  try {
+    if (require('fs').existsSync(settingsPath)) {
+      settings = JSON.parse(require('fs').readFileSync(settingsPath, 'utf8'));
+    }
+  } catch(e) {}
+  settings = { ...settings, ...req.body };
+  try {
+    require('fs').writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    res.json(settings);
+  } catch(e) {
+    res.status(500).json({ error: 'Could not save settings' });
+  }
+});
+
 app.use('/api', sensorRoutes(pool, generateId, realTimeEvents));
 app.use('/api', complianceRoutes(pool, generateId, realTimeEvents));
 

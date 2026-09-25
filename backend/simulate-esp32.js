@@ -291,7 +291,7 @@ const STAGE_SENSORS = {
         {
           name: 'Tablet Hardness',
           parameter: 'Tablet Hardness',
-          value: isPass ? randomInRange(9.0, 10.5, 1),
+          value: isPass ? randomInRange(9.0, 10.5, 1) : randomInRange(6.0, 8.5, 1),
           unit: 'Kp',
           instrument: 'Automated Tablet Hardness Tester (HRD-07)',
           result: isPass ? 'PASS' : 'WARNING'

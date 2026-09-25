@@ -22,7 +22,7 @@
   // Update page title
   function updatePageTitle(pageName) {
     const titles = {
-      'dashboard': 'Dashboard',
+      'dashboard': 'Live Monitoring',
       'batches': 'Batch Management',
       'workflow': 'Process Workflow & Monitoring',
       'sensors': 'Sensors & Hardware Topology',
@@ -32,11 +32,12 @@
       'checkout': 'Checkout Conditions',
       'rules': 'Regulatory Rules',
       'onboarding': 'Project Setup Wizard',
-      'analytical': 'Analytical Data',
+      'data-entry': 'Analytical Data',
       'gallery': 'Image Gallery',
       'compliance': 'Compliance Engine',
       'cgmp': 'cGMP & Industrial Standards',
-      'reports': 'Reports & Audit',
+      'reports': 'Quality Reports',
+      'audit': 'Audit Log',
       'settings': 'Settings'
     };
     const titleEl = document.getElementById('pageTitle');
@@ -66,7 +67,7 @@
         'cgmp': 'cgmp-standards.html',
         'reports': 'reports.html',
         'settings': 'settings.html',
-        'audit': 'reports.html?tab=audit'
+        'audit': 'audit.html'
       };
       if (pageMap[page]) {
         window.location.href = pageMap[page];
@@ -96,7 +97,7 @@
     'cgmp-standards': 'cgmp',
     'reports': 'reports',
     'settings': 'settings',
-    'audit': 'reports'
+    'audit': 'audit'
   };
 
   setActiveNav(pageNameMap[currentPage] || 'dashboard');
