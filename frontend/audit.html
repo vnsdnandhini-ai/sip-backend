@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="refresh" content="0; url=reports.html?tab=audit" />
-  <title>Redirecting to Reports & Audit...</title>
-  <script>window.location.replace('reports.html?tab=audit');</script>
+  
+  <title>Audit Log - Spectroscopic Intelligence Platform</title>
+  
 </head>
 <body>
   <div class="layout">
@@ -54,11 +54,32 @@
       </header>
 
       <section class="content-section">
-        <div class="section-header">
+                <div class="section-header">
           <div>
-            <h3>Audit Trail</h3>
-            <p>Complete audit records for login, configuration changes, uploads, report generation, and approvals.</p>
+            <h3>Audit Log & Trail</h3>
+            <p>21 CFR Part 11 compliant audit records. System events are automatically logged, but you can also record manual operational events here.</p>
           </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">Log Manual Operation Event</div>
+          <form id="manualAuditForm" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px;">
+            <div class="form-group">
+              <label>Operator / User</label>
+              <input type="text" id="auditUser" placeholder="e.g. John Doe (QA Lead)" required>
+            </div>
+            <div class="form-group">
+              <label>Module / Area</label>
+              <input type="text" id="auditModule" placeholder="e.g. Cleanroom B" required>
+            </div>
+            <div class="form-group">
+              <label>Activity Description</label>
+              <input type="text" id="auditActivity" placeholder="e.g. Manual calibration of Sensor X" required>
+            </div>
+            <div style="grid-column: span 3;">
+              <button type="submit" class="button button--primary">Record to Audit Trail</button>
+            </div>
+          </form>
         </div>
         <div class="data-table-wrapper">
           <table class="data-table" id="auditTable">
@@ -95,6 +116,7 @@
   <script src="js/nav.js"></script>
 </body>
 </html>
+
 
 
 
