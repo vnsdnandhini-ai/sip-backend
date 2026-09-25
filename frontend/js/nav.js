@@ -47,7 +47,7 @@
   }
 
   // Enforce Audit Log Step Completion
-  const isAuditComplete = localStorage.getItem('auditStepCompleted') === 'true';
+  const isAuditComplete = sessionStorage.getItem('auditStepCompleted') === 'true';
   const currentFileName = window.location.pathname.split('/').pop() || 'dashboard.html';
   const currentPg = currentFileName.replace('.html', '');
   
@@ -136,10 +136,11 @@
   if (signOutBtn) {
     signOutBtn.addEventListener('click', () => {
       localStorage.removeItem('sipState');
-      localStorage.removeItem('auditStepCompleted');
+      sessionStorage.removeItem('auditStepCompleted');
       window.location.href = 'index.html';
     });
   }
 })();
+
 
 

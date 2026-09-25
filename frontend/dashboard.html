@@ -136,7 +136,7 @@
     <script src="js/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const isAuditComplete = localStorage.getItem('auditStepCompleted') === 'true';
+      const isAuditComplete = sessionStorage.getItem('auditStepCompleted') === 'true';
       if (!isAuditComplete) {
         document.querySelectorAll('.action-grid .mini-button').forEach(btn => {
           if (!btn.textContent.includes('1. Audit Details')) {
@@ -156,6 +156,7 @@
   <script src="js/nav.js"></script>
 </body>
 </html>
+
 
 
 

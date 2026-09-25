@@ -52,7 +52,7 @@ if (typeof document !== 'undefined') {
           });
           
           form.reset();
-          localStorage.setItem('auditStepCompleted', 'true');
+          sessionStorage.setItem('auditStepCompleted', 'true');
           alert('Audit event recorded successfully! Workflow unlocked.');
           window.location.reload();
         } catch (err) {
@@ -66,4 +66,5 @@ if (typeof document !== 'undefined') {
     }
   });
 }
+
 
