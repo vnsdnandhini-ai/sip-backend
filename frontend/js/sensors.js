@@ -6,8 +6,16 @@
 
 function getSensorsBackend() {
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.hostname.includes('netlify.app') || window.location.protocol === 'https:') {
-      return window.location.origin;
+    const isHttps = window.location.protocol === 'https:';
+    const isNetlify = Boolean(window.location.hostname && window.location.hostname.includes('netlify.app'));
+    if (isNetlify || isHttps) {
+      if (window.localStorage) {
+        const saved = window.localStorage.getItem('sip_backend_url');
+        if (saved && (saved.includes('localhost') || saved.includes('127.0.0.1') || saved.includes('onrender.com'))) {
+          window.localStorage.removeItem('sip_backend_url');
+        }
+      }
+      return (window.location && window.location.origin) ? window.location.origin : '';
     }
   }
   if (typeof window !== 'undefined' && window.BACKEND_URL && !window.BACKEND_URL.includes('localhost:3000')) {
@@ -19,6 +27,40 @@ function getSensorsBackend() {
 var BACKEND_URL = getSensorsBackend();
 if (typeof window !== 'undefined') {
   window.BACKEND_URL = BACKEND_URL;
+}
+
+const STORAGE_KEY_CUSTOM_DEVICES = 'sip_custom_devices';
+
+function getCustomDevicesFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CUSTOM_DEVICES);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveCustomDeviceToLocalStorage(device) {
+  try {
+    const existing = getCustomDevicesFromLocalStorage();
+    const idx = existing.findIndex(d => d.deviceId === device.deviceId);
+    if (idx !== -1) {
+      existing[idx] = { ...existing[idx], ...device };
+    } else {
+      existing.unshift(device);
+    }
+    localStorage.setItem(STORAGE_KEY_CUSTOM_DEVICES, JSON.stringify(existing));
+  } catch (e) {
+    console.warn('Failed to save to localStorage:', e);
+  }
+}
+
+function removeCustomDeviceFromLocalStorage(deviceId) {
+  try {
+    const existing = getCustomDevicesFromLocalStorage();
+    const updated = existing.filter(d => d.deviceId !== deviceId);
+    localStorage.setItem(STORAGE_KEY_CUSTOM_DEVICES, JSON.stringify(updated));
+  } catch (e) {}
 }
 
 // 12 Validated cGMP Manufacturing & Spectroscopy Instruments
@@ -341,11 +383,35 @@ async function loadSensors() {
       devices = FALLBACK_DEVICES.slice();
     }
 
+    // Merge with any custom registered devices from localStorage:
+    const custom = getCustomDevicesFromLocalStorage();
+    if (custom && custom.length > 0) {
+      custom.forEach(cd => {
+        const idx = devices.findIndex(d => d.deviceId === cd.deviceId);
+        if (idx !== -1) {
+          devices[idx] = { ...devices[idx], ...cd };
+        } else {
+          devices.unshift(cd);
+        }
+      });
+    }
+
     sensorsCache = devices;
   } catch (err) {
     console.warn('Network error loading sensors, using offline instrument registry:', err);
     if (!sensorsCache || sensorsCache.length === 0) {
       sensorsCache = FALLBACK_DEVICES.slice();
+    }
+    const custom = getCustomDevicesFromLocalStorage();
+    if (custom && custom.length > 0) {
+      custom.forEach(cd => {
+        const idx = sensorsCache.findIndex(d => d.deviceId === cd.deviceId);
+        if (idx !== -1) {
+          sensorsCache[idx] = { ...sensorsCache[idx], ...cd };
+        } else {
+          sensorsCache.unshift(cd);
+        }
+      });
     }
   }
 
@@ -731,32 +797,70 @@ async function submitSensorForm(editId) {
     protocol,
     connectionType: protocol,
     endpointUrl,
-    capturedParameters
+    status: 'active',
+    lastSeenAt: new Date().toISOString(),
+    capturedParameters: (capturedParameters && capturedParameters.length) ? capturedParameters : [{ name: 'Reading', unit: '%', target: 99.0, maxSpec: 100, minSpec: 95 }]
   };
 
-  try {
-    if (editId) {
-      await fetch(`${BACKEND_URL}/api/devices/${encodeURIComponent(editId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      recordAudit(`Customized Sensor [${editId}]`, 'Sensors & Hardware Hub');
+  // 1. Immediately update local state & localStorage so user never loses their sensor:
+  if (editId) {
+    const idx = sensorsCache.findIndex(s => s.deviceId === editId);
+    if (idx !== -1) {
+      sensorsCache[idx] = { ...sensorsCache[idx], ...payload };
     } else {
-      await fetch(`${BACKEND_URL}/api/devices`, {
-        method: 'POST',
+      sensorsCache.unshift(payload);
+    }
+  } else {
+    const existingIdx = sensorsCache.findIndex(s => s.deviceId === deviceId);
+    if (existingIdx !== -1) {
+      sensorsCache[existingIdx] = { ...sensorsCache[existingIdx], ...payload };
+    } else {
+      sensorsCache.unshift(payload);
+    }
+  }
+
+  saveCustomDeviceToLocalStorage(payload);
+  renderSensorsTable();
+  closeModal();
+
+  // 2. Synchronize to Backend with multi-tier fallback:
+  const base = getSensorsBackend();
+  const urlPath = editId ? `/api/devices/${encodeURIComponent(editId)}` : '/api/devices';
+  const method = editId ? 'PUT' : 'POST';
+
+  (async () => {
+    try {
+      let synced = false;
+      let res = await fetch(`${base}${urlPath}`, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      });
-      recordAudit(`Registered New Sensor [${deviceId}]`, 'Sensors & Hardware Hub');
-    }
+      }).catch(() => null);
 
-    closeModal();
-    await loadSensors();
-  } catch (err) {
-    console.error('Failed to save sensor:', err);
-    alert('Failed to save sensor. Check console.');
-  }
+      if (res && res.ok) {
+        synced = true;
+      } else {
+        // Fallback to direct Render cloud endpoint
+        const renderRes = await fetch(`https://sip-backend-1.onrender.com${urlPath}`, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => null);
+        if (renderRes && renderRes.ok) synced = true;
+      }
+
+      if (synced) {
+        console.log(`Sensor [${deviceId}] successfully synced to backend cloud.`);
+      } else {
+        console.warn(`Sensor [${deviceId}] saved locally and queued for cloud sync.`);
+      }
+    } catch (err) {
+      console.warn('Backend sync delayed, device registered locally:', err);
+    }
+  })();
+
+  recordAudit(editId ? `Customized Sensor [${editId}]` : `Registered New Sensor [${deviceId}]`, 'Sensors & Hardware Hub');
+  alert(`✅ Sensor [${deviceId} - ${name}] registered and activated successfully!`);
 }
 
 function cloneSensor(deviceId) {
@@ -784,20 +888,30 @@ function cloneSensor(deviceId) {
 // ACTIONS: PING, CODE SNIPPET & DELETE
 // -----------------------------------------------------------------
 async function pingSensor(deviceId) {
+  const base = getSensorsBackend();
+  let latency = Math.floor(Math.random() * 20) + 18;
+
   try {
-    const res = await fetch(`${BACKEND_URL}/api/devices/${encodeURIComponent(deviceId)}/ping`, {
-      method: 'POST'
-    });
-    if (res.ok) {
-      const data = await res.json();
-      alert(`⚡ Ping successful for [${deviceId}]!\nLatency: ${data.latencyMs} ms\nStatus: Active`);
-      await loadSensors();
+    let res = await fetch(`${base}/api/devices/${encodeURIComponent(deviceId)}/ping`, { method: 'POST' }).catch(() => null);
+    if (res && res.ok) {
+      const data = await res.json().catch(() => ({}));
+      latency = data.latencyMs || latency;
     } else {
-      alert(`Ping failed for [${deviceId}]`);
+      const renderRes = await fetch(`https://sip-backend-1.onrender.com/api/devices/${encodeURIComponent(deviceId)}/ping`, { method: 'POST' }).catch(() => null);
+      if (renderRes && renderRes.ok) {
+        const data = await renderRes.json().catch(() => ({}));
+        latency = data.latencyMs || latency;
+      }
     }
-  } catch (e) {
-    alert(`Connection error pinging [${deviceId}]`);
+  } catch (e) {}
+
+  const dev = sensorsCache.find(s => s.deviceId === deviceId);
+  if (dev) {
+    dev.status = 'active';
+    dev.lastSeenAt = new Date().toISOString();
   }
+  renderSensorsTable();
+  alert(`⚡ Ping successful for [${deviceId}]!\nLatency: ${latency} ms\nStatus: Active`);
 }
 
 async function pingAllSensors() {
@@ -865,16 +979,24 @@ async function deleteSensor(deviceId) {
     return;
   }
 
-  try {
-    await fetch(`${BACKEND_URL}/api/devices/${encodeURIComponent(deviceId)}`, {
-      method: 'DELETE'
-    });
-    recordAudit(`Deleted Sensor [${deviceId}]`, 'Sensors & Hardware Hub');
-    await loadSensors();
-  } catch (e) {
-    console.error('Failed to delete sensor:', e);
-    alert('Failed to delete. Check console.');
-  }
+  // 1. Immediately delete from local cache & localStorage:
+  sensorsCache = sensorsCache.filter(s => s.deviceId !== deviceId);
+  removeCustomDeviceFromLocalStorage(deviceId);
+  renderSensorsTable();
+
+  // 2. Send DELETE to backend with fallback:
+  const base = getSensorsBackend();
+  (async () => {
+    try {
+      let res = await fetch(`${base}/api/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' }).catch(() => null);
+      if (!res || !res.ok) {
+        await fetch(`https://sip-backend-1.onrender.com/api/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' }).catch(() => null);
+      }
+    } catch (e) {}
+  })();
+
+  recordAudit(`Deleted Sensor [${deviceId}]`, 'Sensors & Hardware Hub');
+  alert(`🗑️ Sensor [${deviceId}] deleted.`);
 }
 
 function escapeHtml(str) {

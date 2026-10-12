@@ -52,7 +52,10 @@ function initGlobalTelemetryStream() {
     return;
   }
 
-  const sseUrl = `${BACKEND_URL}/api/telemetry/stream`;
+  const isNetlify = typeof window !== 'undefined' && window.location && window.location.hostname.includes('netlify.app');
+  const sseUrl = isNetlify 
+    ? 'https://sip-backend-1.onrender.com/api/telemetry/stream'
+    : `${BACKEND_URL || ''}/api/telemetry/stream`;
   try {
     globalTelemetrySource = new EventSource(sseUrl);
 
@@ -193,12 +196,23 @@ async function getOrFetchState(force = false) {
 
   _stateFetchPromise = (async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/state`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      _cachedStateData = data;
-      _cachedStateTimestamp = Date.now();
-      return data;
+      let data = null;
+      let response = await fetch(`${BACKEND_URL || ''}/api/state`).catch(() => null);
+      if (response && response.ok) {
+        data = await response.json().catch(() => null);
+      }
+      if (!data) {
+        const renderRes = await fetch('https://sip-backend-1.onrender.com/api/state').catch(() => null);
+        if (renderRes && renderRes.ok) {
+          data = await renderRes.json().catch(() => null);
+        }
+      }
+      if (data) {
+        _cachedStateData = data;
+        _cachedStateTimestamp = Date.now();
+        return data;
+      }
+      throw new Error('Failed to fetch state from all endpoints');
     } finally {
       _stateFetchPromise = null;
     }
