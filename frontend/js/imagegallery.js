@@ -24,9 +24,12 @@ function resolveGalleryImageUrl(url) {
     return url;
   }
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `${BACKEND_URL}${cleanPath}`;
+  if (typeof window !== 'undefined' && window.location && window.location.hostname.includes('netlify.app')) {
+    return `https://sip-backend-1.onrender.com${cleanPath}`;
+  }
+  return `${BACKEND_URL || ''}${cleanPath}`;
 }
-window.resolveImageUrl = window.resolveImageUrl || resolveGalleryImageUrl;
+window.resolveImageUrl = resolveGalleryImageUrl;
 
 /**
  * Safely parses imageAnalysis whether stored as an object or JSON string.
@@ -558,7 +561,7 @@ function renderGallery() {
             alt="${titleText}" 
             loading="lazy" 
             style="width:100%; height:100%; object-fit:cover; display:block;"
-            onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'165\\' viewBox=\\'0 0 300 165\\'%3E%3Crect width=\\'300\\' height=\\'165\\' fill=\\'%231e293b\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'12\\' fill=\\'%2394a3b8\\'%3EImage Loading Failed%3C/text%3E%3C/svg%3E';"
+            onerror="if (!this.dataset.retried) { this.dataset.retried = '1'; this.src = 'https://sip-backend-1.onrender.com/' + '${String(rawUrl).replace(/^\//, '')}'; } else { this.onerror = null; this.src = 'data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'165\\' viewBox=\\'0 0 300 165\\'%3E%3Crect width=\\'300\\' height=\\'165\\' fill=\\'%231e293b\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'12\\' fill=\\'%2394a3b8\\'%3EImage Loading Failed%3C/text%3E%3C/svg%3E'; }"
           />
           ${categoryTag}
           <div style="position:absolute; bottom:8px; left:8px; z-index:2;">

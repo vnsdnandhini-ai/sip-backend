@@ -165,13 +165,77 @@ if (document.getElementById('refreshCombinedVerdict')) {
   document.getElementById('refreshCombinedVerdict').addEventListener('click', loadCombinedVerdict);
 }
 
+async function loadInitialCompliance() {
+  const statusEl = document.getElementById('complianceStatus');
+  const passRateEl = document.getElementById('compliancePassRate');
+  const deviationsEl = document.getElementById('complianceDeviations');
+
+  try {
+    const backend = (typeof window !== 'undefined' && window.BACKEND_URL) ? window.BACKEND_URL : (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
+    let state = null;
+    if (typeof window.getOrFetchState === 'function') {
+      state = await window.getOrFetchState();
+    } else {
+      const res = await fetch(`${backend}/api/state`).catch(() => null);
+      if (res && res.ok) state = await res.json();
+    }
+
+    if (state) {
+      complianceResultsCache = state.complianceResults || [];
+      monitoringPointsCache = state.monitoringPoints || [];
+
+      if (complianceResultsCache.length === 0) {
+        await executeComplianceEvaluation();
+        return;
+      }
+
+      const total = complianceResultsCache.length;
+      const passCount = complianceResultsCache.filter((r) => r.result === 'PASS').length;
+      const deviationCount = complianceResultsCache.filter((r) => r.result === 'WARNING' || r.result === 'CRITICAL').length;
+      const criticalCount = complianceResultsCache.filter((r) => r.result === 'CRITICAL').length;
+      const passRate = total > 0 ? ((passCount / total) * 100) : 0;
+
+      if (statusEl) statusEl.textContent = 'Active (Evaluated)';
+      if (passRateEl) passRateEl.textContent = `${passRate.toFixed(1)}%`;
+      if (deviationsEl) deviationsEl.textContent = deviationCount;
+
+      const statusCard = statusEl ? statusEl.closest('.card--metric') : null;
+      const passRateCard = passRateEl ? passRateEl.closest('.card--metric') : null;
+      const deviationsCard = deviationsEl ? deviationsEl.closest('.card--metric') : null;
+
+      if (statusCard) {
+        statusCard.classList.remove('status-good', 'status-warn', 'status-bad');
+        statusCard.classList.add('status-good');
+      }
+      if (passRateCard) {
+        passRateCard.classList.remove('status-good', 'status-warn', 'status-bad');
+        passRateCard.classList.add(passRate >= 90 ? 'status-good' : passRate >= 70 ? 'status-warn' : 'status-bad');
+      }
+      if (deviationsCard) {
+        deviationsCard.classList.remove('status-good', 'status-warn', 'status-bad');
+        deviationsCard.classList.add(criticalCount > 0 ? 'status-bad' : deviationCount > 0 ? 'status-warn' : 'status-good');
+      }
+
+      renderComplianceTable();
+    }
+  } catch (err) {
+    console.error('Initial compliance load failed:', err);
+  }
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('complianceTable')) {
+      loadInitialCompliance();
+    }
     if (document.getElementById('combinedVerdictTable')) {
       loadCombinedVerdict();
     }
   });
 } else {
+  if (document.getElementById('complianceTable')) {
+    loadInitialCompliance();
+  }
   if (document.getElementById('combinedVerdictTable')) {
     loadCombinedVerdict();
   }

@@ -8,6 +8,12 @@
   force = true
 
 [[redirects]]
+  from = "/uploads/*"
+  to = "https://sip-backend-1.onrender.com/uploads/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

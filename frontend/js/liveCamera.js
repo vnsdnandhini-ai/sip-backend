@@ -8,7 +8,10 @@ function resolveImageUrl(url) {
     return url;
   }
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  return `${BACKEND_URL}${cleanPath}`;
+  if (typeof window !== 'undefined' && window.location && window.location.hostname.includes('netlify.app')) {
+    return `https://sip-backend-1.onrender.com${cleanPath}`;
+  }
+  return `${BACKEND_URL || ''}${cleanPath}`;
 }
 
 let cameraRefreshInterval = null;
