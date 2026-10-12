@@ -4,8 +4,10 @@
  * Matches the platform standard table & modal design.
  */
 
-var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) ? window.BACKEND_URL : 'http://localhost:3000';
-if (typeof window !== 'undefined') {
+var BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL) 
+  ? window.BACKEND_URL 
+  : (typeof window !== 'undefined' && window.location && window.location.hostname.includes('netlify.app') ? window.location.origin : 'http://localhost:3000');
+if (typeof window !== 'undefined' && !window.BACKEND_URL) {
   window.BACKEND_URL = BACKEND_URL;
 }
 
@@ -49,17 +51,37 @@ let currentLiveFeedDeviceId = null;
 
 async function loadSensors() {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/devices`);
-    if (res.ok) {
-      sensorsCache = await res.json();
-    } else {
-      const stateRes = await fetch(`${BACKEND_URL}/api/state`);
-      const state = await stateRes.json();
-      sensorsCache = state.devices || [];
+    let devices = [];
+    const backend = (typeof window !== 'undefined' && window.BACKEND_URL) ? window.BACKEND_URL : (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '');
+    const res = await fetch(`${backend}/api/devices`).catch(() => null);
+    if (res && res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        devices = data;
+      }
     }
+    // If /api/devices returned empty or error, fallback directly to /api/state:
+    if (!devices || devices.length === 0) {
+      let state = null;
+      if (typeof window !== 'undefined' && typeof window.getOrFetchState === 'function') {
+        state = await window.getOrFetchState();
+      } else {
+        const stateRes = await fetch(`${backend}/api/state`).catch(() => null);
+        if (stateRes && stateRes.ok) state = await stateRes.json();
+      }
+      if (state && state.devices && state.devices.length) {
+        devices = state.devices;
+      }
+    }
+    sensorsCache = devices;
   } catch (err) {
     console.error('Failed to load sensors:', err);
-    sensorsCache = [];
+    try {
+      const state = typeof window.getOrFetchState === 'function' ? await window.getOrFetchState() : null;
+      sensorsCache = (state && state.devices) ? state.devices : [];
+    } catch (e) {
+      sensorsCache = [];
+    }
   }
   renderSensorsTable();
   return sensorsCache;

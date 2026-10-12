@@ -15,7 +15,7 @@ function getBackendUrl() {
       return `${proto}//${host || 'localhost'}:3000`;
     }
     if (host.includes('netlify.app')) {
-      return ''; // Routes through Netlify proxy redirects to backend
+      return (window.location && window.location.origin) ? window.location.origin : ''; // Uses origin for Netlify proxy redirects
     }
     return `${proto}//${host}:3000`;
   }

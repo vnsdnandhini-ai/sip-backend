@@ -105,7 +105,13 @@ module.exports = function (pool, generateId, realTimeEvents) {
         lastSeenAt: d.last_seen_at,
       })));
     } catch (err) {
-      console.error('Failed to list devices:', err);
+      console.error('Failed to list devices, loading fallback:', err.message);
+      try {
+        const backup = JSON.parse(fs.readFileSync(path.join(__dirname, 'local_state_backup.json'), 'utf8'));
+        if (backup && backup.devices && backup.devices.length) {
+          return res.json(backup.devices);
+        }
+      } catch (e) {}
       res.status(500).json({ error: 'Database error.' });
     }
   });
