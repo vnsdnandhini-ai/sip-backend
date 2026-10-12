@@ -1,5 +1,19 @@
 function getBackendUrl() {
   if (typeof window !== 'undefined') {
+    const isNetlify = Boolean(window.location && window.location.hostname && window.location.hostname.includes('netlify.app'));
+    const isHttps = Boolean(window.location && window.location.protocol === 'https:');
+
+    // On Netlify or any HTTPS deployment, NEVER return http://localhost:3000 and clear stale localStorage
+    if (isNetlify || isHttps) {
+      if (window.localStorage) {
+        const saved = window.localStorage.getItem('sip_backend_url');
+        if (saved && (saved.includes('localhost') || saved.includes('127.0.0.1') || saved.includes('onrender.com'))) {
+          window.localStorage.removeItem('sip_backend_url');
+        }
+      }
+      return (window.location && window.location.origin) ? window.location.origin : '';
+    }
+
     if (window.localStorage) {
       const saved = window.localStorage.getItem('sip_backend_url');
       if (saved && !saved.includes('onrender.com')) {
@@ -9,13 +23,10 @@ function getBackendUrl() {
         window.localStorage.removeItem('sip_backend_url');
       }
     }
-    const proto = (window.location && window.location.protocol === 'https:') ? 'https:' : 'http:';
+    const proto = isHttps ? 'https:' : 'http:';
     const host = (window.location && window.location.hostname) ? window.location.hostname : 'localhost';
     if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.')) {
       return `${proto}//${host || 'localhost'}:3000`;
-    }
-    if (host.includes('netlify.app')) {
-      return (window.location && window.location.origin) ? window.location.origin : ''; // Uses origin for Netlify proxy redirects
     }
     return `${proto}//${host}:3000`;
   }
