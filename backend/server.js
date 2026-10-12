@@ -6,11 +6,28 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
+const twilio = require('twilio');
+const nodemailer = require('nodemailer');
 const pool = require('./db');
 const runMigrations = require('./runMigrations');
-const { getFullState } = require('./dataAccess');
+const { getFullState, invalidateStateCache } = require('./dataAccess');
 const sensorRoutes = require('./sensorRoutes');
 const complianceRoutes = require('./complianceRoutes');
+
+// Real SMS & Email Clients
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) 
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) 
+  : null;
+
+const emailTransporter = (process.env.EMAIL_USER && process.env.EMAIL_PASS)
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    })
+  : null;
 
 const { EventEmitter } = require('events');
 const realTimeEvents = new EventEmitter();
@@ -71,6 +88,13 @@ app.get('/health', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy', service: 'sip-backend', timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    invalidateStateCache();
+  }
+  next();
 });
 
 app.use('/uploads', (req, res, next) => {
@@ -140,6 +164,86 @@ app.post('/api/login', async (req, res) => {
     console.error('Login failed:', err);
     res.status(500).json({ error: 'Database error.' });
   }
+});
+
+// --- OTP System ---
+const otpStore = {}; // In-memory store for OTPs. In production, use Redis or a database.
+
+app.post('/api/send-otp', async (req, res) => {
+  const { target, type } = req.body;
+  if (!target || !type) {
+    return res.status(400).json({ error: 'Target and type are required.' });
+  }
+
+  // Generate a 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore[target] = { otp, expiresAt: Date.now() + 10 * 60 * 1000 }; // 10 minutes expiry
+
+  console.log(`\n========================================`);
+  console.log(`🔑 OTP GENERATED [${type.toUpperCase()}]`);
+  console.log(`Target: ${target}`);
+  console.log(`OTP Code: ${otp}`);
+  console.log(`========================================\n`);
+
+  try {
+    if (type === 'phone') {
+      if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+        // Must ensure target has country code (e.g. +919360294046)
+        const toPhone = target.startsWith('+') ? target : `+91${target}`;
+        await twilioClient.messages.create({
+          body: `Your Spectroscopic Intelligence Platform OTP is: ${otp}`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: toPhone
+        });
+        console.log(`✅ Real SMS sent via Twilio to ${toPhone}`);
+      } else {
+        console.log(`⚠️ TWILIO_ACCOUNT_SID not set. SMS OTP mocked in console.`);
+      }
+    } else if (type === 'email') {
+      if (emailTransporter) {
+        await emailTransporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: target,
+          subject: 'Your SIP Login OTP',
+          text: `Your OTP for accessing the platform is: ${otp}`
+        });
+        console.log(`✅ Real Email sent via Nodemailer to ${target}`);
+      } else {
+        console.log(`⚠️ EMAIL_USER not set. Email OTP mocked in console.`);
+      }
+    }
+    
+    // For testing without keys, we still return the OTP in the response
+    res.json({ success: true, message: `OTP processed for ${target}`, otp: otp });
+  } catch (err) {
+    console.error(`Failed to send real ${type} OTP:`, err);
+    res.status(500).json({ error: `Failed to send real OTP via API. Check server logs.` });
+  }
+});
+
+app.post('/api/verify-otp', (req, res) => {
+  const { phone, phoneOtp, email, emailOtp } = req.body;
+  
+  if (!phone || !phoneOtp || !email || !emailOtp) {
+    return res.status(400).json({ error: 'All OTPs and targets are required.' });
+  }
+
+  const phoneRecord = otpStore[phone];
+  const emailRecord = otpStore[email];
+
+  if (!phoneRecord || phoneRecord.otp !== phoneOtp || phoneRecord.expiresAt < Date.now()) {
+    return res.status(400).json({ error: 'Invalid or expired Phone OTP.' });
+  }
+
+  if (!emailRecord || emailRecord.otp !== emailOtp || emailRecord.expiresAt < Date.now()) {
+    return res.status(400).json({ error: 'Invalid or expired Email OTP.' });
+  }
+
+  // OTPs are valid, clean them up
+  delete otpStore[phone];
+  delete otpStore[email];
+
+  res.json({ success: true });
 });
 
 // --- Audit ---

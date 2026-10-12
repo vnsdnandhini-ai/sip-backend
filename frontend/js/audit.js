@@ -14,7 +14,8 @@ async function refreshAuditTable() {
       return;
     }
 
-    entries.forEach((entry) => {
+    const displayEntries = entries.slice(0, 50);
+    displayEntries.forEach((entry) => {
       const row = document.createElement('tr');
       row.innerHTML = `<td>${entry.timestamp || '-'}</td><td>${entry.activity || '-'}</td><td>${entry.module || '-'}</td><td>${entry.user || '-'}</td>`;
       tbody.appendChild(row);
@@ -28,42 +29,7 @@ async function refreshAuditTable() {
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     refreshAuditTable();
-    
-    const form = document.getElementById('manualAuditForm');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = document.getElementById('auditUser').value.trim();
-        const module = document.getElementById('auditModule').value.trim();
-        const activity = document.getElementById('auditActivity').value.trim();
-        
-        if (!user || !module || !activity) return;
-        
-        const btn = form.querySelector('button');
-        const origText = btn.textContent;
-        btn.textContent = 'Saving...';
-        btn.disabled = true;
 
-        try {
-          await fetch(BACKEND_URL + '/api/audit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user, module, activity })
-          });
-          
-          form.reset();
-          sessionStorage.setItem('auditStepCompleted', 'true');
-          alert('Audit event recorded successfully! Workflow unlocked.');
-          window.location.reload();
-        } catch (err) {
-          console.error('Failed to log manual audit event:', err);
-          alert('Failed to log event. Check connection.');
-        } finally {
-          btn.textContent = origText;
-          btn.disabled = false;
-        }
-      });
-    }
   });
 }
 

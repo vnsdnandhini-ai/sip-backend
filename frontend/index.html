@@ -9,7 +9,7 @@
 </head>
 <body>
   <div id="login-screen" class="page page--active">
-    <div class="login-panel">
+    <div class="login-panel" style="max-width: 600px;">
       <div class="brand-panel">
         <div class="brand-mark">
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,24 +18,57 @@
   </svg>
 </div>
         <h1>Spectroscopic Intelligence Platform</h1>
-        <p>Secure cloud-connected platform for process monitoring, quality assurance, and compliance.</p>
+        <p>User Identification & Audit Entry</p>
       </div>
       <form id="login-form" class="login-form" autocomplete="off">
-        <div class="form-group">
-          <label for="login-username">Username</label>
-          <input id="login-username" type="text" placeholder="Enter your username (e.g. admin)" value="admin" required />
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="entry-name">Full Name</label>
+            <input id="entry-name" type="text" placeholder="Enter your full name" required />
+          </div>
+          <div class="form-group">
+            <label for="entry-location">Access Location</label>
+            <input id="entry-location" type="text" placeholder="e.g. Lab 1, Remote" required />
+          </div>
         </div>
+        
         <div class="form-group">
-          <label for="login-password">Password</label>
-          <input id="login-password" type="password" placeholder="Enter your password (e.g. admin)" value="admin" required />
+          <label for="entry-purpose">Purpose of using the platform</label>
+          <input id="entry-purpose" type="text" placeholder="e.g. Routine Inspection, Batch Monitoring" required />
         </div>
-        <div class="form-actions" style="margin-top: 1rem;">
-          <button type="submit" class="button button--primary" style="width: 100%;">Sign In to Platform</button>
+        
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="entry-phone">Phone Number</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input id="entry-phone" type="tel" placeholder="Enter phone number" required style="flex: 1;" />
+              <button type="button" id="send-phone-otp" class="button button--secondary" style="white-space: nowrap;">Send OTP</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="entry-phone-otp">Phone OTP</label>
+            <input id="entry-phone-otp" type="text" placeholder="Enter OTP" required disabled />
+          </div>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="entry-email">Email Address</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input id="entry-email" type="email" placeholder="Enter email address" required style="flex: 1;" />
+              <button type="button" id="send-email-otp" class="button button--secondary" style="white-space: nowrap;">Send OTP</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="entry-email-otp">Email OTP</label>
+            <input id="entry-email-otp" type="text" placeholder="Enter email OTP" required disabled />
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 1.5rem;">
+          <button type="submit" class="button button--primary" style="width: 100%;">Verify & Access Platform</button>
         </div>
       </form>
-      <div class="login-footnote" style="margin-top: 1.2rem; text-align: center;">
-        <span style="font-size: 0.85rem; color: var(--muted);">Demo Access: <strong>admin</strong> / <strong>admin</strong></span>
-      </div>
     </div>
   </div>
 

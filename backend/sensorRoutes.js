@@ -802,63 +802,101 @@ router.post('/reference-color', async (req, res) => {
       if (Buffer.isBuffer(req.body)) {
         imageBase64 = req.body.toString('base64');
       } else if (req.body && req.body.image) {
-        imageBase64 = req.body.image; // If sent as JSON
+        imageBase64 = req.body.image;
       } else {
         return res.status(400).json({ error: 'No image data received. Expected raw image/jpeg or JSON with base64.' });
       }
 
       // Update device last seen
-      await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [deviceId]);
+      await pool.query('UPDATE devices SET last_seen_at = now() WHERE device_id = $1', [deviceId]).catch(() => {});
 
-      // Broadcast immediately to SSE clients (Real-time feed)
+      // Broadcast raw frame immediately to SSE clients (Live feed)
       if (realTimeEvents) {
         realTimeEvents.emit('telemetry', {
           type: 'esp32-frame',
-          deviceId: deviceId,
+          deviceId,
           image: `data:image/jpeg;base64,${imageBase64}`,
           timestamp: new Date().toISOString()
         });
       }
-      
-      // Process analysis and storage for the frame
+
+      // Process and save frame
       const id = generateId();
       const fileName = `${id}.jpg`;
       const uploadDir = path.join(__dirname, 'uploads');
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-      
+
       const imageBuffer = Buffer.from(imageBase64, 'base64');
-      
-      let aiResult = null;
-        try {
-            const formData = new FormData();
-            formData.append('file', new Blob([imageBuffer], { type: 'image/jpeg' }), fileName);
-            const aiResponse = await fetch('http://localhost:5000/api/ai/analyze', {
-                method: 'POST',
-                body: formData
-            });
-            if (aiResponse.ok) aiResult = await aiResponse.json();
-        } catch (err) {
-            console.error('AI analysis skipped:', err.message);
-        }
 
-        const isAnomaly = aiResult && aiResult.has_anomaly === true;
-        const settings = getSettings();
-  
-        if (settings.storeOnlyAnomalies && !isAnomaly) {
-            return res.status(200).send('Frame received (discarded, no anomaly)');
-        }
+      // ===== RUN CONVEYOR-SPECIFIC ANOMALY DETECTION =====
+      let analysisResult = null;
+      try {
+        const { analyzeConveyorImage } = require('./imageAnalysis');
+        analysisResult = await analyzeConveyorImage(imageBuffer);
+      } catch (err) {
+        console.error('Conveyor analysis failed:', err.message);
+      }
 
-        fs.writeFileSync(path.join(uploadDir, fileName), imageBuffer);
+      const isDefective = analysisResult?.isDefective || false;
+      const settings = getSettings();
 
-        // Save to DB (only if explicitly requested to analyze to prevent DB bloat)
-        await pool.query(
-          `INSERT INTO analytical_data (id, device_id, reading_type, parameter, data_type, image_path, image_analysis, device_timestamp)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-          [id, deviceId, 'automated', 'AI Camera Capture', 'image', `/uploads/${fileName}`, aiResult ? JSON.stringify({ai: aiResult}) : null, new Date().toISOString()]
-        );
-        await enforceImageLimit();
+      // If "store only anomalies" is ON and image is clean, discard it
+      if (settings.storeOnlyAnomalies && !isDefective) {
+        return res.status(200).send('Frame received (clean - discarded per settings)');
+      }
 
-      res.status(200).send('Frame received');
+      // Save highlighted image if defective
+      let savedAnalysis = analysisResult;
+      if (analysisResult?.highlightedImageBuffer) {
+        const hName = `${id}_highlighted.jpg`;
+        fs.writeFileSync(path.join(uploadDir, hName), analysisResult.highlightedImageBuffer);
+        savedAnalysis = { ...analysisResult, highlightedImageBuffer: undefined };
+        if (!savedAnalysis.ai) savedAnalysis.ai = {};
+        savedAnalysis.ai.pixel_anomaly_map = `/uploads/${hName}`;
+      }
+
+      fs.writeFileSync(path.join(uploadDir, fileName), imageBuffer);
+
+      // Save to database
+      await pool.query(
+        `INSERT INTO analytical_data (id, device_id, reading_type, parameter, data_type, image_path, image_analysis, defect_tags, device_timestamp)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [
+          id, deviceId, 'automated', 'Conveyor Belt AI Inspection', 'image',
+          `/uploads/${fileName}`,
+          savedAnalysis ? JSON.stringify(savedAnalysis) : null,
+          isDefective ? (analysisResult?.detectedDefect || 'Anomaly Detected') : null,
+          new Date().toISOString()
+        ]
+      );
+
+      await enforceImageLimit();
+
+      // ===== EMIT REAL-TIME DEFECT ALERT VIA SSE =====
+      if (realTimeEvents && isDefective && analysisResult) {
+        realTimeEvents.emit('telemetry', {
+          type: 'conveyor-defect-alert',
+          severity: analysisResult.visualQaResult,       // 'WARNING' or 'CRITICAL'
+          severityTier: analysisResult.severityTier,
+          detectedDefect: analysisResult.detectedDefect,
+          defectPercent: analysisResult.defectPercent,
+          deviceId,
+          imagePath: `/uploads/${fileName}`,
+          highlightedImagePath: savedAnalysis?.ai?.pixel_anomaly_map || null,
+          anomalyBreakdown: analysisResult.anomalyBreakdown,
+          timestamp: new Date().toISOString()
+        });
+        console.log(`🚨 CONVEYOR ALERT [${analysisResult.visualQaResult}] ${analysisResult.detectedDefect} | Defect: ${analysisResult.defectPercent}%`);
+      }
+
+      res.status(200).json({
+        success: true,
+        recordId: id,
+        isDefective,
+        detectedDefect: analysisResult?.detectedDefect,
+        defectPercent: analysisResult?.defectPercent,
+        severity: analysisResult?.visualQaResult
+      });
     } catch (err) {
       console.error('Failed to process ESP32 frame:', err);
       res.status(500).json({ error: 'Server error' });

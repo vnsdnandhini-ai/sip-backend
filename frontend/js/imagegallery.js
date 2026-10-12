@@ -142,6 +142,7 @@ function classifyQA(item) {
   if (analysis.isDefective === true || analysis.isDefectiveSample === true || analysis.isContaminated === true) return 'contaminated';
   if (analysis.isDefective === false || analysis.isDefectiveSample === false) return 'clean';
 
+  if (ai.visual_qa_result === 'EMPTY') return 'empty';
   if (analysis.captureQualityOk === false) return 'issue';
   return 'clean';
 }
@@ -154,11 +155,14 @@ async function loadGallery() {
   if (!grid) return;
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/state`);
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}`);
+    let state;
+    if (typeof window !== 'undefined' && typeof window.getOrFetchState === 'function') {
+      state = await window.getOrFetchState();
+    } else {
+      const response = await fetch(`${BACKEND_URL}/api/state`);
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+      state = await response.json();
     }
-    const state = await response.json();
 
     platformBatches = state.projects || state.batches || [];
     populateBatchDropdowns();
@@ -282,59 +286,59 @@ function updateHeroAndKpis() {
 
   if (activeCategory === 'raw_material') {
     kpiGrid.innerHTML = `
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Raw Botanical Lots</div>
-        <div class="gallery-kpi-val">${total}</div>
+      <div class="card card--metric">
+        <div class="card-title">Raw Botanical Lots</div>
+        <div class="card-value">${total}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Botanical Pass Rate</div>
-        <div class="gallery-kpi-val">${passRate}%</div>
+      <div class="card card--metric">
+        <div class="card-title">Botanical Pass Rate</div>
+        <div class="card-value">${passRate}%</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Foliar Defects / Lesions</div>
-        <div class="gallery-kpi-val">${defectCount}</div>
+      <div class="card card--metric">
+        <div class="card-title">Foliar Defects / Lesions</div>
+        <div class="card-value">${defectCount}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Avg Chlorophyll Health</div>
-        <div class="gallery-kpi-val">${cleanCount > 0 ? '98.6%' : 'N/A'}</div>
+      <div class="card card--metric">
+        <div class="card-title">Avg Chlorophyll Health</div>
+        <div class="card-value">${cleanCount > 0 ? '98.6%' : 'N/A'}</div>
       </div>
     `;
   } else if (activeCategory === 'final_product') {
     kpiGrid.innerHTML = `
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Finished Units Inspected</div>
-        <div class="gallery-kpi-val">${total}</div>
+      <div class="card card--metric">
+        <div class="card-title">Finished Units Inspected</div>
+        <div class="card-value">${total}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">QC Release Pass Rate</div>
-        <div class="gallery-kpi-val">${passRate}%</div>
+      <div class="card card--metric">
+        <div class="card-title">QC Release Pass Rate</div>
+        <div class="card-value">${passRate}%</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Critical Rejections</div>
-        <div class="gallery-kpi-val">${defectCount}</div>
+      <div class="card card--metric">
+        <div class="card-title">Critical Rejections</div>
+        <div class="card-value">${defectCount}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Surface Integrity Index</div>
-        <div class="gallery-kpi-val">99.2%</div>
+      <div class="card card--metric">
+        <div class="card-title">Surface Integrity Index</div>
+        <div class="card-value">99.2%</div>
       </div>
     `;
   } else {
     kpiGrid.innerHTML = `
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Total Visual Captures</div>
-        <div class="gallery-kpi-val">${total}</div>
+      <div class="card card--metric">
+        <div class="card-title">Total Visual Captures</div>
+        <div class="card-value">${total}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Platform Compliance</div>
-        <div class="gallery-kpi-val">${passRate}%</div>
+      <div class="card card--metric">
+        <div class="card-title">Platform Compliance</div>
+        <div class="card-value">${passRate}%</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Total Flagged Defects</div>
-        <div class="gallery-kpi-val">${defectCount}</div>
+      <div class="card card--metric">
+        <div class="card-title">Total Flagged Defects</div>
+        <div class="card-value">${defectCount}</div>
       </div>
-      <div class="gallery-kpi-card">
-        <div class="gallery-kpi-lbl">Monitored Process Stages</div>
-        <div class="gallery-kpi-val">8 Stages</div>
+      <div class="card card--metric">
+        <div class="card-title">Monitored Process Stages</div>
+        <div class="card-value">8 Stages</div>
       </div>
     `;
   }
@@ -481,39 +485,40 @@ function renderGallery() {
   grid.innerHTML = list.map((item) => {
     const rawUrl = item.imagePath || item.value;
     const imageUrl = resolveGalleryImageUrl(rawUrl);
+    const analysis = parseAnalysis(item.imageAnalysis) || {};
+    const ai = analysis.ai || {};
     const classification = item.qaStatus;
     const isDefective = classification === 'contaminated';
     const isReview = classification === 'issue';
-    const analysis = parseAnalysis(item.imageAnalysis) || {};
-    const ai = analysis.ai || {};
+    const isEmpty = classification === 'empty' || (ai && ai.visual_qa_result === 'EMPTY');
 
     const isRaw = item.category === 'raw_material';
     const categoryTag = `<span class="gallery-cat-pill">${isRaw ? 'Raw Material · Stage 1' : 'Final QC · Stage 8'}</span>`;
 
     let statusBadge = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;border:1px solid #86efac;padding:3px 8px;border-radius:4px;font-size:0.72rem;">${isRaw ? 'HEALTHY · PASS' : 'PASS'}</span>`;
-    if (isDefective) {
+    if (isEmpty) {
+      statusBadge = `<span class="badge" style="background:#f1f5f9;color:#64748b;font-weight:700;border:1px solid #cbd5e1;padding:3px 8px;border-radius:4px;font-size:0.72rem;">EMPTY · IDLE</span>`;
+    } else if (isDefective) {
       statusBadge = `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;border:1px solid #fca5a5;padding:3px 8px;border-radius:4px;font-size:0.72rem;">DEFECT · REJECT</span>`;
     } else if (isReview) {
       statusBadge = `<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;border:1px solid #fde68a;padding:3px 8px;border-radius:4px;font-size:0.72rem;">REVIEW</span>`;
     }
 
-    // Specimen / Title formulation
-    const isGenericParam = !item.parameter || ['Manual Upload', 'Image', 'test', 'tes', 'one', 'two', 'plant', 'leaf'].includes(item.parameter.trim());
-    let titleText = item.parameter;
-    if (isGenericParam) {
-      if (isRaw) {
-        titleText = isDefective ? 'Botanical Leaf / Defective Specimen' : 'Approved Healthy Botanical Specimen';
-      } else {
-        titleText = isDefective ? 'Compressed Tablet / Edge Chipping Defect' : 'Approved Finished Tablet Inspection';
-      }
-    }
-
     // Defect diagnosis description
-    let defectDiagnosis = isRaw ? 'Healthy Botanical Standard (Pass)' : 'Passed Tablet Visual Release QA';
-    if (isDefective) {
+    let defectDiagnosis = ai.detected_defect || analysis.detectedDefect || (isRaw ? 'Healthy Botanical Standard (Pass)' : 'Passed Tablet Visual Release QA');
+    
+    if (ai.condition && !isDefective) {
+      defectDiagnosis = ai.condition;
+    } else if (isDefective) {
       defectDiagnosis = (ai.detected_defect && ai.detected_defect !== 'None' && !ai.detected_defect.includes('Approved')) 
         ? ai.detected_defect 
         : ((analysis.detectedDefect && analysis.detectedDefect !== 'None' && !analysis.detectedDefect.includes('Approved')) ? analysis.detectedDefect : (isRaw ? 'Foliar Lesion / Chlorosis' : 'Surface Defect / Edge Irregularity'));
+    }
+
+    // Specimen / Title formulation
+    let titleText = item.parameter || 'AI Vision Inspection';
+    if (ai.raw_material_class) {
+      titleText = ai.raw_material_class;
     }
 
     // Segmented / Defect thumbnail strip

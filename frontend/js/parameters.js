@@ -129,3 +129,10 @@ async function refreshParametersTable() {
   renderParametersRows(parametersCache);
 }
 
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => refreshParametersTable());
+  } else {
+    refreshParametersTable();
+  }
+}

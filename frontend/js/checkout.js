@@ -276,3 +276,12 @@ async function refreshCheckoutTable() {
     testBtn.dataset.bound = 'true';
   }
 }
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => refreshCheckoutTable());
+  } else {
+    refreshCheckoutTable();
+  }
+}
+

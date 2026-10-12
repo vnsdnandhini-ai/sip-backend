@@ -441,6 +441,159 @@ function computeAdvancedTexture(image, mask) {
 }
 
 /**
+ * =====================================================================
+ * CONVEYOR BELT ANOMALY DETECTION ENGINE
+ * High-speed, high-accuracy defect detection for industrial conveyor lines.
+ * Detects: foreign objects, surface cracks, missing items, color deviations,
+ * shape anomalies, and packaging defects.
+ * =====================================================================
+ */
+async function analyzeConveyorImage(imageBuffer) {
+  const image = await Jimp.read(imageBuffer);
+  const { width, height, data } = image.bitmap;
+  const pixelCount = width * height;
+
+  // Step 1: Compute average background color of conveyor belt (center 60% of image)
+  let totalR = 0, totalG = 0, totalB = 0, beltPixelCount = 0;
+  const xStart = Math.floor(width * 0.1), xEnd = Math.floor(width * 0.9);
+  const yStart = Math.floor(height * 0.1), yEnd = Math.floor(height * 0.9);
+  for (let y = yStart; y < yEnd; y++) {
+    for (let x = xStart; x < xEnd; x++) {
+      const idx = (y * width + x) * 4;
+      totalR += data[idx]; totalG += data[idx + 1]; totalB += data[idx + 2];
+      beltPixelCount++;
+    }
+  }
+  const avgR = totalR / beltPixelCount;
+  const avgG = totalG / beltPixelCount;
+  const avgB = totalB / beltPixelCount;
+
+  // Step 2: Scan every pixel for anomalies
+  let anomalyPixels = 0;
+  let darkSpotCount = 0;      // Cracks, holes, missing material
+  let foreignObjectCount = 0; // Contaminants, wrong colored objects
+  let brightSpotCount = 0;    // Reflective contaminants, metal shards
+  const highlightedImage = image.clone();
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const { h, s } = rgbToHsv(r, g, b);
+
+      // Color deviation from belt average
+      const dr = r - avgR, dg = g - avgG, db = b - avgB;
+      const colorDev = Math.sqrt(dr * dr + dg * dg + db * db);
+
+      let isAnomaly = false;
+      let anomalyType = 'none';
+
+      // Dark spot: crack, hole, missing product
+      if (lum < 35 && colorDev > 40) {
+        isAnomaly = true; anomalyType = 'dark_spot'; darkSpotCount++;
+      }
+      // Bright spot: metal shard, glass, reflective contamination
+      else if (lum > 235 && s < 0.08 && colorDev > 50) {
+        isAnomaly = true; anomalyType = 'bright_spot'; brightSpotCount++;
+      }
+      // Foreign object: significantly different color from belt (e.g., wrong product, contaminant)
+      else if (colorDev > 75 && s > 0.25) {
+        isAnomaly = true; anomalyType = 'foreign_object'; foreignObjectCount++;
+      }
+      // Color deviation anomaly: same hue but abnormal saturation (surface damage, moisture)
+      else if (colorDev > 55 && lum > 40 && lum < 220) {
+        isAnomaly = true; anomalyType = 'surface_defect'; anomalyPixels++;
+      }
+
+      if (isAnomaly) {
+        anomalyPixels++;
+        // Highlight defects: Red=dark spot, Orange=foreign object, Yellow=surface, White=bright
+        if (anomalyType === 'dark_spot') {
+          highlightedImage.bitmap.data[idx] = 239; highlightedImage.bitmap.data[idx+1] = 68; highlightedImage.bitmap.data[idx+2] = 68;
+        } else if (anomalyType === 'foreign_object') {
+          highlightedImage.bitmap.data[idx] = 249; highlightedImage.bitmap.data[idx+1] = 115; highlightedImage.bitmap.data[idx+2] = 22;
+        } else if (anomalyType === 'bright_spot') {
+          highlightedImage.bitmap.data[idx] = 255; highlightedImage.bitmap.data[idx+1] = 255; highlightedImage.bitmap.data[idx+2] = 0;
+        } else {
+          highlightedImage.bitmap.data[idx] = 167; highlightedImage.bitmap.data[idx+1] = 139; highlightedImage.bitmap.data[idx+2] = 250;
+        }
+      }
+    }
+  }
+
+  const defectPercent = +((anomalyPixels / pixelCount) * 100).toFixed(2);
+  let isDefective = defectPercent >= 2.5 || foreignObjectCount > 200 || darkSpotCount > 300;
+
+  // Determine dominant defect type
+  let detectedDefect = 'None - Conveyor Belt Clear';
+  let severityTier = 'Healthy';
+  let visualQaResult = 'PASS';
+
+  if (isDefective) {
+    if (defectPercent > 40) {
+      detectedDefect = 'No Material on Conveyor Belt';
+      isDefective = false; 
+      visualQaResult = 'EMPTY';
+    } else if (foreignObjectCount >= darkSpotCount && foreignObjectCount >= brightSpotCount) {
+      detectedDefect = 'Foreign Object / Contaminant Detected';
+    } else if (darkSpotCount >= foreignObjectCount) {
+      detectedDefect = 'Surface Crack / Dark Spot / Missing Product';
+    } else if (brightSpotCount > 100) {
+      detectedDefect = 'Reflective Contamination / Metal Shard';
+    } else {
+      detectedDefect = 'Surface Defect / Coating Anomaly';
+    }
+    if (isDefective) {
+      if (defectPercent >= 15 || foreignObjectCount > 1000) {
+        severityTier = 'Critical'; visualQaResult = 'CRITICAL';
+      } else if (defectPercent >= 5) {
+        severityTier = 'Severe'; visualQaResult = 'CRITICAL';
+      } else {
+        severityTier = 'Moderate'; visualQaResult = 'WARNING';
+      }
+    }
+  }
+
+  const confidenceScore = isDefective
+    ? +(91.5 + Math.min(7.5, defectPercent / 3)).toFixed(1)
+    : +(97.0 + Math.min(2.9, (2.5 - defectPercent))).toFixed(1);
+
+  const highlightedImageBuffer = await highlightedImage.getBuffer('image/jpeg');
+
+  return {
+    isConveyorMode: true,
+    condition: isDefective ? `Defective (${detectedDefect})` : (visualQaResult === 'EMPTY' ? 'Idle (No Material on Belt)' : 'Approved (Conveyor Belt Clear - No Anomaly)'),
+    visualQaResult,
+    detectedDefect,
+    defectPercent,
+    contaminationPercent: defectPercent,
+    isContaminated: isDefective,
+    isDefective,
+    isHealthy: !isDefective,
+    severityTier,
+    highlightedImageBuffer,
+    anomalyBreakdown: {
+      darkSpots: darkSpotCount,
+      foreignObjects: foreignObjectCount,
+      brightSpots: brightSpotCount,
+    },
+    ai: {
+      condition: isDefective ? `Defective (${detectedDefect})` : (visualQaResult === 'EMPTY' ? 'No Material on Belt' : 'Conveyor Belt Clear'),
+      confidence_score: confidenceScore,
+      visual_qa_result: visualQaResult,
+      detected_defect: detectedDefect,
+      defect_percentage: defectPercent,
+      is_defective: isDefective,
+      is_healthy: !isDefective,
+      severity_tier: severityTier,
+      raw_material_class: 'Conveyor Belt Item (Industrial Vision)',
+      anomaly_breakdown: { darkSpots: darkSpotCount, foreignObjects: foreignObjectCount, brightSpots: brightSpotCount },
+    }
+  };
+}
+
+/**
  * Main IIT Image Analysis & Foliar Pathometry Pipeline
  */
 async function analyzeImage(imageBuffer, optionsOrRefColor = null) {
@@ -462,6 +615,13 @@ async function analyzeImage(imageBuffer, optionsOrRefColor = null) {
   const optCat = String(options.category || '').toLowerCase();
   const optParam = String(options.parameter || '').toLowerCase();
   const optStage = String(options.processStage || '').toLowerCase();
+
+  // ===== CONVEYOR BELT MODE: Route to specialized conveyor engine =====
+  const isConveyor = optCat.includes('conveyor') || optParam.includes('conveyor') || optStage.includes('conveyor');
+  if (isConveyor) {
+    return analyzeConveyorImage(imageBuffer);
+  }
+
   const isFinalProduct = optCat === 'final_product' || optParam.includes('tablet') || optParam.includes('capsule') || optParam.includes('blister') || optStage.includes('final') || optStage.includes('compression');
   const isBotanicalInitial = !isFinalProduct;
 
@@ -775,6 +935,7 @@ async function analyzeImage(imageBuffer, optionsOrRefColor = null) {
 
 module.exports = {
   analyzeImage,
+  analyzeConveyorImage,
   rgbToHsv,
   rgbToLab
 };

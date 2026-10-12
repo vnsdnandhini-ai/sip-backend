@@ -15,6 +15,12 @@
       link.classList.remove('active');
       if (link.getAttribute('data-page') === pageName) {
         link.classList.add('active');
+        const parentCollapsible = link.closest('.nav-collapsible');
+        if (parentCollapsible) {
+          parentCollapsible.classList.add('open');
+          const toggle = parentCollapsible.querySelector('.nav-link--parent');
+          if (toggle) toggle.setAttribute('aria-expanded', 'true');
+        }
       }
     });
   }
@@ -22,11 +28,11 @@
   // Update page title
   function updatePageTitle(pageName) {
     const titles = {
-      'dashboard': 'Live Monitoring',
-      'batches': 'Batch Management',
+      'dashboard': 'Dashboard',
+      'batches': 'Medicine & Batch Type',
       'workflow': 'Process Workflow & Monitoring',
-      'sensors': 'Sensors & Hardware Topology',
-      'devices': 'Sensors & Hardware Topology',
+      'sensors': 'Sensor Data Entry',
+      'devices': 'Sensor Data Entry',
       'monitoring': 'Monitoring Points',
       'parameters': 'Process Parameters',
       'checkout': 'Checkout Conditions',
@@ -38,7 +44,8 @@
       'cgmp': 'cGMP & Industrial Standards',
       'reports': 'Quality Reports',
       'audit': 'Audit Log',
-      'settings': 'Settings'
+      'settings': 'Settings',
+      'process-monitoring': 'Live Monitoring'
     };
     const titleEl = document.getElementById('pageTitle');
     if (titleEl) {
@@ -46,21 +53,18 @@
     }
   }
 
-  // Enforce Audit Log Step Completion
-  const isAuditComplete = sessionStorage.getItem('auditStepCompleted') === 'true';
+  // Always unlock workflow
+  const isAuditComplete = true;
   const currentFileName = window.location.pathname.split('/').pop() || 'dashboard.html';
   const currentPg = currentFileName.replace('.html', '');
-  
-  // Protect all pages except audit, dashboard, index, settings
-  if (!isAuditComplete && !['audit', 'dashboard', 'index', 'settings', ''].includes(currentPg)) {
-    alert('Workflow Locked: Please log an initial Audit Event first to unlock the platform.');
-    window.location.href = 'audit.html';
-    return;
-  }
 
   // Handle nav clicks
   document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
+    link.addEventListener('click', (e) => {
+      // If it is the parent toggle button, let the toggle handler handle it
+      if (link.classList.contains('nav-link--parent')) {
+        return;
+      }
       const page = link.getAttribute('data-page');
       if (!isAuditComplete && !['audit', 'dashboard', 'settings'].includes(page)) {
         alert('Workflow Locked: Please complete the Audit Log entry first.');
@@ -83,7 +87,8 @@
         'cgmp': 'cgmp-standards.html',
         'reports': 'reports.html',
         'settings': 'settings.html',
-        'audit': 'audit.html'
+        'audit': 'audit.html',
+        'process-monitoring': 'process-monitoring.html'
       };
       if (pageMap[page]) {
         window.location.href = pageMap[page];
@@ -91,17 +96,18 @@
     });
   });
 
-  // Visually lock nav links
-  if (!isAuditComplete) {
-    document.querySelectorAll('.nav-link').forEach(link => {
-      const p = link.getAttribute('data-page');
-      if (!['audit', 'dashboard', 'settings'].includes(p)) {
-        link.style.opacity = '0.5';
-        link.style.cursor = 'not-allowed';
-        link.title = 'Complete Audit Log first';
+  // Handle collapsible nav toggles
+  document.querySelectorAll('.nav-link--parent').forEach(toggleBtn => {
+    toggleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const parentGroup = toggleBtn.closest('.nav-collapsible');
+      if (parentGroup) {
+        const isOpen = parentGroup.classList.toggle('open');
+        toggleBtn.setAttribute('aria-expanded', isOpen);
       }
     });
-  }
+  });
 
   // Extract current page from URL
   const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
@@ -118,9 +124,10 @@
     'checkout': 'checkout',
     'rules': 'rules',
     'onboarding': 'onboarding',
-    'analytical': 'data-entry',
-    'imagegallery': 'gallery',
-    'live-camera': 'gallery',
+    'analytical': 'process-monitoring',
+    'imagegallery': 'process-monitoring',
+    'live-camera': 'process-monitoring',
+    'process-monitoring': 'process-monitoring',
     'compliance': 'compliance',
     'cgmp-standards': 'cgmp',
     'reports': 'reports',
@@ -141,7 +148,3 @@
     });
   }
 })();
-
-
-
-

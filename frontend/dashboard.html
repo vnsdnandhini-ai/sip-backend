@@ -20,17 +20,36 @@
         <div class="brand-text">Spectroscopic Intelligence</div>
       </div>
                     <nav class="nav-menu" id="navMenu">
+          <button class="nav-link" data-page="dashboard">Dashboard</button>
           <button class="nav-link" data-page="audit">Audit Log</button>
-          <button class="nav-link" data-page="batches">Batch Management</button>
-          <button class="nav-link" data-page="rules">Regulatory Rules</button>
-          <button class="nav-link" data-page="cgmp">cGMP Standards</button>
-          <button class="nav-link" data-page="sensors">Sensors & Hardware</button>
-          <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+          <button class="nav-link" data-page="sensors">Sensor Data Entry</button>
+          <button class="nav-link" data-page="batches">Medicine & Batch Type</button>
+          <div class="nav-collapsible" id="navRegulationsGroup">
+            <button type="button" class="nav-link nav-link--parent" id="navRegulationsToggle" aria-expanded="false">
+              <span>Regulations & Standards</span>
+              <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div class="nav-submenu" id="navRegulationsSubmenu">
+              <button class="nav-link nav-link--sub" data-page="rules">Regulatory Rules</button>
+              <button class="nav-link nav-link--sub" data-page="cgmp">cGMP Standards</button>
+            </div>
+          </div>
           <button class="nav-link" data-page="workflow">Process Workflow</button>
-          <button class="nav-link" data-page="parameters">Process Parameters</button>
-          <button class="nav-link" data-page="checkout">Checkout Conditions</button>
-          <button class="nav-link" data-page="dashboard">Live Monitoring</button>
-          <button class="nav-link" data-page="process-monitoring">Process Monitoring</button>
+          <div class="nav-collapsible" id="navParametersGroup">
+            <button type="button" class="nav-link nav-link--parent" id="navParametersToggle" aria-expanded="false">
+              <span>Parameter & Checkout Conditions</span>
+              <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div class="nav-submenu" id="navParametersSubmenu">
+              <button class="nav-link nav-link--sub" data-page="parameters">Process Parameters</button>
+              <button class="nav-link nav-link--sub" data-page="checkout">Checkout Conditions</button>
+            </div>
+          </div>
+          <button class="nav-link" data-page="process-monitoring">Live Monitoring</button>
           <button class="nav-link" data-page="compliance">Compliance Engine</button>
           <button class="nav-link" data-page="reports">Quality Reports</button>
           <button class="nav-link" data-page="settings">Settings</button>
@@ -85,18 +104,6 @@
             <div class="card-header">Recent Batch Quality Reports</div>
             <ul class="report-list" id="dashboardReports"></ul>
           </article>
-                    <article class="card card--actions">
-            <div class="card-header">Core Workflow Navigation</div>
-            <div class="action-grid">
-              <button class="mini-button" onclick="window.location.href='audit.html'">1. Audit Details</button>
-              <button class="mini-button" onclick="window.location.href='sensors.html'">2. Sensor Data Entry</button>
-              <button class="mini-button" onclick="window.location.href='batches.html'">3. Medicine & Batch Type</button>
-              <button class="mini-button" onclick="window.location.href='rules.html'">4. Regulations & Standards</button>
-              <button class="mini-button" onclick="window.location.href='monitoring.html'">5. Assign Sensors to Lines</button>
-              <button class="mini-button" onclick="window.location.href='dashboard.html'" style="border-color:#6366f1; font-weight:700; color:#4f46e5;">6. Live Process Monitoring</button>
-              <button class="mini-button" onclick="window.location.href='compliance.html'">7. Compliance Check QA</button>
-            </div>
-          </article>
 
           <article class="card card--actions">
             <div class="card-header">AI Vision Inspection Settings</div>
@@ -132,29 +139,13 @@
   <div id="modalBackdrop" class="modal-backdrop hidden"></div>
   <div id="modalPanel" class="modal hidden"></div>
 
-    <script src="js/app.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const isAuditComplete = sessionStorage.getItem('auditStepCompleted') === 'true';
-      if (!isAuditComplete) {
-        document.querySelectorAll('.action-grid .mini-button').forEach(btn => {
-          if (!btn.textContent.includes('1. Audit Details')) {
-            btn.style.opacity = '0.4';
-            btn.style.cursor = 'not-allowed';
-            btn.title = 'Please complete the Audit Log first';
-            btn.onclick = (e) => {
-              e.preventDefault();
-              alert('Workflow Locked: Please complete the Audit Log entry first.');
-            };
-          }
-        });
-      }
-    });
-  </script>
+  <script src="js/app.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/conveyor-alerts.js"></script>
 </body>
 </html>
+
 
 
 

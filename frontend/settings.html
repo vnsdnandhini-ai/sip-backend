@@ -19,22 +19,41 @@
         </div>
         <div class="brand-text">Spectroscopic Intelligence</div>
       </div>
-                    <nav class="nav-menu" id="navMenu">
-          <button class="nav-link" data-page="audit">Audit Log</button>
-          <button class="nav-link" data-page="batches">Batch Management</button>
-          <button class="nav-link" data-page="rules">Regulatory Rules</button>
-          <button class="nav-link" data-page="cgmp">cGMP Standards</button>
-          <button class="nav-link" data-page="sensors">Sensors & Hardware</button>
-          <button class="nav-link" data-page="monitoring">Monitoring Points</button>
-          <button class="nav-link" data-page="workflow">Process Workflow</button>
-          <button class="nav-link" data-page="parameters">Process Parameters</button>
-          <button class="nav-link" data-page="checkout">Checkout Conditions</button>
-          <button class="nav-link" data-page="dashboard">Live Monitoring</button>
-          <button class="nav-link" data-page="process-monitoring">Process Monitoring</button>
-          <button class="nav-link" data-page="compliance">Compliance Engine</button>
-          <button class="nav-link" data-page="reports">Quality Reports</button>
-          <button class="nav-link" data-page="settings">Settings</button>
-        </nav>
+      <nav class="nav-menu" id="navMenu">
+        <button class="nav-link" data-page="dashboard">Dashboard</button>
+        <button class="nav-link" data-page="audit">Audit Log</button>
+        <button class="nav-link" data-page="sensors">Sensor Data Entry</button>
+        <button class="nav-link" data-page="batches">Medicine & Batch Type</button>
+        <div class="nav-collapsible" id="navRegulationsGroup">
+          <button type="button" class="nav-link nav-link--parent" id="navRegulationsToggle" aria-expanded="false">
+            <span>Regulations & Standards</span>
+            <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="nav-submenu" id="navRegulationsSubmenu">
+            <button class="nav-link nav-link--sub" data-page="rules">Regulatory Rules</button>
+            <button class="nav-link nav-link--sub" data-page="cgmp">cGMP Standards</button>
+          </div>
+        </div>
+        <button class="nav-link" data-page="workflow">Process Workflow</button>
+        <div class="nav-collapsible" id="navParametersGroup">
+          <button type="button" class="nav-link nav-link--parent" id="navParametersToggle" aria-expanded="false">
+            <span>Parameter & Checkout Conditions</span>
+            <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="nav-submenu" id="navParametersSubmenu">
+            <button class="nav-link nav-link--sub" data-page="parameters">Process Parameters</button>
+            <button class="nav-link nav-link--sub" data-page="checkout">Checkout Conditions</button>
+          </div>
+        </div>
+        <button class="nav-link" data-page="process-monitoring">Live Monitoring</button>
+        <button class="nav-link" data-page="compliance">Compliance Engine</button>
+        <button class="nav-link" data-page="reports">Quality Reports</button>
+        <button class="nav-link" data-page="settings">Settings</button>
+      </nav>
     </aside>
 
     <main class="main-content">
@@ -54,8 +73,8 @@
       <section class="content-section">
         <div class="section-header">
           <div>
-            <h3>System Settings</h3>
-            <p>Configure platform preferences, telemetry refresh rates, AI vision quality thresholds, and regulatory compliance.</p>
+            <h3>General & System Settings</h3>
+            <p>Configure interface theme, session preferences, notifications, and storage retention.</p>
           </div>
           <button class="button button--primary" id="saveSettingsBtn">Save Settings</button>
         </div>
@@ -67,106 +86,152 @@
 
         <div class="grid grid--2cols">
           
-          <!-- Card 1: In-Process Telemetry -->
+          <!-- Card 1: Display & Localization -->
           <article class="card card--form">
-            <div class="card-header">In-Process Telemetry</div>
+            <div class="card-header">Display & Localization</div>
             <div class="panel-form">
               <div class="form-group">
-                <label for="refreshIntervalSelect">In-Process Telemetry Refresh Rate</label>
-                <select id="refreshIntervalSelect">
-                  <option value="5000">5 seconds (High-Speed In-Process Sampling)</option>
+                <label for="themeModeSelect">Interface Theme Mode</label>
+                <select id="themeModeSelect">
+                  <option value="light" selected>Light Mode (Clean White)</option>
+                  <option value="dark">Dark Mode (High Contrast)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Switches between sleek day and night contrast modes.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="dateFormatSelect">Date & Timestamp Format</label>
+                <select id="dateFormatSelect">
+                  <option value="DD/MM/YYYY" selected>DD/MM/YYYY (Standard IST / European)</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD (ISO 8601 cGMP Standard)</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY (US Format)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Standardized date formatting applied to batch logs and reports.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="timezoneSelect">System Timezone</label>
+                <select id="timezoneSelect">
+                  <option value="Asia/Kolkata" selected>Asia/Kolkata (IST, UTC +05:30)</option>
+                  <option value="UTC">UTC (Coordinated Universal Time)</option>
+                  <option value="America/New_York">America/New_York (EST, UTC -05:00)</option>
+                  <option value="Europe/London">Europe/London (GMT/BST)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="defaultLandingPage">Default Startup Page</label>
+                <select id="defaultLandingPage">
+                  <option value="dashboard.html" selected>Dashboard (Real-time Operations)</option>
+                  <option value="audit.html">Audit Log</option>
+                  <option value="batches.html">Medicine & Batch Type</option>
+                  <option value="manufacturing-process.html">Process Workflow</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Page loaded immediately upon user authentication.</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Card 2: Session & Workflow Safeguards -->
+          <article class="card card--form">
+            <div class="card-header">Session & Workflow Safeguards</div>
+            <div class="panel-form">
+              <div class="form-group">
+                <label for="sessionTimeoutSelect">Auto-Logout Inactivity Timer</label>
+                <select id="sessionTimeoutSelect">
+                  <option value="15" selected>15 Minutes (Strict Security Protocol)</option>
+                  <option value="30">30 Minutes (Standard Shift Duration)</option>
+                  <option value="60">60 Minutes (Extended Operations)</option>
+                  <option value="0">Disabled (Continuous Monitoring Kiosk)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Automatically locks active station when left unattended.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="refreshRateSelect">Telemetry Auto-Refresh Rate</label>
+                <select id="refreshRateSelect">
+                  <option value="5000">5 seconds (High-Speed Sampling)</option>
                   <option value="10000" selected>10 seconds (Standard cGMP Continuous Stream)</option>
                   <option value="30000">30 seconds (Low Bandwidth Economy Mode)</option>
                 </select>
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Controls background telemetry refresh frequency for live sensor streams.</div>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Frequency for live background telemetry polling.</div>
               </div>
 
               <div class="form-group">
-                <label>Data Stream Protocol</label>
-                <input type="text" value="Continuous Real-Time IPQC Telemetry" readonly />
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Synchronous acquisition across active stage monitoring points.</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <label for="confirmStageAdvanceToggle" style="margin-bottom: 0; font-weight: 600;">Confirm Before Advancing Stages</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="confirmStageAdvanceToggle" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Prompts for confirmation before advancing a batch to the next stage.</div>
               </div>
             </div>
           </article>
 
-          <!-- Card 2: Regulatory Security & Traceability -->
+          <!-- Card 3: Notifications & System Alerts -->
           <article class="card card--form">
-            <div class="card-header">Regulatory & Traceability</div>
+            <div class="card-header">Notifications & System Alerts</div>
             <div class="panel-form">
               <div class="form-group">
-                <label for="auditLogSelect">21 CFR Part 11 Electronic Audit Logging</label>
-                <select id="auditLogSelect">
-                  <option value="true" selected>Enabled (All approvals, parameter edits & stage transitions logged)</option>
-                  <option value="false">Disabled</option>
-                </select>
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Maintains unalterable audit trails with timestamped electronic records.</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <label for="toastAlertToggle" style="margin-bottom: 0; font-weight: 600;">Real-Time Status Toasts</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="toastAlertToggle" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Show non-intrusive popup notifications for batch events and syncs.</div>
               </div>
 
               <div class="form-group">
-                <label>Cryptographic Integrity Standard</label>
-                <input type="text" value="SHA-256 (FDA 21 CFR Part 11 Certified Hashing)" readonly />
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Standard checksum hashing applied to all batch reports and release signatures.</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <label for="audioAlertToggle" style="margin-bottom: 0; font-weight: 600;">Audible Chimes for Deviations</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="audioAlertToggle">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Play an audible alert tone when an Out-of-Spec or critical limit is breached.</div>
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <label for="emailSummaryToggle" style="margin-bottom: 0; font-weight: 600;">End-of-Shift Email Summary</label>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="emailSummaryToggle" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Send an automated batch release and audit log summary after shift completion.</div>
               </div>
             </div>
           </article>
 
-          <!-- Card 3: AI Vision Inspection -->
-          <article class="card card--form">
-            <div class="card-header">AI Vision Inspection</div>
-            <div class="panel-form">
-              <div class="form-group">
-                <label for="aiEnableSelect">AI Botanical & Tablet Defect Classifier</label>
-                <select id="aiEnableSelect">
-                  <option value="true">Enabled (Deep Learning Inference Active)</option>
-                  <option value="false">Disabled (Rule-Based Computer Vision Only)</option>
-                </select>
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Enables automated botanical raw material leaf and tablet defect classification.</div>
-              </div>
-
-              <div class="form-group">
-                <label for="aiThresholdInput">AI Confidence Acceptance Threshold (%)</label>
-                <input type="number" id="aiThresholdInput" value="70" min="50" max="99" />
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Predictions below this score require manual QA review.</div>
-              </div>
-
-              <div class="form-group">
-                <label>Active Vision Model Engine</label>
-                <input type="text" id="aiModelVersionDisplay" value="MobileNetV2 (Botanical Leaf & Defect Vision v3.0)" readonly />
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 4: Quality Gate Thresholds -->
-          <article class="card card--form">
-            <div class="card-header">Computer Vision Quality Gates</div>
-            <div class="panel-form">
-              <div class="form-group">
-                <label for="contaminationThresholdInput">Surface Contamination Limit (%)</label>
-                <input type="number" id="contaminationThresholdInput" value="3.0" step="0.1" min="0.5" max="15.0" />
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Maximum allowable outlier pixel ratio before triggering Out-of-Spec alert.</div>
-              </div>
-
-              <div class="form-group">
-                <label for="edgeSensitivityInput">Sobel Edge Gradient Sensitivity</label>
-                <input type="number" id="edgeSensitivityInput" value="3.0" step="0.1" min="1.0" max="10.0" />
-                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Detects broken tablet edges, chips, and irregular surface contours.</div>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 5: Storage & Retention -->
+          <!-- Card 4: Storage & Retention -->
           <article class="card card--form">
             <div class="card-header">Storage & Retention</div>
             <div class="panel-form">
               <div class="form-group">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <label for="storeOnlyAnomaliesSelect" style="margin-bottom: 0;">Store Anomalous Images Only</label>
+                  <label for="storeOnlyAnomaliesSelect" style="margin-bottom: 0; font-weight: 600;">Store Anomalous Images Only</label>
                   <label class="toggle-switch">
                     <input type="checkbox" id="storeOnlyAnomaliesSelect">
                     <span class="slider"></span>
                   </label>
                 </div>
                 <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Automatically discard images where no anomaly is detected to save storage. Note: Images are always limited to a maximum of 50.</div>
+              </div>
+
+              <div class="form-group">
+                <label for="imageCacheLimitSelect">Camera Frame Cache Limit</label>
+                <select id="imageCacheLimitSelect">
+                  <option value="50" selected>50 Images (Standard Buffer)</option>
+                  <option value="100">100 Images (Expanded Buffer)</option>
+                  <option value="25">25 Images (Low Storage)</option>
+                </select>
+                <div class="note" style="margin-top: 4px; font-size: 0.8rem;">Maximum high-resolution camera frames stored in edge memory.</div>
               </div>
             </div>
           </article>

@@ -1,14 +1,25 @@
 function getBackendUrl() {
   if (typeof window !== 'undefined') {
-    if (localStorage && localStorage.getItem('sip_backend_url')) {
-      return localStorage.getItem('sip_backend_url');
+    if (window.localStorage) {
+      const saved = window.localStorage.getItem('sip_backend_url');
+      if (saved && !saved.includes('onrender.com')) {
+        return saved;
+      }
+      if (saved && saved.includes('onrender.com')) {
+        window.localStorage.removeItem('sip_backend_url');
+      }
     }
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '') {
-      return `${window.location.protocol}//${host || 'localhost'}:3000`;
+    const proto = (window.location && window.location.protocol === 'https:') ? 'https:' : 'http:';
+    const host = (window.location && window.location.hostname) ? window.location.hostname : 'localhost';
+    if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.')) {
+      return `${proto}//${host || 'localhost'}:3000`;
     }
+    if (host.includes('netlify.app')) {
+      return ''; // Routes through Netlify proxy redirects to backend
+    }
+    return `${proto}//${host}:3000`;
   }
-  return 'https://sip-backend-1.onrender.com';
+  return 'http://localhost:3000';
 }
 
 var BACKEND_URL = getBackendUrl();
@@ -153,10 +164,39 @@ function resolveImageUrl(url) {
 }
 window.resolveImageUrl = resolveImageUrl;
 
-async function fetchLiveAnalyticalData() {
+let _stateFetchPromise = null;
+let _cachedStateData = null;
+let _cachedStateTimestamp = 0;
+
+async function getOrFetchState(force = false) {
+  const now = Date.now();
+  if (!force && _cachedStateData && (now - _cachedStateTimestamp < 2500)) {
+    return _cachedStateData;
+  }
+  if (!force && _stateFetchPromise) {
+    return _stateFetchPromise;
+  }
+
+  _stateFetchPromise = (async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/state`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      _cachedStateData = data;
+      _cachedStateTimestamp = Date.now();
+      return data;
+    } finally {
+      _stateFetchPromise = null;
+    }
+  })();
+
+  return _stateFetchPromise;
+}
+window.getOrFetchState = getOrFetchState;
+
+async function fetchLiveAnalyticalData(force = false) {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/state`);
-    const liveData = await response.json();
+    const liveData = await getOrFetchState(force);
     if (liveData.analyticalData && liveData.analyticalData.length) {
       const liveFormatted = liveData.analyticalData.map((item) => {
         const isManualEntry = item.readingType === 'manual' && item.parameter;
@@ -240,8 +280,10 @@ async function fetchLiveAnalyticalData() {
       });
       appState.analyticalData = liveFormatted.reverse();
     }
+    return liveData;
   } catch (err) {
     console.error('Could not fetch live sensor data:', err);
+    return null;
   }
 }
 let currentFilter = 'all';
@@ -465,6 +507,12 @@ const selectors = {
 function initApp() {
   if (selectors.loginForm) {
     selectors.loginForm.addEventListener('submit', handleLogin);
+    if (document.getElementById('send-phone-otp')) {
+      document.getElementById('send-phone-otp').addEventListener('click', () => sendOtp('phone'));
+    }
+    if (document.getElementById('send-email-otp')) {
+      document.getElementById('send-email-otp').addEventListener('click', () => sendOtp('email'));
+    }
   }
   if (selectors.signOutButton) {
     selectors.signOutButton.addEventListener('click', signOut);
@@ -546,42 +594,119 @@ function initializeCurrentModule() {
     refreshAuditTable();
   }
 }
-async function handleLogin(event) {
-  event.preventDefault();
-  const username = document.getElementById('login-username').value.trim();
-  const password = document.getElementById('login-password').value.trim();
-
-  if (!username || !password) {
-    alert('Please enter a valid username and password.');
+async function sendOtp(type) {
+  const targetId = type === 'phone' ? 'entry-phone' : 'entry-email';
+  const target = document.getElementById(targetId).value.trim();
+  
+  if (!target) {
+    alert(`Please enter your ${type} first.`);
     return;
   }
 
   try {
-    const response = await fetch(`${BACKEND_URL}/api/login`, {
+    const response = await fetch(`${BACKEND_URL}/api/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ target, type }),
     });
 
     const data = await response.json();
+    if (response.ok) {
+      // Display the OTP in the alert for easy testing
+      alert(`${data.message}\n\n[TESTING] Your OTP Code is: ${data.otp}`);
+      const otpInputId = type === 'phone' ? 'entry-phone-otp' : 'entry-email-otp';
+      const inputEl = document.getElementById(otpInputId);
+      if (inputEl) {
+        inputEl.disabled = false;
+        inputEl.value = data.otp;
+        inputEl.focus();
+      }
+    } else {
+      alert(data.error || 'Failed to send OTP.');
+    }
+  } catch (err) {
+    console.warn('Backend server unavailable (Netlify / Static mode), generating verification OTP locally:', err);
+    // Offline / Netlify Preview fallback OTP generator
+    const fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    window[`last_otp_${type}`] = fallbackOtp;
+    
+    alert(`[PREVIEW / DEMO MODE]\nLive SMS/Email gateway requires active backend.\n\nYour Verification OTP for ${type} is:\n🔑 ${fallbackOtp}\n\n(Auto-filled for your convenience)`);
+    const otpInputId = type === 'phone' ? 'entry-phone-otp' : 'entry-email-otp';
+    const inputEl = document.getElementById(otpInputId);
+    if (inputEl) {
+      inputEl.disabled = false;
+      inputEl.value = fallbackOtp;
+      inputEl.focus();
+    }
+  }
+}
 
-    if (!response.ok) {
-      alert(data.error || 'Login failed.');
+async function handleLogin(event) {
+  event.preventDefault();
+  const name = document.getElementById('entry-name').value.trim();
+  const location = document.getElementById('entry-location').value.trim();
+  const purpose = document.getElementById('entry-purpose').value.trim();
+  const phone = document.getElementById('entry-phone').value.trim();
+  const phoneOtp = document.getElementById('entry-phone-otp').value.trim();
+  const email = document.getElementById('entry-email').value.trim();
+  const emailOtp = document.getElementById('entry-email-otp').value.trim();
+
+  if (!name || !location || !purpose || !phone || !phoneOtp || !email || !emailOtp) {
+    alert('Please fill in all the details and OTPs to access the platform.');
+    return;
+  }
+
+  try {
+    // 1. Verify OTPs with the backend if online, or validate fallback OTP
+    let verified = false;
+    try {
+      const verifyRes = await fetch(`${BACKEND_URL}/api/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, phoneOtp, email, emailOtp }),
+      });
+
+      if (verifyRes.ok) {
+        verified = true;
+      } else {
+        const verifyData = await verifyRes.json();
+        alert(verifyData.error || 'Invalid OTPs provided.');
+        return;
+      }
+    } catch (apiErr) {
+      // Backend is offline / running on Netlify without proxy
+      const expectedPhoneOtp = window['last_otp_phone'];
+      const expectedEmailOtp = window['last_otp_email'];
+      if ((!expectedPhoneOtp || phoneOtp === expectedPhoneOtp) && (!expectedEmailOtp || emailOtp === expectedEmailOtp)) {
+        verified = true;
+      }
+    }
+
+    if (!verified) {
+      alert('Invalid OTP entered. Please click "Send OTP" to generate a fresh verification code.');
       return;
     }
 
+    // 2. OTP verified, proceed with session creation
     appState.session = {
-      user: data.user.username,
-      role: data.user.role,
-      token: data.token,
+      user: name,
+      role: 'Operator',
+      location: location,
+      purpose: purpose,
+      phone: phone,
+      email: email,
+      token: 'audit-token-' + Date.now(),
       loggedAt: new Date().toISOString(),
     };
     saveState();
-    recordAudit('User Login', 'Login', data.user.username);
+    
+    // Log the detailed access to the audit trail
+    recordAudit(`Platform Access - Purpose: ${purpose}, Location: ${location}`, 'User Identification', name);
+    
     window.location.href = 'dashboard.html';
   } catch (err) {
-    console.error('Login failed:', err);
-    alert('Could not reach the server. Please try again.');
+    console.error('Entry failed:', err);
+    alert('An error occurred while accessing the platform. Please try again.');
   }
 }
 function handleSearch(event) {
@@ -956,195 +1081,56 @@ function showImagePopup(imageUrl, analysis, record = null) {
 
   // --- RIGHT SCIENTIFIC TELEMETRY PANEL ---
   const rightPanel = document.createElement('div');
-  rightPanel.style.cssText = 'flex:1.05;max-width:500px;background:#f8fafc;padding:24px 26px;overflow-y:auto;position:relative;display:flex;flex-direction:column;box-sizing:border-box;';
-
-  const closeBtn = document.createElement('button');
-  closeBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-  closeBtn.style.cssText = 'position:absolute;top:20px;right:20px;background:#ffffff;border:1px solid #e2e8f0;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#475569;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,0.05);transition:all 0.2s;';
-  closeBtn.onmouseover = () => { closeBtn.style.background = '#e2e8f0'; closeBtn.style.color = '#0f172a'; };
-  closeBtn.onmouseout = () => { closeBtn.style.background = '#ffffff'; closeBtn.style.color = '#475569'; };
-  closeBtn.onclick = closePopup;
-  rightPanel.appendChild(closeBtn);
-
-  const titleHeader = document.createElement('div');
-  titleHeader.style.cssText = 'margin-bottom:14px;padding-right:36px;';
-  titleHeader.innerHTML = `
-    <h2 style="margin:0 0 4px 0;font-size:1.28rem;color:#0f172a;font-weight:800;letter-spacing:-0.02em;">Foliar Pathometry & QA Report</h2>
-    <div style="font-size:0.78rem;color:#64748b;font-weight:600;">Specimen: <strong style="color:#0f172a;">${specimenName}</strong> · Batch ID: <code>${specimenBatchId}</code></div>
-  `;
-  rightPanel.appendChild(titleHeader);
-
-  // True Health Status
-  const isHealthySpecimen = Boolean(
+  const isEmptyScene = ai.visual_qa_result === 'EMPTY' || (ai.detected_defect && (ai.detected_defect.toLowerCase().includes('noisy') || ai.detected_defect.toLowerCase().includes('no material')));
+  
+  const isHealthySpecimen = !isEmptyScene && (Boolean(
     analysis.isHealthy === true ||
     ai.is_healthy === true ||
     ai.visual_qa_result === 'PASS' ||
     (analysis.defectPercent !== undefined && analysis.defectPercent < 3.5)
   ) && !Boolean(
     ai.visual_qa_result === 'CRITICAL' ||
-    (ai.detected_defect && !ai.detected_defect.toLowerCase().includes('none') && !ai.detected_defect.toLowerCase().includes('approved'))
-  );
+    (ai.detected_defect && !ai.detected_defect.toLowerCase().includes('none') && !ai.detected_defect.toLowerCase().includes('approved') && !ai.detected_defect.toLowerCase().includes('clear'))
+  ));
 
-  // Status Badge Row
-  const statusBadge = document.createElement('div');
-  statusBadge.style.cssText = 'margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
-  statusBadge.innerHTML = isHealthySpecimen
-    ? `<span style="background:#dcfce7;color:#15803d;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #86efac;display:inline-flex;align-items:center;gap:6px;">HEALTHY · PASS (GRADE 0)</span>
-       <span style="background:#f1f5f9;color:#475569;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #e2e8f0;">100% Viable Tissue</span>`
-    : `<span style="background:#fee2e2;color:#b91c1c;padding:5px 12px;border-radius:20px;font-size:0.74rem;font-weight:800;border:1px solid #fca5a5;display:inline-flex;align-items:center;gap:6px;">DEFECTIVE · REJECT</span>
-       <span style="background:#fef3c7;color:#92400e;padding:5px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid #fde68a;">Pathological Risk</span>`;
-  rightPanel.appendChild(statusBadge);
+  const defectDiagnosisText = isEmptyScene ? 'No Material Detected' : (isHealthySpecimen ? 'Clear / No Defects' : (ai.detected_defect || analysis.detectedDefect || 'Anomaly Detected'));
+  const descriptionText = isEmptyScene ? 'Conveyor belt is empty or no valid object is in the frame.' : (isHealthySpecimen ? 'The item passed all visual checks and is ready to proceed.' : 'The system has identified anomalies that require manual review.');
 
-  // 1. Phytopathology Severity Card (Horsfall-Barratt Scale)
-  const pathCard = document.createElement('div');
-  pathCard.className = 'data-card';
-  pathCard.style.borderLeft = isHealthySpecimen ? '5px solid #10b981' : '5px solid #ef4444';
+  let icon = isHealthySpecimen ? '✅' : '❌';
+  let title = isHealthySpecimen ? 'Healthy' : 'Defect Detected';
+  let titleColor = isHealthySpecimen ? '#10b981' : '#ef4444';
 
-  const defectDiagnosisText = isHealthySpecimen ? 'None - Approved Healthy Plant' : (ai.detected_defect || analysis.detectedDefect || 'Foliar Pathological Lesions');
-  const defectPct = analysis.defectPercent !== undefined ? analysis.defectPercent : (ai.defect_percentage || 0);
-
-  pathCard.innerHTML = `
-    <div class="data-card-title">
-      <span>Phytopathological Severity Assessment</span>
-      <span style="font-size:0.68rem;color:#0284c7;background:#e0f2fe;padding:2px 8px;border-radius:10px;font-weight:700;">EPPO Standard</span>
-    </div>
-    <div class="data-row"><span class="data-label">Specimen Classification</span> <span class="data-value">${rawClass}</span></div>
-    <div class="data-row"><span class="data-label">Horsfall-Barratt Grade</span> <span class="data-value" style="color:${isHealthySpecimen ? '#16a34a' : '#dc2626'};">${hbGradeStr}</span></div>
-    <div class="data-row"><span class="data-label">Diseased Leaf Area (DLA %)</span> <span class="data-value" style="color:${isHealthySpecimen ? '#16a34a' : '#dc2626'};font-size:1.05rem;font-weight:800;">${defectPct}%</span></div>
-    <div class="data-row"><span class="data-label">Diagnosed Pathogen</span> <span class="data-value" style="color:${isHealthySpecimen ? '#16a34a' : '#dc2626'};">${defectDiagnosisText}</span></div>
-    <div class="data-row"><span class="data-label">AI Diagnostic Confidence</span> <span class="data-value">${ai.confidence_score || 98.4}%</span></div>
-  `;
-  rightPanel.appendChild(pathCard);
-
-  // 2. Scientific Vegetation Indices & Colorimetry Card
-  const vegCard = document.createElement('div');
-  vegCard.className = 'data-card';
-  vegCard.innerHTML = `
-    <div class="data-card-title">
-      <span style="display:inline-flex;align-items:center;gap:6px;">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Chromatic & Vegetation Indices
-      </span>
-      <span style="font-size:0.68rem;color:#64748b;font-weight:600;">Calibrated Core</span>
-    </div>
-    <div class="sci-metric-grid">
-      <div class="sci-metric-tile">
-        <span class="sci-metric-name">VARI (Physiology)</span>
-        <span class="sci-metric-value" style="color:#0284c7;">${variVal > 0 ? '+' + variVal : variVal}</span>
-      </div>
-      <div class="sci-metric-tile">
-        <span class="sci-metric-name">GLI (Green Index)</span>
-        <span class="sci-metric-value" style="color:#10b981;">${gliVal > 0 ? '+' + gliVal : gliVal}</span>
-      </div>
-      <div class="sci-metric-tile">
-        <span class="sci-metric-name">ExG (Excess Green)</span>
-        <span class="sci-metric-value" style="color:#059669;">${exgVal}</span>
-      </div>
-      <div class="sci-metric-tile">
-        <span class="sci-metric-name">TGI (Triangular)</span>
-        <span class="sci-metric-value" style="color:#8b5cf6;">${tgiVal}</span>
-      </div>
-    </div>
-    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:0.75rem;color:#64748b;display:flex;justify-content:space-between;">
-      <span>LBP Texture Entropy: <strong style="color:#0f172a;">${analysis.textureEntropy || '5.89'}</strong></span>
-      <span>GLCM Contrast: <strong style="color:#0f172a;">${analysis.glcmContrast || '24.1'}</strong></span>
-    </div>
-  `;
-  rightPanel.appendChild(vegCard);
-
-  // 3. Lesion Morphometry Table Card
-  const morphoCard = document.createElement('div');
-  morphoCard.className = 'data-card';
-  const lesionsList = ai.lesion_morphometry || analysis.lesionMorphometry || [];
-
-  let tableRows = '';
-  if (lesionsList.length > 0) {
-    lesionsList.forEach((l) => {
-      tableRows += `
-        <tr onclick="window.highlightSingleLesion('${l.id}')">
-          <td><strong style="color:#dc2626;">${l.id}</strong></td>
-          <td>${l.areaMm2} mm²</td>
-          <td>${l.circularity}</td>
-          <td><span style="background:#fee2e2;color:#b91c1c;padding:2px 6px;border-radius:4px;font-size:0.7rem;font-weight:700;">Necrotic Core</span></td>
-        </tr>
-      `;
-    });
-  } else {
-    tableRows = `<tr><td colspan="4" style="text-align:center;color:#16a34a;padding:12px;font-weight:600;">✔ Zero Pathological Lesions Detected (100% Homogeneous)</td></tr>`;
+  if (isEmptyScene) {
+    icon = '⚪';
+    title = 'Idle / Empty';
+    titleColor = '#64748b';
   }
 
-  morphoCard.innerHTML = `
-    <div class="data-card-title">
-      <span>Lesion Morphometry Profiler</span>
-      <span style="font-size:0.7rem;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px;font-weight:700;">${lesionsList.length} Focal Spot(s)</span>
-    </div>
-    <div class="sci-table-wrapper">
-      <table class="sci-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Area (mm²)</th>
-            <th>Circularity</th>
-            <th>Classification</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-      </table>
-    </div>
-  `;
-  rightPanel.appendChild(morphoCard);
+  rightPanel.style.cssText = 'flex:0.6;max-width:380px;background:#ffffff;padding:40px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif;';
 
-  // 4. Compliance & Export Bar
-  const exportBtn = document.createElement('button');
-  exportBtn.className = 'modern-btn modern-btn-primary';
-  exportBtn.style.cssText = 'width:100%;margin-top:8px;padding:10px 14px;font-size:0.82rem;justify-content:center;border-radius:8px;';
-  exportBtn.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    Export Certified ASTM / ISO 17025 Certificate
+  const closeBtnHTML = '<button id="closePopupBtn" style="position:absolute;top:20px;right:20px;background:none;border:none;color:#94a3b8;cursor:pointer;transition:all 0.2s;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>';
+
+  rightPanel.innerHTML = closeBtnHTML + `
+    <h2 style="font-size:1.4rem; font-weight:600; color:${titleColor}; margin:0 0 12px 0;">
+      ${title}
+    </h2>
+    <p style="font-size:1rem; color:#334155; margin:0 0 8px 0; font-weight:500;">
+      ${defectDiagnosisText}
+    </p>
+    <p style="font-size:0.9rem; color:#64748b; margin:0; line-height:1.5;">
+      ${descriptionText}
+    </p>
   `;
-  exportBtn.onclick = () => {
-    const certWindow = window.open('', '_blank');
-    certWindow.document.write(`
-      <html>
-      <head>
-        <title>Foliar Pathometry QA Certificate - ${specimenBatchId}</title>
-        <style>
-          body { font-family: sans-serif; padding: 40px; color: #0f172a; }
-          .header { border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 24px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
-          th { background: #f1f5f9; }
-          .stamp { border: 2px solid #10b981; color: #10b981; padding: 12px; display: inline-block; font-weight: bold; border-radius: 8px; margin-top: 20px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h2>IIT Spectroscopic Intelligence Platform</h2>
-          <h3>Certified Botanical & Foliar Pathometry Analysis Certificate</h3>
-          <p>Specimen: <strong>${specimenName}</strong> | Record ID: <code>${specimenBatchId}</code></p>
-        </div>
-        <table>
-          <tr><th>Metric</th><th>Evaluated Result</th><th>Standard Benchmark</th></tr>
-          <tr><td>Diseased Leaf Area (DLA)</td><td>${defectPct}%</td><td>< 3.5% (PASS)</td></tr>
-          <tr><td>Horsfall-Barratt Grade</td><td>${hbGradeStr}</td><td>Grade 0 (Prime)</td></tr>
-          <tr><td>Visible Atmospherically Resistant Index (VARI)</td><td>${variVal}</td><td>> +0.20</td></tr>
-          <tr><td>Green Leaf Index (GLI)</td><td>${gliVal}</td><td>> +0.15</td></tr>
-          <tr><td>Excess Green Index (ExG)</td><td>${exgVal}</td><td>Positive (> 0)</td></tr>
-          <tr><td>LBP Texture Entropy</td><td>${analysis.textureEntropy || '5.89'}</td><td>Homogeneous</td></tr>
-          <tr><td>AI Release Decision</td><td><strong>${isHealthySpecimen ? 'APPROVED / PASS' : 'REJECT / FAILED'}</strong></td><td>Batch Qualified</td></tr>
-        </table>
-        <div class="stamp">
-          ${isHealthySpecimen ? '✔ APPROVED - ISO 17025 & ASTM E2500 COMPLIANT' : '✖ REJECTED - CRITICAL PHYTOPATHOLOGICAL CONTAMINATION'}
-        </div>
-        <p style="margin-top:30px;font-size:0.8rem;color:#64748b;">Cryptographic Hash: <code>${Math.random().toString(36).substring(2)}${Date.now()}</code> | Timestamp: ${new Date().toISOString()}</p>
-      </body>
-      </html>
-    `);
-    certWindow.document.close();
-  };
-  rightPanel.appendChild(exportBtn);
+  
+  // Attach event listener after setting innerHTML
+  setTimeout(() => {
+    const btn = document.getElementById('closePopupBtn');
+    if (btn) {
+      btn.onclick = closePopup;
+      btn.onmouseover = () => { btn.style.color = '#0f172a'; };
+      btn.onmouseout = () => { btn.style.color = '#94a3b8'; };
+    }
+  }, 10);
 
   modal.appendChild(leftPanel);
   modal.appendChild(rightPanel);
@@ -1779,14 +1765,13 @@ function initializePlatform() {
     window.location.href = 'index.html';
   } else {
     // Normal initialization
-    fetchLiveAnalyticalData().then(async () => {
+    fetchLiveAnalyticalData().then(async (liveData) => {
       const currentFile = window.location.pathname.split('/').pop() || 'dashboard.html';
       const skipRedirectPages = ['onboarding.html', 'index.html'];
       if (!skipRedirectPages.includes(currentFile)) {
         try {
-          const response = await fetch(`${BACKEND_URL}/api/state`);
-          const state = await response.json();
-          if (!state.projects || state.projects.length === 0) {
+          const state = liveData || await getOrFetchState();
+          if (state && (!state.projects || state.projects.length === 0)) {
             window.location.href = 'onboarding.html';
             return;
           }

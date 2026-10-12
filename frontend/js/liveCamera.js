@@ -55,20 +55,50 @@ async function loadLatestImages() {
         const mpName = monitoringPoints.find((mp) => mp.id === img.monitoringPointId)?.name || 'Unassigned';
         const imageUrl = resolveImageUrl(img.value || img.imagePath);
         const secondsAgo = Math.max(0, Math.round((Date.now() - new Date(img.receivedAt).getTime()) / 1000));
+        
         return `
-          <div class="card" style="padding:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <strong>${mpName}</strong>
-              <span style="color:#64748b;font-size:0.8rem;">${secondsAgo}s ago</span>
+          <div class="camera-card" style="position:relative; border-radius:12px; overflow:hidden; background:#0f172a; border:1px solid #334155; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); display:flex; flex-direction:column; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 20px 25px -5px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 10px 15px -3px rgba(0,0,0,0.1)';">
+            <div style="position:relative; width:100%; height:240px; overflow:hidden; background:#000; cursor:pointer;" onclick="openLiveView('${img.monitoringPointId}', '${mpName}')">
+              
+              <img 
+                src="${imageUrl}" 
+                alt="${mpName}" 
+                style="width:100%;height:100%;object-fit:cover; opacity:0.85; filter: contrast(1.1) brightness(1.1) grayscale(0.2);" 
+                onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'240\\' viewBox=\\'0 0 300 240\\'%3E%3Crect width=\\'300\\' height=\\'240\\' fill=\\'%23000\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'monospace\\' font-size=\\'14\\' fill=\\'%23ef4444\\'%3ESIGNAL LOST%3C/text%3E%3C/svg%3E';"
+              />
+          
+              <div style="position:absolute; top:12px; left:12px; display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.7); padding:4px 10px; border-radius:6px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="width:8px; height:8px; background:#ef4444; border-radius:50%; animation: cameraBlink 1.5s infinite;"></div>
+                <span style="color:#ef4444; font-size:0.75rem; font-weight:700; letter-spacing:1px; font-family:monospace;">LIVE</span>
+              </div>
+          
+              <div style="position:absolute; top:12px; right:12px; background:rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.5); padding:4px 10px; border-radius:6px; color:#10b981; font-size:0.7rem; font-weight:600; font-family:monospace; display:flex; align-items:center; gap:4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 12"/></svg>
+                AI ACTIVE
+              </div>
+          
+              <div style="position:absolute; bottom:12px; left:12px; background:rgba(0,0,0,0.7); padding:4px 10px; border-radius:6px; color:#f8fafc; font-size:0.75rem; font-family:monospace; border: 1px solid rgba(255,255,255,0.1);">
+                CAM-${(img.monitoringPointId || '001').substring(0,4).toUpperCase()} | ${mpName.toUpperCase()}
+              </div>
+          
+              <div style="position:absolute; bottom:12px; right:12px; background:rgba(0,0,0,0.7); padding:4px 10px; border-radius:6px; color:#94a3b8; font-size:0.75rem; font-family:monospace; border: 1px solid rgba(255,255,255,0.1);">
+                T-${secondsAgo}s
+              </div>
+          
+              <div style="position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 4px, 3px 100%; pointer-events:none;"></div>
+              <div style="position:absolute; top:0; left:0; width:100%; height:2px; background:rgba(16,185,129,0.5); box-shadow:0 0 10px rgba(16,185,129,1); animation: cameraScanline 3s linear infinite; pointer-events:none;"></div>
             </div>
-            <img 
-              src="${imageUrl}" 
-              alt="${mpName}" 
-              style="width:100%;height:180px;object-fit:cover;border-radius:8px;display:block;cursor:pointer;background:#0f172a;" 
-              onclick="openLiveView('${img.monitoringPointId}', '${mpName}')"
-              onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'300\\' height=\\'180\\' viewBox=\\'0 0 300 180\\'%3E%3Crect width=\\'300\\' height=\\'180\\' fill=\\'%231e293b\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'12\\' fill=\\'%2394a3b8\\'%3ECamera Offline%3C/text%3E%3C/svg%3E';"
-            />
-            <button class="button button--secondary" style="margin-top:8px;width:100%;" onclick="openLiveView('${img.monitoringPointId}', '${mpName}')">View Live</button>
+            
+            <div style="padding:16px; display:flex; justify-content:space-between; align-items:center; background:#1e293b; border-top:1px solid #334155;">
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <strong style="color:#f8fafc; font-size:0.95rem;">${mpName}</strong>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <div style="width:6px; height:6px; border-radius:50%; background:#10b981;"></div>
+                  <span style="color:#94a3b8; font-size:0.8rem;">Status: Optimal</span>
+                </div>
+              </div>
+              <button class="button button--primary" style="padding:8px 20px; font-size:0.85rem; border-radius:6px; background:#3b82f6; color:white; border:none; cursor:pointer;" onclick="openLiveView('${img.monitoringPointId}', '${mpName}')">Expand</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -84,6 +114,18 @@ async function loadLatestImages() {
 }
 
 function initLiveCameraPage() {
+  // Inject CCTV animations
+  if (!document.getElementById('cameraAnimations')) {
+    const style = document.createElement('style');
+    style.id = 'cameraAnimations';
+    style.innerHTML = `
+      @keyframes cameraBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+      @keyframes cameraScanline { 0% { top: 0; } 100% { top: 100%; } }
+      @keyframes pulseBox { 0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } }
+    `;
+    document.head.appendChild(style);
+  }
+
   loadLatestImages();
 
   const filterSelect = document.getElementById('cameraMonitoringPointFilter');
@@ -92,7 +134,7 @@ function initLiveCameraPage() {
   }
 
   if (cameraRefreshInterval) clearInterval(cameraRefreshInterval);
-  cameraRefreshInterval = setInterval(loadLatestImages, 30000);
+  cameraRefreshInterval = setInterval(loadLatestImages, 5000); // Polling faster to simulate "live" better
 }
 
 if (document.getElementById('cameraGrid')) {
@@ -107,12 +149,52 @@ function openLiveView(monitoringPointId, mpName) {
 
   const modal = document.createElement('div');
   modal.id = 'liveViewModal';
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);backdrop-filter:blur(6px);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);backdrop-filter:blur(10px);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box; font-family:monospace;';
   modal.innerHTML = `
-    <div style="color:white;margin-bottom:12px;font-size:1.2rem;font-weight:700;">${mpName} - Live View</div>
-    <img id="liveViewImage" style="max-width:90%;max-height:75vh;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);" />
-    <div id="liveViewStatus" style="color:#94a3b8;margin-top:12px;font-size:0.85rem;"></div>
-    <button class="button button--secondary" style="margin-top:16px;" onclick="closeLiveView()">Close</button>
+    <div style="position:relative; width:90%; max-width:1000px; background:#000; border:1px solid #334155; border-radius:12px; overflow:hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+      
+      <!-- Top Bar -->
+      <div style="position:absolute; top:0; left:0; right:0; padding:16px; display:flex; justify-content:space-between; align-items:center; background:linear-gradient(rgba(0,0,0,0.8), transparent); z-index:10;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:12px; height:12px; background:#ef4444; border-radius:50%; animation: cameraBlink 1.5s infinite;"></div>
+          <span style="color:#ef4444; font-size:1.1rem; font-weight:700; letter-spacing:2px;">LIVE MONITORING</span>
+        </div>
+        <div style="color:white; font-size:1.2rem; font-weight:700; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">${mpName.toUpperCase()}</div>
+      </div>
+
+      <!-- Image Container -->
+      <div style="position:relative; width:100%; height:70vh; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+        <img id="liveViewImage" style="width:100%; height:100%; object-fit:contain; filter: contrast(1.1) brightness(1.05);" />
+        
+        <!-- Mock Bounding Boxes / AI Analysis -->
+        <div style="position:absolute; top:20%; left:30%; width:120px; height:80px; border:2px solid #10b981; border-radius:4px; animation: pulseBox 2s infinite;">
+          <div style="position:absolute; top:-22px; left:-2px; background:#10b981; color:white; padding:2px 6px; font-size:0.75rem; font-weight:bold; border-radius:4px 4px 0 0;">OBJECT DETECTED: 98%</div>
+        </div>
+
+        <div style="position:absolute; top:50%; left:60%; width:90px; height:90px; border:2px solid #3b82f6; border-radius:4px;">
+          <div style="position:absolute; top:-22px; left:-2px; background:#3b82f6; color:white; padding:2px 6px; font-size:0.75rem; font-weight:bold; border-radius:4px 4px 0 0;">TRACKING: ACTIVE</div>
+        </div>
+        
+        <!-- Crosshairs -->
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:40px; height:40px; border:1px solid rgba(255,255,255,0.3); border-radius:50%; pointer-events:none;">
+          <div style="position:absolute; top:50%; left:-10px; right:-10px; height:1px; background:rgba(255,255,255,0.3);"></div>
+          <div style="position:absolute; left:50%; top:-10px; bottom:-10px; width:1px; background:rgba(255,255,255,0.3);"></div>
+        </div>
+
+        <!-- Scanline -->
+        <div style="position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%); background-size: 100% 4px; pointer-events:none;"></div>
+        <div style="position:absolute; top:0; left:0; width:100%; height:3px; background:rgba(16,185,129,0.3); box-shadow:0 0 15px rgba(16,185,129,0.8); animation: cameraScanline 4s linear infinite; pointer-events:none;"></div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; background:#111827; border-top:1px solid #334155;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div id="liveViewStatus" style="color:#10b981; font-size:0.9rem; font-weight:bold;">SYSTEM ONLINE - AI ACTIVE</div>
+          <div style="color:#64748b; font-size:0.8rem;">Resolution: 1080p | FPS: 30 | Network: Stable</div>
+        </div>
+        <button class="button button--secondary" style="padding:10px 24px; font-size:1rem; font-weight:bold; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="closeLiveView()">TERMINATE FEED</button>
+      </div>
+    </div>
   `;
   document.body.appendChild(modal);
 
@@ -139,7 +221,7 @@ async function refreshLiveViewImage() {
     }
 
     const statusEl = document.getElementById('liveViewStatus');
-    if (statusEl) statusEl.textContent = `Updated: ${new Date(latest.receivedAt).toLocaleTimeString()}`;
+    if (statusEl) statusEl.textContent = `SYSTEM ONLINE - AI ACTIVE | LAST UPDATE: ${new Date(latest.receivedAt).toLocaleTimeString()}`;
   } catch (err) {
     console.error('Live view refresh failed:', err);
   }

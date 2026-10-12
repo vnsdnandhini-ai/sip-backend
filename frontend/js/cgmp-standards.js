@@ -8,74 +8,74 @@
 const DEFAULT_CGMP_MATRIX = {
   overallAuditReadinessScore: 98.4,
   status: 'AUDIT_READY',
-  evaluationAuthority: 'Spectroscopic Intelligence Platform cGMP Validation Core',
+  evaluationAuthority: 'SIP cGMP Validation Core',
   standards: [
     {
       id: 'fda-211',
       code: 'US FDA 21 CFR Part 211',
-      title: 'Current Good Manufacturing Practice for Finished Pharmaceuticals',
+      title: 'Finished Pharmaceuticals cGMP',
       overallScore: 98.0,
       status: 'AUDIT_READY',
       clauses: [
-        { clause: '§ 211.68', name: 'Automatic, mechanical, and electronic equipment calibration & PAT monitoring', status: 'COMPLIANT', score: 100 },
-        { clause: '§ 211.100', name: 'Written production and process control procedures & deviation controls', status: 'COMPLIANT', score: 95 },
-        { clause: '§ 211.110', name: 'In-process sampling and testing (Blend uniformity, LOD, hardness)', status: 'COMPLIANT', score: 98 },
-        { clause: '§ 211.188', name: 'Batch production and control records (eBR / genealogy)', status: 'COMPLIANT', score: 100 },
-        { clause: '§ 211.192', name: 'Production record review & Out-of-Specification (OOS) investigations', status: 'COMPLIANT', score: 96 }
+        { clause: '§ 211.68', name: 'Equipment Calibration & PAT Monitoring', status: 'COMPLIANT', score: 100 },
+        { clause: '§ 211.100', name: 'Production & Deviation Controls', status: 'COMPLIANT', score: 95 },
+        { clause: '§ 211.110', name: 'In-Process Testing & Sampling', status: 'COMPLIANT', score: 98 },
+        { clause: '§ 211.188', name: 'Batch Records & Genealogy', status: 'COMPLIANT', score: 100 },
+        { clause: '§ 211.192', name: 'OOS Investigations & Records Review', status: 'COMPLIANT', score: 96 }
       ]
     },
     {
       id: 'fda-part11',
-      code: 'FDA 21 CFR Part 11 & EU GMP Annex 11',
-      title: 'Electronic Records; Electronic Signatures & Computerised Systems',
+      code: 'FDA 21 CFR Part 11 & EU Annex 11',
+      title: 'Electronic Records & Signatures',
       overallScore: 99.2,
       status: 'AUDIT_READY',
       clauses: [
-        { clause: '11.10 (a)', name: 'Validation of systems to ensure accuracy, reliability, consistent performance', status: 'COMPLIANT', score: 100 },
-        { clause: '11.10 (e)', name: 'Secure, computer-generated, time-stamped audit trails for all operations', status: 'COMPLIANT', score: 100 },
-        { clause: '11.10 (d)', name: 'Limiting system access to authorized individuals (RBAC / GMP tiers)', status: 'COMPLIANT', score: 96 },
-        { clause: '11.50', name: 'Signature manifestations (Printed name, date/time, signing intent)', status: 'COMPLIANT', score: 100 },
-        { clause: '11.70', name: 'Signature linking to electronic records with SHA-256 cryptographic seal', status: 'COMPLIANT', score: 100 }
+        { clause: '11.10(a)', name: 'System Validation & Accuracy', status: 'COMPLIANT', score: 100 },
+        { clause: '11.10(e)', name: 'Time-Stamped Audit Trails', status: 'COMPLIANT', score: 100 },
+        { clause: '11.10(d)', name: 'User Access Control & RBAC', status: 'COMPLIANT', score: 96 },
+        { clause: '11.50', name: 'Electronic Signatures', status: 'COMPLIANT', score: 100 },
+        { clause: '11.70', name: 'Cryptographic Record Linking', status: 'COMPLIANT', score: 100 }
       ]
     },
     {
       id: 'alcoa-plus',
-      code: 'ALCOA+ Data Integrity Framework',
-      title: 'WHO / FDA / EMA Data Integrity Governance for Life Sciences',
+      code: 'ALCOA+ Framework',
+      title: 'Data Integrity Governance',
       overallScore: 99.1,
       status: 'AUDIT_READY',
       clauses: [
-        { clause: 'Attributable', name: 'Unique operator IDs linked to every sensor reading, entry & sign-off', status: 'COMPLIANT', score: 100 },
-        { clause: 'Legible', name: 'Clear visual logs, unalterable human-readable audit reports', status: 'COMPLIANT', score: 100 },
-        { clause: 'Contemporaneous', name: 'Real-time automatic sensor timestamping with millisecond synchronization', status: 'COMPLIANT', score: 99 },
-        { clause: 'Original', name: 'Raw spectral InGaAs / load-cell telemetry stored immutably before processing', status: 'COMPLIANT', score: 100 },
-        { clause: 'Accurate', name: 'NIST/USP calibrated instruments with verified tolerance ranges', status: 'COMPLIANT', score: 97 },
-        { clause: 'Complete + Consistent', name: 'End-to-end 8-step batch genealogy without data fragmentation', status: 'COMPLIANT', score: 99 },
-        { clause: 'Enduring + Available', name: 'Encrypted multi-tier database storage with verified backup replication', status: 'COMPLIANT', score: 98 }
+        { clause: 'Attributable', name: 'Operator ID & Device Binding', status: 'COMPLIANT', score: 100 },
+        { clause: 'Legible', name: 'Tamper-Proof Audit Records', status: 'COMPLIANT', score: 100 },
+        { clause: 'Contemporaneous', name: 'Real-Time Sensor Timestamping', status: 'COMPLIANT', score: 99 },
+        { clause: 'Original', name: 'Raw Telemetry Immutability', status: 'COMPLIANT', score: 100 },
+        { clause: 'Accurate', name: 'USP/NIST Calibrated Instruments', status: 'COMPLIANT', score: 97 },
+        { clause: 'Complete', name: 'End-to-End Batch Genealogy', status: 'COMPLIANT', score: 99 },
+        { clause: 'Enduring', name: 'Encrypted Multi-Tier Storage', status: 'COMPLIANT', score: 98 }
       ]
     },
     {
       id: 'ich-q8-q9-q10',
       code: 'ICH Q8 / Q9 / Q10',
-      title: 'Pharmaceutical Development, Quality Risk Management & PQS',
+      title: 'Quality Risk Management & PQS',
       overallScore: 95.8,
       status: 'AUDIT_READY',
       clauses: [
-        { clause: 'ICH Q8(R2)', name: 'Design Space verification & Critical Quality Attributes (CQAs / CPPs)', status: 'COMPLIANT', score: 96 },
-        { clause: 'ICH Q9', name: 'Quality Risk Management (FMEA, Ishikawa root cause & severity ranking)', status: 'COMPLIANT', score: 94 },
-        { clause: 'ICH Q10', name: 'Pharmaceutical Quality System lifecycle & CAPA corrective action loops', status: 'COMPLIANT', score: 97 }
+        { clause: 'ICH Q8', name: 'Design Space & CQAs Verification', status: 'COMPLIANT', score: 96 },
+        { clause: 'ICH Q9', name: 'Quality Risk Management (QRM)', status: 'COMPLIANT', score: 94 },
+        { clause: 'ICH Q10', name: 'PQS Lifecycle & CAPA Loops', status: 'COMPLIANT', score: 97 }
       ]
     },
     {
       id: 'iso-14644',
-      code: 'ISO 14644-1 & EU GMP Annex 1',
-      title: 'Cleanroom Classification & Environmental HVAC Monitoring',
+      code: 'ISO 14644 & Cleanroom',
+      title: 'Cleanroom & HVAC Monitoring',
       overallScore: 98.8,
       status: 'AUDIT_READY',
       clauses: [
-        { clause: 'Grade C / ISO 7', name: 'Dispensing & Compression suites particle count (0.5µm <= 352,000 / m³)', status: 'COMPLIANT', score: 99 },
-        { clause: 'Grade D / ISO 8', name: 'Granulation & Drying suites particle count (0.5µm <= 3,520,000 / m³)', status: 'COMPLIANT', score: 98 },
-        { clause: 'ΔP Differential', name: 'Positive pressure cascade (>= 10 - 15 Pa relative to adjacent corridor)', status: 'COMPLIANT', score: 100 }
+        { clause: 'Grade C', name: 'Dispensing & Compression Limits', status: 'COMPLIANT', score: 99 },
+        { clause: 'Grade D', name: 'Granulation & Drying Limits', status: 'COMPLIANT', score: 98 },
+        { clause: 'ΔP Cascade', name: 'Positive Pressure Cascade (>= 10 Pa)', status: 'COMPLIANT', score: 100 }
       ]
     }
   ]
@@ -138,30 +138,72 @@ function renderCgmpMatrix(matrix) {
   const container = document.getElementById('standardsListContainer');
   if (!container) return;
 
+  const simplifyClause = (name) => {
+    if (!name) return '';
+    const map = {
+      'Automatic, mechanical, and electronic equipment calibration & PAT monitoring': 'Equipment Calibration & PAT Monitoring',
+      'Written production and process control procedures & deviation controls': 'Production & Deviation Controls',
+      'In-process sampling and testing (Blend uniformity, LOD, hardness)': 'In-Process Testing & Sampling',
+      'Batch production and control records (eBR / genealogy)': 'Batch Records & Genealogy',
+      'Production record review & Out-of-Specification (OOS) investigations': 'OOS Investigations & Records Review',
+      'Validation of systems to ensure accuracy, reliability, consistent performance': 'System Validation & Accuracy',
+      'Secure, computer-generated, time-stamped audit trails for all operations': 'Time-Stamped Audit Trails',
+      'Limiting system access to authorized individuals (RBAC / GMP tiers)': 'User Access Control & RBAC',
+      'Signature manifestations (Printed name, date/time, signing intent)': 'Electronic Signatures',
+      'Signature linking to electronic records with SHA-256 cryptographic seal': 'Cryptographic Record Linking',
+      'Unique operator IDs linked to every sensor reading, entry & sign-off': 'Operator ID & Device Binding',
+      'Clear visual logs, unalterable human-readable audit reports': 'Tamper-Proof Audit Records',
+      'Real-time automatic sensor timestamping with millisecond synchronization': 'Real-Time Sensor Timestamping',
+      'Raw spectral InGaAs / load-cell telemetry stored immutably before processing': 'Raw Telemetry Immutability',
+      'NIST/USP calibrated instruments with verified tolerance ranges': 'USP/NIST Calibrated Instruments',
+      'End-to-end 8-step batch genealogy without data fragmentation': 'End-to-End Batch Genealogy',
+      'Encrypted multi-tier database storage with verified backup replication': 'Encrypted Multi-Tier Storage',
+      'Design Space verification & Critical Quality Attributes (CQAs / CPPs)': 'Design Space & CQAs Verification',
+      'Quality Risk Management (FMEA, Ishikawa root cause & severity ranking)': 'Quality Risk Management (QRM)',
+      'Pharmaceutical Quality System lifecycle & CAPA corrective action loops': 'PQS Lifecycle & CAPA Loops',
+      'Dispensing & Compression suites particle count (0.5µm <= 352,000 / m³)': 'Dispensing & Compression Limits',
+      'Granulation & Drying suites particle count (0.5µm <= 3,520,000 / m³)': 'Granulation & Drying Limits',
+      'Positive pressure cascade (>= 10 - 15 Pa relative to adjacent corridor)': 'Positive Pressure Cascade (>= 10 Pa)'
+    };
+    return map[name] || name;
+  };
+
+  const simplifyTitle = (title) => {
+    if (!title) return '';
+    const map = {
+      'Current Good Manufacturing Practice for Finished Pharmaceuticals': 'Finished Pharmaceuticals cGMP',
+      'Electronic Records; Electronic Signatures & Computerised Systems': 'Electronic Records & Signatures',
+      'WHO / FDA / EMA Data Integrity Governance for Life Sciences': 'Data Integrity Governance',
+      'Pharmaceutical Development, Quality Risk Management & PQS': 'Quality Risk Management & PQS',
+      'Cleanroom Classification & Environmental HVAC Monitoring': 'Cleanroom & HVAC Monitoring'
+    };
+    return map[title] || title;
+  };
+
   container.innerHTML = '';
   (matrix.standards || DEFAULT_CGMP_MATRIX.standards).forEach((std) => {
     const card = document.createElement('div');
     card.style.border = '1px solid var(--border)';
     card.style.borderRadius = '8px';
-    card.style.padding = '12px';
+    card.style.padding = '10px 12px';
     card.style.background = '#f8fafc';
 
     const clauseRows = std.clauses.map(c => `
-      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.82rem; padding: 4px 0; border-bottom: 1px dotted #e2e8f0;">
-        <span style="font-weight:600; color:var(--text);"><code style="background:#e0e7ff; color:#3730a3; padding:1px 4px; border-radius:4px;">${c.clause}</code> ${c.name}</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; padding: 4px 0; border-bottom: 1px dotted #e2e8f0;">
+        <span style="font-weight:600; color:var(--text);"><code style="background:#e0e7ff; color:#3730a3; padding:1px 5px; border-radius:4px; font-size:0.75rem;">${c.clause}</code> ${simplifyClause(c.name)}</span>
         <span class="badge ${c.score >= 95 ? 'badge--pass' : 'badge--warning'}" style="font-size:0.75rem;">${c.score}%</span>
       </div>
     `).join('');
 
     card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 8px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 6px;">
         <div>
-          <div style="font-weight:800; font-size:0.95rem; color:#1e1b4b;">${std.code}</div>
-          <div style="font-size:0.8rem; color:var(--muted);">${std.title}</div>
+          <div style="font-weight:700; font-size:0.9rem; color:#1e1b4b;">${std.code}</div>
+          <div style="font-size:0.78rem; color:var(--muted);">${simplifyTitle(std.title)}</div>
         </div>
-        <span class="badge badge--pass" style="font-size:0.8rem; font-weight:700;">Score: ${std.overallScore}%</span>
+        <span class="badge badge--pass" style="font-size:0.78rem; font-weight:700;">Score: ${std.overallScore}%</span>
       </div>
-      <div style="margin-top: 8px;">
+      <div style="margin-top: 6px;">
         ${clauseRows}
       </div>
     `;
@@ -641,15 +683,15 @@ async function runLiveAlcoaScan() {
       overallScore: 99.1,
       certificateId: 'ALCOA-CERT-2026-X89',
       dimensions: [
-        { name: 'Attributable', metric: 'User / Device Identity Binding', score: 100, detail: 'Every recorded reading is cryptographically tied to a validated Operator ID or Hardware Device MAC/ID.' },
-        { name: 'Legible', metric: 'Human Readable & Structured Storage', score: 100, detail: 'All records are stored in normalized JSON/SQL formats with full analytical unit specifications.' },
-        { name: 'Contemporaneous', metric: 'Real-Time Acquisition Timestamping', score: 99.2, detail: 'In-line sensor and NIR spectral timestamps are captured at the exact moment of physical measurement.' },
-        { name: 'Original', metric: 'First Recording Immutability', score: 100, detail: 'Raw spectral files and sensor telemetry are preserved in immutable write-once data stores.' },
-        { name: 'Accurate', metric: 'Calibrated Analytical Accuracy', score: 97.5, detail: 'Limits match validated ICH Q2(R2) method parameters with active equipment calibration checks.' },
-        { name: 'Complete', metric: 'End-to-End Batch Genealogy', score: 99.0, detail: 'Full 8-stage lineage from raw material API lot to final packaged tablet core.' },
-        { name: 'Consistent', metric: 'Chronological Sequence Validity', score: 100, detail: 'Timestamps strictly maintain chronological workflow monotonicity without retroactive tampering.' },
-        { name: 'Enduring', metric: 'Archival Retention & Resiliency', score: 100, detail: 'Persistent database storage with automatic backup snapshots and tamper-evident logs.' },
-        { name: 'Available', metric: 'Audit Retrieval Accessibility', score: 99.8, detail: 'Instant multi-format export (JSON, CSV, Verified PDF, CoA) for regulatory agency inspection.' }
+        { name: 'Attributable', metric: 'User & Device Binding', score: 100, detail: 'Readings bound to validated Operator ID or Device.' },
+        { name: 'Legible', metric: 'Structured Audit Records', score: 100, detail: 'Tamper-proof structured records with unit specs.' },
+        { name: 'Contemporaneous', metric: 'Real-Time Acquisition', score: 99.2, detail: 'Timestamps recorded at the moment of measurement.' },
+        { name: 'Original', metric: 'Raw Data Immutability', score: 100, detail: 'Raw spectral data preserved in immutable store.' },
+        { name: 'Accurate', metric: 'Calibrated Accuracy', score: 97.5, detail: 'Limits match validated USP/NIST calibration limits.' },
+        { name: 'Complete', metric: 'End-to-End Lineage', score: 99.0, detail: 'Traceable 8-stage lineage from API to finished lot.' },
+        { name: 'Consistent', metric: 'Chronological Validity', score: 100, detail: 'Strict chronological monotonic sequence.' },
+        { name: 'Enduring', metric: 'Archival Retention', score: 100, detail: 'Persistent database storage with automatic backups.' },
+        { name: 'Available', metric: 'Audit Accessibility', score: 99.8, detail: 'Fast export (PDF, CSV, CoA) for regulatory audits.' }
       ]
     };
   }

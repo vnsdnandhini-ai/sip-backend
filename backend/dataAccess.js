@@ -10,26 +10,55 @@ const fs = require('fs');
 const path = require('path');
 const pool = require('./db');
 
-async function getFullState() {
+let cachedState = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 2500; // 2.5-second TTL prevents repeated burst queries during page loads
+
+function invalidateStateCache() {
+  cachedState = null;
+  lastCacheTime = 0;
+}
+
+async function getFullState(forceRefresh = false) {
+  if (!forceRefresh && cachedState && (Date.now() - lastCacheTime < CACHE_TTL_MS)) {
+    return cachedState;
+  }
+
   try {
-    const users = await pool.query('SELECT id, username, role FROM users');
-    const projects = await pool.query('SELECT * FROM projects ORDER BY created_at DESC');
-    const devices = await pool.query('SELECT * FROM devices');
-    const monitoringPoints = await pool.query('SELECT * FROM monitoring_points ORDER BY created_at');
-    const parameters = await pool.query('SELECT * FROM parameters ORDER BY created_at');
-    const checkoutConditions = await pool.query('SELECT * FROM checkout_conditions ORDER BY created_at');
-    const regulatoryRules = await pool.query('SELECT * FROM regulatory_rules ORDER BY created_at');
-    const analyticalData = await pool.query(`
-      (SELECT * FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL ORDER BY received_at DESC)
-      UNION ALL
-      (SELECT * FROM analytical_data WHERE (data_type IS NULL OR data_type != 'image') AND image_path IS NULL ORDER BY received_at DESC LIMIT 250)
-      ORDER BY received_at DESC
-    `);
-    const complianceResults = await pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at DESC LIMIT 200');
-    const auditTrail = await pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC LIMIT 100');
-    const reports = await pool.query('SELECT * FROM reports ORDER BY created_at DESC');
-    const dispensingLogs = await pool.query('SELECT * FROM dispensing_logs ORDER BY timestamp DESC LIMIT 100').catch(() => ({ rows: [] }));
-    const workflows = await pool.query('SELECT * FROM process_workflows ORDER BY created_at ASC').catch(() => ({ rows: [] }));
+    const [
+      users,
+      projects,
+      devices,
+      monitoringPoints,
+      parameters,
+      checkoutConditions,
+      regulatoryRules,
+      analyticalData,
+      complianceResults,
+      auditTrail,
+      reports,
+      dispensingLogs,
+      workflows
+    ] = await Promise.all([
+      pool.query('SELECT id, username, role FROM users'),
+      pool.query('SELECT * FROM projects ORDER BY created_at DESC'),
+      pool.query('SELECT * FROM devices'),
+      pool.query('SELECT * FROM monitoring_points ORDER BY created_at'),
+      pool.query('SELECT * FROM parameters ORDER BY created_at'),
+      pool.query('SELECT * FROM checkout_conditions ORDER BY created_at'),
+      pool.query('SELECT * FROM regulatory_rules ORDER BY created_at'),
+      pool.query(`
+        (SELECT * FROM analytical_data WHERE data_type = 'image' OR image_path IS NOT NULL ORDER BY received_at DESC)
+        UNION ALL
+        (SELECT * FROM analytical_data WHERE (data_type IS NULL OR data_type != 'image') AND image_path IS NULL ORDER BY received_at DESC LIMIT 250)
+        ORDER BY received_at DESC
+      `),
+      pool.query('SELECT * FROM compliance_results ORDER BY evaluated_at DESC LIMIT 200'),
+      pool.query('SELECT * FROM audit_trail ORDER BY created_at DESC LIMIT 200'),
+      pool.query('SELECT * FROM reports ORDER BY created_at DESC LIMIT 10'),
+      pool.query('SELECT * FROM dispensing_logs ORDER BY timestamp DESC LIMIT 100').catch(() => ({ rows: [] })),
+      pool.query('SELECT * FROM process_workflows ORDER BY created_at ASC').catch(() => ({ rows: [] }))
+    ]);
 
   const mappedBatches = projects.rows.map((p) => ({
     id: p.id,
@@ -53,7 +82,7 @@ async function getFullState() {
     createdAt: p.created_at,
   }));
 
-  return {
+  const state = {
     users: users.rows,
     projects: mappedBatches,
     batches: mappedBatches, // backward-compatible alias
@@ -127,11 +156,22 @@ async function getFullState() {
       id: a.id, activity: a.activity, module: a.module, user: a.user_name,
       timestamp: a.created_at,
     })),
-    reports: reports.rows.map((r) => ({
-      id: r.id,
-      content: typeof r.content === 'string' ? JSON.parse(r.content) : r.content,
-      integrity: typeof r.integrity === 'string' ? JSON.parse(r.integrity) : r.integrity,
-    })),
+    reports: reports.rows.map((r) => {
+      let content = typeof r.content === 'string' ? (() => { try { return JSON.parse(r.content); } catch (e) { return {}; } })() : (r.content || {});
+      // Lighten heavy arrays inside reports if present
+      if (content && content.results && content.results.length > 20) {
+        content = {
+          ...content,
+          results: content.results.slice(0, 20),
+          byMonitoringPoint: Array.isArray(content.byMonitoringPoint) ? content.byMonitoringPoint.slice(0, 5) : content.byMonitoringPoint
+        };
+      }
+      return {
+        id: r.id,
+        content,
+        integrity: typeof r.integrity === 'string' ? (() => { try { return JSON.parse(r.integrity); } catch (e) { return {}; } })() : (r.integrity || {}),
+      };
+    }),
     dispensingLogs: (dispensingLogs.rows || []).map((d) => ({
       id: d.id,
       batchId: d.batch_id,
@@ -155,6 +195,10 @@ async function getFullState() {
       createdAt: w.created_at,
     })),
   };
+
+  cachedState = state;
+  lastCacheTime = Date.now();
+  return state;
   } catch (err) {
     console.warn('Database query failed in getFullState, loading local fallback:', err.message);
     try {
@@ -172,5 +216,5 @@ async function getFullState() {
   }
 }
 
-module.exports = { pool, getFullState };
+module.exports = { pool, getFullState, invalidateStateCache };
 

@@ -346,6 +346,57 @@ textarea:focus {
   border-radius: 4px;
 }
 
+/* Collapsible Navigation Submenu */
+.nav-collapsible {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-link--parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  width: 100%;
+}
+
+.nav-link--parent .chevron-icon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.nav-collapsible.open .nav-link--parent .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.nav-collapsible.open .nav-link--parent {
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.nav-submenu {
+  display: none;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-left: 0.75rem;
+  margin-top: 0.35rem;
+  margin-left: 0.75rem;
+  border-left: 2px solid rgba(14, 165, 233, 0.25);
+}
+
+.nav-collapsible.open .nav-submenu {
+  display: flex;
+}
+
+.nav-link--sub {
+  font-size: 0.85rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+}
+
 .main-content {
   flex: 1 1 0%;
   min-width: 0;

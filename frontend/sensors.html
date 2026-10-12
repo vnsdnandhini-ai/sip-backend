@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sensors & Hardware - Spectroscopic Intelligence Platform</title>
+  <title>Sensor Data Entry - Spectroscopic Intelligence Platform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
@@ -20,17 +20,36 @@
         <div class="brand-text">Spectroscopic Intelligence</div>
       </div>
                     <nav class="nav-menu" id="navMenu">
+          <button class="nav-link" data-page="dashboard">Dashboard</button>
           <button class="nav-link" data-page="audit">Audit Log</button>
-          <button class="nav-link" data-page="batches">Batch Management</button>
-          <button class="nav-link" data-page="rules">Regulatory Rules</button>
-          <button class="nav-link" data-page="cgmp">cGMP Standards</button>
-          <button class="nav-link" data-page="sensors">Sensors & Hardware</button>
-          <button class="nav-link" data-page="monitoring">Monitoring Points</button>
+          <button class="nav-link" data-page="sensors">Sensor Data Entry</button>
+          <button class="nav-link" data-page="batches">Medicine & Batch Type</button>
+          <div class="nav-collapsible" id="navRegulationsGroup">
+            <button type="button" class="nav-link nav-link--parent" id="navRegulationsToggle" aria-expanded="false">
+              <span>Regulations & Standards</span>
+              <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div class="nav-submenu" id="navRegulationsSubmenu">
+              <button class="nav-link nav-link--sub" data-page="rules">Regulatory Rules</button>
+              <button class="nav-link nav-link--sub" data-page="cgmp">cGMP Standards</button>
+            </div>
+          </div>
           <button class="nav-link" data-page="workflow">Process Workflow</button>
-          <button class="nav-link" data-page="parameters">Process Parameters</button>
-          <button class="nav-link" data-page="checkout">Checkout Conditions</button>
-          <button class="nav-link" data-page="dashboard">Live Monitoring</button>
-          <button class="nav-link" data-page="process-monitoring">Process Monitoring</button>
+          <div class="nav-collapsible" id="navParametersGroup">
+            <button type="button" class="nav-link nav-link--parent" id="navParametersToggle" aria-expanded="false">
+              <span>Parameter & Checkout Conditions</span>
+              <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div class="nav-submenu" id="navParametersSubmenu">
+              <button class="nav-link nav-link--sub" data-page="parameters">Process Parameters</button>
+              <button class="nav-link nav-link--sub" data-page="checkout">Checkout Conditions</button>
+            </div>
+          </div>
+          <button class="nav-link" data-page="process-monitoring">Live Monitoring</button>
           <button class="nav-link" data-page="compliance">Compliance Engine</button>
           <button class="nav-link" data-page="reports">Quality Reports</button>
           <button class="nav-link" data-page="settings">Settings</button>
@@ -40,7 +59,7 @@
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-left">
-          <h2 id="pageTitle">Sensors & Hardware</h2>
+          <h2 id="pageTitle">Sensor Data Entry</h2>
           <div class="topbar-breadcrumb">Hardware Device Management & Process Topology Mapping</div>
         </div>
         <div class="topbar-right">

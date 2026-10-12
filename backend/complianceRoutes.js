@@ -655,4 +655,3 @@ router.post('/reports/generate', async (req, res) => {
 
   return router;
 };
-
